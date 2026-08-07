@@ -37,18 +37,21 @@ export function useFacebookPageConnect() {
 
   // FB.login never rejects; resolve the user access token on success and null
   // for any other status (closed popup, not_authorized, unknown).
+  // Facebook Login for Business apps reject scope-based requests with
+  // "Invalid Scopes"; they require a Login Configuration id instead.
   const login = () =>
     new Promise(resolve => {
-      window.FB.login(
-        response => {
-          resolve(
-            response.status === 'connected'
-              ? response.authResponse?.accessToken || null
-              : null
-          );
-        },
-        { scope: buildFacebookLoginScopes() }
-      );
+      const configId = window.chatwootConfig?.fbLoginConfigId;
+      const loginOptions = configId
+        ? { config_id: configId }
+        : { scope: buildFacebookLoginScopes() };
+      window.FB.login(response => {
+        resolve(
+          response.status === 'connected'
+            ? response.authResponse?.accessToken || null
+            : null
+        );
+      }, loginOptions);
     });
 
   // Resolves { userAccessToken, pages } on success, null when the user cancels,

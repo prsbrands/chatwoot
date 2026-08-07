@@ -123,6 +123,10 @@
 - name: FB_APP_ID
   display_title: 'Facebook App ID'
   locked: false
+- name: FACEBOOK_LOGIN_CONFIG_ID
+  display_title: 'Facebook Login Configuration ID'
+  description: 'Login Configuration ID required by Facebook Login for Business apps (replaces scope-based FB.login)'
+  locked: false
 - name: FB_VERIFY_TOKEN
   display_title: 'Facebook Verify Token'
   description: 'The verify token used for Facebook Messenger Webhook'
