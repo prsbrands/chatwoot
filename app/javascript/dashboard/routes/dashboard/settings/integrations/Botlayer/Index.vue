@@ -18,7 +18,7 @@ const store = useStore();
 const router = useRouter();
 const getters = useStoreGetters();
 
-const TABS = ['personas', 'knowledge', 'channels', 'providers'];
+const TABS = ['personas', 'knowledge', 'channels'];
 const activeTab = ref('personas');
 
 const personas = ref([]);
@@ -26,17 +26,6 @@ const docs = ref([]);
 const routes = ref([]);
 const providers = ref([]);
 const isLoading = ref(true);
-
-const API_STYLES = [
-  { value: 'openai', label: 'OpenAI-compatible' },
-  { value: 'anthropic', label: 'Anthropic Messages' },
-];
-
-const providerDialogRef = ref(null);
-const providerForm = ref({});
-const isNewProvider = ref(false);
-const isSavingProvider = ref(false);
-const syncingProviderId = ref(null);
 
 const deleteDialogRef = ref(null);
 const deleteTarget = ref(null); // { kind: 'persona' | 'doc', record }
@@ -123,75 +112,7 @@ const openDocEditor = doc =>
     params: { docId: doc?.id || 'new' },
   });
 
-// --- Providers ---
-
-const openProviderDialog = provider => {
-  isNewProvider.value = !provider;
-  providerForm.value = provider
-    ? {
-        id: provider.id,
-        slug: provider.slug,
-        label: provider.label,
-        base_url: provider.base_url,
-        api_style: provider.api_style,
-        api_key: '',
-        has_key: Boolean(provider.api_key),
-        is_active: provider.is_active,
-      }
-    : {
-        slug: '',
-        label: '',
-        base_url: '',
-        api_style: 'openai',
-        api_key: '',
-        has_key: false,
-        is_active: true,
-      };
-  providerDialogRef.value.open();
-};
-
-const saveProvider = async () => {
-  isSavingProvider.value = true;
-  const form = providerForm.value;
-  const payload = {
-    slug: form.slug,
-    label: form.label,
-    base_url: form.base_url,
-    api_style: form.api_style,
-    api_key: form.api_key,
-    is_active: form.is_active,
-  };
-  try {
-    if (isNewProvider.value) await BotlayerAPI.createProvider(payload);
-    else await BotlayerAPI.updateProvider(form.id, payload);
-    providerDialogRef.value.close();
-    useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
-    fetchAll();
-  } catch (error) {
-    alertError(error);
-  } finally {
-    isSavingProvider.value = false;
-  }
-};
-
-const syncModels = async provider => {
-  syncingProviderId.value = provider.id;
-  try {
-    const { data } = await BotlayerAPI.syncModels(provider.id);
-    useAlert(
-      t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.SYNCED', {
-        count: (data.models || []).length,
-      })
-    );
-    fetchAll();
-  } catch (error) {
-    alertError(error);
-  } finally {
-    syncingProviderId.value = null;
-  }
-};
-
-// --- Delete (personas + docs + providers) ---
+// --- Delete (personas + docs) ---
 
 const openDeleteDialog = (kind, record) => {
   deleteTarget.value = { kind, record };
@@ -202,7 +123,6 @@ const confirmDelete = async () => {
   const { kind, record } = deleteTarget.value;
   try {
     if (kind === 'persona') await BotlayerAPI.deletePersona(record.id);
-    else if (kind === 'provider') await BotlayerAPI.deleteProvider(record.id);
     else await BotlayerAPI.deleteKnowledge(record.id);
     useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.DELETED'));
     fetchAll();
@@ -283,7 +203,20 @@ onMounted(() => {
         :title="$t('INTEGRATION_SETTINGS.BOTLAYER.HEADER')"
         :description="$t('INTEGRATION_SETTINGS.BOTLAYER.DESCRIPTION')"
         :back-button-label="$t('INTEGRATION_SETTINGS.HEADER')"
-      />
+      >
+        <template #actions>
+          <Button
+            slate
+            faded
+            sm
+            icon="i-lucide-key-round"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS_LINK')"
+            @click="
+              router.push({ name: 'settings_integrations_ai_providers' })
+            "
+          />
+        </template>
+      </BaseSettingsHeader>
     </template>
     <template #body>
       <div class="flex flex-col gap-4">
@@ -520,158 +453,7 @@ onMounted(() => {
           </table>
         </div>
 
-        <!-- Providers -->
-        <div v-if="activeTab === 'providers'" class="flex flex-col gap-4">
-          <div class="flex items-center justify-between gap-4">
-            <p class="text-sm text-n-slate-11">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.HELP') }}
-            </p>
-            <Button
-              blue
-              sm
-              icon="i-lucide-circle-plus"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NEW')"
-              @click="openProviderDialog(null)"
-            />
-          </div>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div
-              v-for="provider in providers"
-              :key="provider.id"
-              class="flex flex-col gap-2 rounded-xl bg-n-card p-4 outline outline-1 outline-n-container"
-            >
-              <div class="flex items-start justify-between">
-                <div class="min-w-0">
-                  <p class="font-medium text-n-slate-12">
-                    {{ provider.label }}
-                    <span class="text-xs text-n-slate-10">
-                      ({{ provider.slug }})
-                    </span>
-                  </p>
-                  <p class="truncate text-xs text-n-slate-11">
-                    {{ provider.base_url }}
-                  </p>
-                </div>
-                <span
-                  class="shrink-0 rounded-md px-2 py-0.5 text-xs font-medium"
-                  :class="
-                    provider.api_key
-                      ? 'bg-n-teal-3 text-n-teal-11'
-                      : 'bg-n-amber-3 text-n-amber-11'
-                  "
-                >
-                  {{
-                    provider.api_key
-                      ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.HAS_KEY')
-                      : $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NO_KEY')
-                  }}
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-n-slate-10">
-                  {{
-                    $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.MODEL_COUNT', {
-                      count: (provider.models || []).length,
-                    })
-                  }}
-                  · {{ provider.api_style }}
-                </span>
-                <div class="flex gap-1">
-                  <Button
-                    sm
-                    slate
-                    ghost
-                    icon="i-lucide-refresh-cw"
-                    :is-loading="syncingProviderId === provider.id"
-                    :label="
-                      $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.SYNC')
-                    "
-                    @click="syncModels(provider)"
-                  />
-                  <Button
-                    sm
-                    slate
-                    ghost
-                    icon="i-lucide-pencil"
-                    @click="openProviderDialog(provider)"
-                  />
-                  <Button
-                    sm
-                    ruby
-                    ghost
-                    icon="i-lucide-trash-2"
-                    @click="openDeleteDialog('provider', provider)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-
-      <!-- Provider dialog -->
-      <Dialog
-        ref="providerDialogRef"
-        :title="
-          isNewProvider
-            ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NEW')
-            : $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.EDIT')
-        "
-        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
-        :is-loading="isSavingProvider"
-        :disable-confirm-button="
-          isSavingProvider ||
-          !providerForm.label ||
-          !providerForm.slug ||
-          !providerForm.base_url
-        "
-        @confirm="saveProvider"
-      >
-        <div class="flex flex-col gap-4">
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="providerForm.label"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL')"
-              placeholder="Groq"
-            />
-            <Input
-              v-model="providerForm.slug"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
-              :disabled="!isNewProvider"
-              placeholder="groq"
-            />
-          </div>
-          <Input
-            v-model="providerForm.base_url"
-            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL')"
-            placeholder="https://api.groq.com/openai/v1"
-            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL_HELP')"
-          />
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
-            </span>
-            <Select v-model="providerForm.api_style" :options="API_STYLES" />
-          </div>
-          <Input
-            v-model="providerForm.api_key"
-            type="password"
-            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY')"
-            :placeholder="
-              providerForm.has_key
-                ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.KEY_KEEP')
-                : 'sk-...'
-            "
-            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY_HELP')"
-          />
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
-            </span>
-            <Switch v-model="providerForm.is_active" />
-          </div>
-        </div>
-      </Dialog>
 
       <!-- Delete confirmation -->
       <Dialog

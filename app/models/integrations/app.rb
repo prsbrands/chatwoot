@@ -66,7 +66,7 @@ class Integrations::App
       notion_enabled?(account)
     when 'openwa'
       Integrations::Openwa::Client.configured?
-    when 'botlayer'
+    when 'botlayer', 'ai_providers'
       Integrations::Botlayer::Client.configured?
     else
       true
@@ -94,7 +94,7 @@ class Integrations::App
       account.dashboard_apps.exists?
     when 'openwa'
       Integrations::Openwa::Client.configured?
-    when 'botlayer'
+    when 'botlayer', 'ai_providers'
       Integrations::Botlayer::Client.configured?
     else
       account.hooks.exists?(app_id: id)

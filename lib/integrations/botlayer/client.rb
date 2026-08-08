@@ -50,24 +50,26 @@ class Integrations::Botlayer::Client
     post('bot_persona_knowledge', persona_ids.map { |persona_id| { doc_id: doc_id, persona_id: uuid!(persona_id) } })
   end
 
-  def providers
-    get('bot_providers?select=*&order=label.asc')
+  # Credenciais de LLM são por conta: cada cliente do painel só enxerga e edita
+  # as próprias chaves. O filtro por conta é aplicado em toda leitura e escrita.
+  def providers(account_id)
+    get("bot_providers?chatwoot_account_id=eq.#{account_id.to_i}&select=*&order=label.asc")
   end
 
-  def provider(id)
-    get("bot_providers?id=eq.#{uuid!(id)}&select=*").first
+  def provider(account_id, id)
+    get("bot_providers?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}&select=*").first
   end
 
-  def create_provider(attributes)
-    post('bot_providers', attributes).first
+  def create_provider(account_id, attributes)
+    post('bot_providers', attributes.merge(chatwoot_account_id: account_id.to_i)).first
   end
 
-  def update_provider(id, attributes)
-    patch("bot_providers?id=eq.#{uuid!(id)}", attributes).first
+  def update_provider(account_id, id, attributes)
+    patch("bot_providers?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}", attributes).first
   end
 
-  def delete_provider(id)
-    delete("bot_providers?id=eq.#{uuid!(id)}")
+  def delete_provider(account_id, id)
+    delete("bot_providers?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}")
   end
 
   def routes(account_id)

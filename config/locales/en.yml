@@ -397,6 +397,10 @@ en:
     dashboard_apps:
       name: 'Dashboard Apps'
       description: 'Dashboard Apps allow you to create and embed applications that display user information, orders, or payment history, providing more context to your customer support agents.'
+    ai_providers:
+      name: 'AI Providers'
+      short_description: 'Connect your own OpenRouter, Anthropic, OpenAI or any other LLM API key.'
+      description: 'Store the API keys your AI agents use to answer conversations. Each provider keeps its own key and model catalog, synced straight from the provider. Keys stay on the server and are never exposed to the browser.'
     botlayer:
       name: 'Bot Personas'
       short_description: 'Edit your AI agent personas, models and knowledge base.'

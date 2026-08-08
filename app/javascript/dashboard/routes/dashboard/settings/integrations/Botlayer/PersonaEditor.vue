@@ -173,7 +173,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden">
+  <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1">
     <div
       v-if="isLoading"
       class="flex flex-1 items-center justify-center"

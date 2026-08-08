@@ -191,6 +191,13 @@
         "ERROR": "Could not reach the OpenWA gateway"
       }
     },
+    "AI_PROVIDERS": {
+      "HEADER": "AI Providers",
+      "DESCRIPTION": "API keys your AI agents use to answer conversations. Keys are stored on the server and never sent back to the browser. Each provider syncs its own model catalog.",
+      "LOADING": "Loading providers",
+      "QUICK_ADD": "Add a known provider (fills in the URL and API style — you only enter the key):",
+      "CHANNELS_NOTE": "Looking for Twilio, 360dialog, WhatsApp Cloud or Telegram? Those are messaging channels — add them under Settings → Inboxes → Add Inbox, where their credentials are stored encrypted per channel."
+    },
     "BOTLAYER": {
       "HEADER": "Bot Personas",
       "DESCRIPTION": "The brain behind your agent bots: personas with prompts and model settings, the knowledge base that feeds them, and which inbox each persona answers. Changes apply to the next message — no deploy needed.",
@@ -283,7 +290,8 @@
         "MODEL_COUNT": "{count} models",
         "SYNC": "Sync models",
         "SYNCED": "Synced {count} models"
-      }
+      },
+      "PROVIDERS_LINK": "AI providers"
     },
     "SLACK": {
       "HEADER": "Slack",

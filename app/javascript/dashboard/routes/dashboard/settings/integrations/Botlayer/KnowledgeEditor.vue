@@ -106,7 +106,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden">
+  <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1">
     <div v-if="isLoading" class="flex flex-1 items-center justify-center">
       <Spinner />
     </div>
@@ -143,77 +143,76 @@ onMounted(load);
         />
       </header>
 
-      <div class="flex flex-1 gap-6 overflow-hidden p-6">
-        <div class="flex min-w-0 flex-1 flex-col gap-2">
-          <label class="text-sm font-medium text-n-slate-12">
-            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.CONTENT') }}
-          </label>
-          <textarea
-            v-model="form.content"
-            spellcheck="false"
-            class="min-h-0 flex-1 resize-none rounded-lg border border-n-weak bg-n-alpha-black2 p-4 font-mono text-sm leading-relaxed text-n-slate-12 focus:border-n-brand focus:outline-none"
+      <!-- Um documento não precisa de sidebar: metadados numa barra compacta e
+           o texto ocupando a largura inteira. -->
+      <div
+        class="flex shrink-0 flex-wrap items-end gap-4 border-b border-n-weak px-6 py-3"
+      >
+        <div class="min-w-56 flex-1">
+          <Input
+            v-model="form.title"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.TITLE')"
           />
-          <p class="text-xs text-n-slate-11">
-            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.CONTENT_HELP') }}
-          </p>
         </div>
+        <div class="w-48">
+          <Input
+            v-model="form.slug"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
+            :disabled="!isNew"
+          />
+        </div>
+        <div class="w-28">
+          <Input
+            v-model="form.priority"
+            type="number"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.PRIORITY')"
+          />
+        </div>
+        <div class="flex items-center gap-2 pb-2">
+          <span class="text-sm text-n-slate-12">
+            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
+          </span>
+          <Switch v-model="form.is_active" />
+        </div>
+        <div class="flex items-center gap-2 pb-2">
+          <span class="text-sm text-n-slate-12">
+            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.GLOBAL_TOGGLE') }}
+          </span>
+          <Switch v-model="form.is_global" />
+        </div>
+      </div>
 
-        <aside class="flex w-80 shrink-0 flex-col gap-5 overflow-y-auto pr-1">
-          <section class="flex flex-col gap-3">
-            <Input
-              v-model="form.title"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.TITLE')"
-            />
-            <Input
-              v-model="form.slug"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
-              :disabled="!isNew"
-            />
-            <Input
-              v-model="form.priority"
-              type="number"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.PRIORITY')"
-              :message="
-                $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.PRIORITY_HELP')
-              "
-            />
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
-              </span>
-              <Switch v-model="form.is_active" />
-            </div>
-          </section>
+      <div
+        v-if="!form.is_global"
+        class="flex shrink-0 flex-wrap items-center gap-3 border-b border-n-weak px-6 py-2"
+      >
+        <span class="text-sm text-n-slate-11">
+          {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.LINKED') }}:
+        </span>
+        <label
+          v-for="persona in personas"
+          :key="persona.id"
+          class="flex items-center gap-1.5 text-sm text-n-slate-12"
+        >
+          <input
+            type="checkbox"
+            class="rounded border-n-weak"
+            :checked="form.persona_ids.includes(persona.id)"
+            @change="togglePersona(persona.id)"
+          />
+          {{ persona.display_name }}
+        </label>
+      </div>
 
-          <section class="flex flex-col gap-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-n-slate-12">
-                {{
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.GLOBAL_TOGGLE')
-                }}
-              </span>
-              <Switch v-model="form.is_global" />
-            </div>
-            <template v-if="!form.is_global">
-              <span class="text-sm font-medium text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.LINKED') }}
-              </span>
-              <label
-                v-for="persona in personas"
-                :key="persona.id"
-                class="flex items-center gap-2 text-sm text-n-slate-12"
-              >
-                <input
-                  type="checkbox"
-                  class="rounded border-n-weak"
-                  :checked="form.persona_ids.includes(persona.id)"
-                  @change="togglePersona(persona.id)"
-                />
-                {{ persona.display_name }} ({{ persona.slug }})
-              </label>
-            </template>
-          </section>
-        </aside>
+      <div class="flex min-h-0 flex-1 flex-col gap-2 p-6">
+        <textarea
+          v-model="form.content"
+          spellcheck="false"
+          class="min-h-0 w-full flex-1 resize-none rounded-lg border border-n-weak bg-n-alpha-black2 p-4 font-mono text-sm leading-relaxed text-n-slate-12 focus:border-n-brand focus:outline-none"
+        />
+        <p class="shrink-0 text-xs text-n-slate-11">
+          {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.CONTENT_HELP') }}
+        </p>
       </div>
     </template>
   </div>
