@@ -7,12 +7,12 @@
 #   4. Opcional: vínculo do agent bot à inbox + rota de persona no Supabase.
 #   5. Start da sessão (o QR fica disponível para pareamento).
 class Integrations::Openwa::ProvisionService
-  pattr_initialize [:account!, :user!, :name!, :agent_bot_id]
+  pattr_initialize [:account!, :user!, :name!, :agent_bot_id, :inbox_id]
 
   def perform
     session = client.create_session(name)
     @session_id = session['id']
-    @inbox = create_inbox
+    @inbox = find_or_create_inbox
     client.create_adapter_instance(
       instance_id: name,
       session_id: @session_id,
@@ -30,9 +30,18 @@ class Integrations::Openwa::ProvisionService
 
   private
 
-  def create_inbox
-    channel = Channel::Api.create!(account: account, webhook_url: client.ingress_url(name))
-    account.inboxes.create!(name: "WhatsApp — #{name}", channel: channel)
+  # Reusa uma inbox de API existente (reapontando o webhook do canal para o
+  # ingress desta sessão) ou cria uma nova dedicada.
+  def find_or_create_inbox
+    if inbox_id.present?
+      inbox = account.inboxes.find(inbox_id)
+      inbox.channel.update!(webhook_url: client.ingress_url(name))
+      inbox
+    else
+      @created_inbox = true
+      channel = Channel::Api.create!(account: account, webhook_url: client.ingress_url(name))
+      account.inboxes.create!(name: "WhatsApp — #{name}", channel: channel)
+    end
   end
 
   def adapter_config
@@ -49,7 +58,10 @@ class Integrations::Openwa::ProvisionService
   def bind_agent_bot
     return if agent_bot_id.blank?
 
-    AgentBotInbox.create!(inbox: @inbox, agent_bot: account.agent_bots.find(agent_bot_id))
+    binding = AgentBotInbox.find_or_initialize_by(inbox: @inbox)
+    binding.agent_bot = account.agent_bots.find(agent_bot_id)
+    binding.status = :active
+    binding.save!
   end
 
   # Insere a rota inbox → persona na camada de bots (Supabase/PostgREST) para o
@@ -63,8 +75,8 @@ class Integrations::Openwa::ProvisionService
     return 'persona_not_found' if persona_id.blank?
 
     response = HTTParty.post(
-      "#{supabase_rest_url}/bot_channel_routes",
-      headers: supabase_headers.merge('Prefer' => 'return=minimal'),
+      "#{supabase_rest_url}/bot_channel_routes?on_conflict=chatwoot_account_id,chatwoot_inbox_id",
+      headers: supabase_headers.merge('Prefer' => 'return=minimal,resolution=merge-duplicates'),
       body: {
         chatwoot_account_id: account.id,
         chatwoot_inbox_id: @inbox.id,
@@ -100,10 +112,11 @@ class Integrations::Openwa::ProvisionService
   end
 
   # Desfaz o que já foi criado quando um passo falha, para não deixar sessão ou
-  # inbox órfã; erros do próprio rollback não mascaram o erro original.
+  # inbox órfã; erros do próprio rollback não mascaram o erro original. Uma
+  # inbox pré-existente reaproveitada nunca é destruída.
   def rollback
     client.delete_adapter_instance(name) if @inbox.present?
-    @inbox&.destroy!
+    @inbox.destroy! if @created_inbox && @inbox.present?
     client.delete_session(@session_id) if @session_id.present?
   rescue StandardError => e
     Rails.logger.warn("[openwa] rollback of session #{name} incomplete: #{e.message}")

@@ -12,12 +12,14 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
 
   def create
     return render json: { error: I18n.t('errors.openwa.invalid_name') }, status: :unprocessable_entity unless valid_name?
+    return render json: { error: I18n.t('errors.openwa.invalid_inbox') }, status: :unprocessable_entity unless valid_inbox?
 
     result = Integrations::Openwa::ProvisionService.new(
       account: Current.account,
       user: Current.user,
       name: permitted_params[:name],
-      agent_bot_id: permitted_params[:agent_bot_id]
+      agent_bot_id: permitted_params[:agent_bot_id],
+      inbox_id: permitted_params[:inbox_id]
     ).perform
     render json: result
   end
@@ -53,11 +55,16 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
   private
 
   def slim_adapter_instances
-    client.adapter_instances.map do |instance|
+    instances = client.adapter_instances
+    inbox_ids = instances.filter_map { |instance| instance.dig('config', 'inboxId') }
+    inbox_names = Current.account.inboxes.where(id: inbox_ids).pluck(:id, :name).to_h
+    instances.map do |instance|
+      inbox_id = instance.dig('config', 'inboxId')
       {
         instance_id: instance['instanceId'],
         session_id: instance['sessionScope'],
-        inbox_id: instance.dig('config', 'inboxId'),
+        inbox_id: inbox_id,
+        inbox_name: inbox_names[inbox_id],
         enabled: instance['enabled']
       }
     end
@@ -65,6 +72,12 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
 
   def valid_name?
     permitted_params[:name].to_s.match?(NAME_FORMAT)
+  end
+
+  def valid_inbox?
+    return true if permitted_params[:inbox_id].blank?
+
+    Current.account.inboxes.find(permitted_params[:inbox_id]).channel_type == 'Channel::Api'
   end
 
   def ensure_configured
@@ -82,6 +95,6 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
   end
 
   def permitted_params
-    params.permit(:name, :agent_bot_id, :session_id)
+    params.permit(:name, :agent_bot_id, :inbox_id, :session_id)
   end
 end

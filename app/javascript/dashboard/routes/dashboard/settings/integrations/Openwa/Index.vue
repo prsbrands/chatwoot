@@ -36,10 +36,35 @@ let qrTimer = null;
 const deleteDialogRef = ref(null);
 const sessionToDelete = ref(null);
 
+const NEW_INBOX = 0;
+const selectedInboxId = ref(NEW_INBOX);
+
 const agentBots = computed(() => getters['agentBots/getBots'].value);
 const botOptions = computed(() =>
   agentBots.value.map(bot => ({ value: bot.id, label: bot.name }))
 );
+
+// Inboxes de API ainda não ligadas a uma sessão podem ser reaproveitadas;
+// o padrão continua sendo criar uma inbox nova dedicada à sessão.
+const inboxOptions = computed(() => {
+  const usedInboxIds = adapterInstances.value.map(
+    instance => instance.inbox_id
+  );
+  const apiInboxes = getters['inboxes/getInboxes'].value
+    .filter(
+      inbox =>
+        inbox.channel_type === 'Channel::Api' &&
+        !usedInboxIds.includes(inbox.id)
+    )
+    .map(inbox => ({ value: inbox.id, label: inbox.name }));
+  return [
+    {
+      value: NEW_INBOX,
+      label: t('INTEGRATION_SETTINGS.OPENWA.ADD.INBOX_NEW'),
+    },
+    ...apiInboxes,
+  ];
+});
 
 const STATUS_STYLES = {
   ready: 'bg-n-teal-3 text-n-teal-11',
@@ -54,9 +79,16 @@ const statusClass = status =>
 const statusLabel = status =>
   t(`INTEGRATION_SETTINGS.OPENWA.STATUS.${status.toUpperCase()}`);
 
-const inboxIdFor = session =>
-  adapterInstances.value.find(instance => instance.session_id === session.id)
-    ?.inbox_id;
+const instanceFor = session =>
+  adapterInstances.value.find(instance => instance.session_id === session.id);
+
+const inboxIdFor = session => instanceFor(session)?.inbox_id;
+
+const inboxLabelFor = session => {
+  const instance = instanceFor(session);
+  if (!instance?.inbox_id) return '';
+  return instance.inbox_name || `#${instance.inbox_id}`;
+};
 
 const fetchSessions = async () => {
   isLoading.value = true;
@@ -111,6 +143,7 @@ const closeQrDialog = () => {
 const openCreateDialog = () => {
   newSessionName.value = '';
   withBot.value = agentBots.value.length > 0;
+  selectedInboxId.value = NEW_INBOX;
   createDialogRef.value.open();
 };
 
@@ -120,6 +153,7 @@ const createSession = async () => {
     const { data } = await OpenwaAPI.create({
       name: newSessionName.value,
       agent_bot_id: withBot.value ? selectedBotId.value : null,
+      inbox_id: selectedInboxId.value || null,
     });
     createDialogRef.value.close();
     useAlert(t('INTEGRATION_SETTINGS.OPENWA.API.CREATE_SUCCESS'));
@@ -182,6 +216,7 @@ watch(agentBots, bots => {
 onMounted(() => {
   fetchSessions();
   store.dispatch('agentBots/get');
+  store.dispatch('inboxes/get');
 });
 
 onBeforeUnmount(stopQrPolling);
@@ -260,7 +295,7 @@ onBeforeUnmount(stopQrPolling);
                   params: { inboxId: inboxIdFor(session) },
                 }"
               >
-                #{{ inboxIdFor(session) }}
+                {{ inboxLabelFor(session) }}
               </router-link>
               <span v-else>—</span>
             </td>
@@ -325,6 +360,15 @@ onBeforeUnmount(stopQrPolling);
             :placeholder="$t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_PLACEHOLDER')"
             :message="$t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_HELP')"
           />
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.OPENWA.ADD.INBOX_LABEL') }}
+            </span>
+            <Select v-model="selectedInboxId" :options="inboxOptions" />
+            <span class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.OPENWA.ADD.INBOX_HELP') }}
+            </span>
+          </div>
           <div
             v-if="botOptions.length"
             class="flex items-center justify-between gap-2"

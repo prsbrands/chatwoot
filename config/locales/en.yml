@@ -140,6 +140,7 @@ en:
     openwa:
       not_configured: 'OpenWA gateway is not configured. Set OPENWA_API_URL and OPENWA_API_KEY.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
+      invalid_inbox: 'The selected inbox must be an API channel inbox.'
     dyte:
       invalid_message_type: 'Invalid message type. Action not permitted'
       realtimekit_credentials_required: 'Cloudflare RealtimeKit credentials are required. Delete the existing Dyte integration and create it again with Cloudflare RealtimeKit credentials.'

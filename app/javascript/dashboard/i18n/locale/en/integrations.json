@@ -127,7 +127,7 @@
     },
     "OPENWA": {
       "HEADER": "WhatsApp Sessions",
-      "DESCRIPTION": "Pair new WhatsApp numbers by QR code and manage their sessions through the OpenWA gateway. Each session gets its own inbox and can be answered by an agent bot.",
+      "DESCRIPTION": "Pair WhatsApp numbers by QR code through the OpenWA gateway. Each session is one number — run as many sessions as you need, each relaying into its own inbox.",
       "LOADING": "Fetching WhatsApp sessions",
       "EMPTY": "No WhatsApp sessions yet. Create one to pair a number.",
       "STATUS": {
@@ -156,10 +156,13 @@
       "ADD": {
         "BUTTON": "New session",
         "TITLE": "New WhatsApp session",
-        "DESC": "Creates the session on the gateway, an inbox wired to it, and optionally assigns an agent bot.",
+        "DESC": "Each session connects one WhatsApp number. Nothing needs to be created beforehand: the inbox is created automatically and the agent bot is optional.",
         "NAME_LABEL": "Session name",
         "NAME_PLACEHOLDER": "sales-line",
         "NAME_HELP": "3-50 characters. Lowercase letters, numbers and hyphens only.",
+        "INBOX_LABEL": "Inbox",
+        "INBOX_NEW": "Create a new inbox for this session (recommended)",
+        "INBOX_HELP": "Where this number's conversations will live. Pick an existing API inbox only if you want to reuse it — its webhook will be rewired to this session.",
         "WITH_BOT": "Answer with an agent bot",
         "BOT_LABEL": "Agent bot",
         "CREATE": "Create"
