@@ -59,7 +59,7 @@ class Integrations::Openwa::ProvisionService
     return if agent_bot_id.blank?
 
     binding = AgentBotInbox.find_or_initialize_by(inbox: @inbox)
-    binding.agent_bot = account.agent_bots.find(agent_bot_id)
+    binding.agent_bot = AgentBot.accessible_to(account).find(agent_bot_id)
     binding.status = :active
     binding.save!
   end

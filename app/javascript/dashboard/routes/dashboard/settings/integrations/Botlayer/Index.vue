@@ -31,6 +31,11 @@ const deleteDialogRef = ref(null);
 const deleteTarget = ref(null); // { kind: 'persona' | 'doc', record }
 
 const inboxes = computed(() => getters['inboxes/getInboxes'].value);
+const agentBots = computed(() => getters['agentBots/getBots'].value);
+
+const agentBotOptions = computed(() =>
+  agentBots.value.map(bot => ({ value: bot.id, label: bot.name }))
+);
 
 const personaOptions = computed(() =>
   personas.value.map(persona => ({
@@ -146,9 +151,16 @@ const channelRows = computed(() =>
 
 const draftRoutes = ref({});
 
+// Com um único agent bot na conta, escolher qual não é decisão — já vem
+// preenchido para que ligar o canal seja um clique só.
+const defaultAgentBotId = () =>
+  agentBots.value.length === 1 ? agentBots.value[0].id : null;
+
 const draftFor = row =>
   draftRoutes.value[row.inbox.id] || {
     persona_id: row.route?.persona_id || null,
+    chatwoot_agent_bot_id:
+      row.route?.chatwoot_agent_bot_id || defaultAgentBotId(),
     is_active: row.route?.is_active || false,
   };
 
@@ -159,13 +171,19 @@ const setDraft = (row, patch) => {
   };
 };
 
+const canSave = row => {
+  const draft = draftFor(row);
+  return Boolean(draft.persona_id && draft.chatwoot_agent_bot_id);
+};
+
 const saveRoute = async row => {
   const draft = draftFor(row);
-  if (!draft.persona_id) return;
+  if (!canSave(row)) return;
   try {
     await BotlayerAPI.upsertRoute({
       chatwoot_inbox_id: row.inbox.id,
       persona_id: draft.persona_id,
+      chatwoot_agent_bot_id: draft.chatwoot_agent_bot_id,
       is_active: draft.is_active,
     });
     useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
@@ -190,6 +208,7 @@ const removeRoute = async row => {
 onMounted(() => {
   fetchAll();
   store.dispatch('inboxes/get');
+  store.dispatch('agentBots/get');
 });
 </script>
 
@@ -386,6 +405,13 @@ onMounted(() => {
           <p class="text-sm text-n-slate-11">
             {{ $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.HELP') }}
           </p>
+          <p
+            v-if="!agentBots.length"
+            class="flex items-center gap-1 text-sm text-n-ruby-11"
+          >
+            <span class="i-lucide-triangle-alert size-3.5 shrink-0" />
+            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.NO_BOTS') }}
+          </p>
           <table class="min-w-full divide-y divide-n-weak">
             <thead>
               <tr class="text-left text-sm text-n-slate-11">
@@ -394,6 +420,9 @@ onMounted(() => {
                 </th>
                 <th class="py-2 pr-4 font-medium">
                   {{ $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.PERSONA') }}
+                </th>
+                <th class="py-2 pr-4 font-medium">
+                  {{ $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.BOT') }}
                 </th>
                 <th class="py-2 pr-4 font-medium">
                   {{ $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.ACTIVE') }}
@@ -423,6 +452,18 @@ onMounted(() => {
                   />
                 </td>
                 <td class="py-2 pr-4">
+                  <Select
+                    :model-value="draftFor(row).chatwoot_agent_bot_id"
+                    :options="agentBotOptions"
+                    :placeholder="
+                      $t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.NO_BOT')
+                    "
+                    @update:model-value="
+                      value => setDraft(row, { chatwoot_agent_bot_id: value })
+                    "
+                  />
+                </td>
+                <td class="py-2 pr-4">
                   <Switch
                     :model-value="draftFor(row).is_active"
                     @update:model-value="
@@ -436,7 +477,7 @@ onMounted(() => {
                     blue
                     ghost
                     :label="$t('INTEGRATION_SETTINGS.BOTLAYER.CHANNELS.SAVE')"
-                    :disabled="!draftFor(row).persona_id"
+                    :disabled="!canSave(row)"
                     @click="saveRoute(row)"
                   />
                   <Button

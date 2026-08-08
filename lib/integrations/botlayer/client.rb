@@ -76,6 +76,10 @@ class Integrations::Botlayer::Client
     get("bot_channel_routes?chatwoot_account_id=eq.#{account_id.to_i}&order=chatwoot_inbox_id.asc")
   end
 
+  def route(account_id, id)
+    get("bot_channel_routes?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}").first
+  end
+
   def upsert_route(attributes)
     post(
       'bot_channel_routes?on_conflict=chatwoot_account_id,chatwoot_inbox_id',

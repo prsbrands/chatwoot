@@ -256,13 +256,16 @@
         "CHARS": "characters"
       },
       "CHANNELS": {
-        "HELP": "Choose which persona answers each inbox and switch the bot on or off per channel. Remember the inbox also needs the agent bot assigned (Settings → Inboxes → Bot Configuration) for the webhook to fire.",
+        "HELP": "Choose which persona answers each inbox and switch the bot on or off per channel. Saving also assigns the agent bot to the inbox, so the channel is fully switched on from here — no extra step in Settings → Inboxes.",
         "INBOX": "Inbox",
         "PERSONA": "Persona",
+        "BOT": "Agent bot",
         "ACTIVE": "Bot active",
         "ACTIONS": "Actions",
         "SAVE": "Save",
-        "NO_PERSONA": "Select a persona"
+        "NO_PERSONA": "Select a persona",
+        "NO_BOT": "Select a bot",
+        "NO_BOTS": "No agent bots yet — create one in Settings → Bots before switching a channel on."
       },
       "DELETE": {
         "TITLE": "Delete",
