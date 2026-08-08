@@ -137,6 +137,9 @@ en:
     categories:
       locale:
         unique: should be unique in the category and portal
+    openwa:
+      not_configured: 'OpenWA gateway is not configured. Set OPENWA_API_URL and OPENWA_API_KEY.'
+      invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
     dyte:
       invalid_message_type: 'Invalid message type. Action not permitted'
       realtimekit_credentials_required: 'Cloudflare RealtimeKit credentials are required. Delete the existing Dyte integration and create it again with Cloudflare RealtimeKit credentials.'
@@ -390,6 +393,10 @@ en:
     dashboard_apps:
       name: 'Dashboard Apps'
       description: 'Dashboard Apps allow you to create and embed applications that display user information, orders, or payment history, providing more context to your customer support agents.'
+    openwa:
+      name: 'WhatsApp Sessions'
+      short_description: 'Pair and manage WhatsApp numbers connected through the OpenWA gateway.'
+      description: 'Pair new WhatsApp numbers by QR code and manage their sessions without leaving the dashboard. Each session is provisioned with its own inbox and can be answered by an agent bot.'
     dyte:
       name: 'Cloudflare RealtimeKit'
       short_description: 'Start video/voice calls with customers directly from CortexGen Chat.'

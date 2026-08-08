@@ -9,6 +9,7 @@ import Slack from './Slack.vue';
 import Linear from './Linear.vue';
 import Notion from './Notion.vue';
 import Shopify from './Shopify.vue';
+import Openwa from './Openwa/Index.vue';
 
 export default {
   routes: [
@@ -39,6 +40,15 @@ export default {
           path: 'webhook',
           component: Webhook,
           name: 'settings_integrations_webhook',
+          meta: {
+            featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+            permissions: ['administrator'],
+          },
+        },
+        {
+          path: 'openwa',
+          component: Openwa,
+          name: 'settings_integrations_openwa',
           meta: {
             featureFlag: FEATURE_FLAGS.INTEGRATIONS,
             permissions: ['administrator'],

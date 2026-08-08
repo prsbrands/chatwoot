@@ -23,6 +23,12 @@ dashboard_apps:
   i18n_key: dashboard_apps
   hook_type: account
   allow_multiple_hooks: true
+openwa:
+  id: openwa
+  logo: openwa.png
+  i18n_key: openwa
+  hook_type: account
+  allow_multiple_hooks: false
 openai:
   id: openai
   logo: openai.png

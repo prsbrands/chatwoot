@@ -64,6 +64,8 @@ class Integrations::App
       account.feature_enabled?('crm_integration')
     when 'notion'
       notion_enabled?(account)
+    when 'openwa'
+      Integrations::Openwa::Client.configured?
     else
       true
     end
@@ -88,6 +90,8 @@ class Integrations::App
       account.webhooks.exists?
     when 'dashboard_apps'
       account.dashboard_apps.exists?
+    when 'openwa'
+      Integrations::Openwa::Client.configured?
     else
       account.hooks.exists?(app_id: id)
     end

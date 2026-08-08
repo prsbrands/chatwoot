@@ -125,6 +125,69 @@
         }
       }
     },
+    "OPENWA": {
+      "HEADER": "WhatsApp Sessions",
+      "DESCRIPTION": "Pair new WhatsApp numbers by QR code and manage their sessions through the OpenWA gateway. Each session gets its own inbox and can be answered by an agent bot.",
+      "LOADING": "Fetching WhatsApp sessions",
+      "EMPTY": "No WhatsApp sessions yet. Create one to pair a number.",
+      "STATUS": {
+        "CREATED": "Created",
+        "INITIALIZING": "Initializing",
+        "QR_READY": "Waiting for QR scan",
+        "AUTHENTICATING": "Authenticating",
+        "READY": "Connected",
+        "DISCONNECTED": "Disconnected",
+        "ACTION_REQUIRED": "Action required",
+        "FAILED": "Failed"
+      },
+      "LIST": {
+        "NAME": "Session",
+        "STATUS": "Status",
+        "PHONE": "Phone",
+        "INBOX": "Inbox",
+        "ACTIONS": "Actions"
+      },
+      "ACTIONS": {
+        "PAIR": "Pair",
+        "START": "Start",
+        "STOP": "Stop",
+        "LOGOUT": "Log out"
+      },
+      "ADD": {
+        "BUTTON": "New session",
+        "TITLE": "New WhatsApp session",
+        "DESC": "Creates the session on the gateway, an inbox wired to it, and optionally assigns an agent bot.",
+        "NAME_LABEL": "Session name",
+        "NAME_PLACEHOLDER": "sales-line",
+        "NAME_HELP": "3-50 characters. Lowercase letters, numbers and hyphens only.",
+        "WITH_BOT": "Answer with an agent bot",
+        "BOT_LABEL": "Agent bot",
+        "CREATE": "Create"
+      },
+      "QR": {
+        "TITLE": "Pair WhatsApp",
+        "INSTRUCTIONS": "On your phone, open WhatsApp → Settings → Linked devices → Link a device, and scan this code. Use a dedicated number.",
+        "WAITING": "Preparing QR code…",
+        "CONNECTED": "Number connected! The session is ready.",
+        "CLOSE": "Close"
+      },
+      "DELETE": {
+        "TITLE": "Delete session",
+        "MESSAGE": "Delete session {name}? The gateway session and its adapter are removed. The inbox and its conversations are kept.",
+        "CONFIRM": "Delete",
+        "SUCCESS": "Session deleted"
+      },
+      "BOT_ROUTE": {
+        "PENDING_ENV": "Bot route not created: Supabase env vars are missing. Add the route manually.",
+        "PERSONA_NOT_FOUND": "Bot route not created: persona not found in the bot layer.",
+        "FAILED": "Bot route creation failed. Add the route manually."
+      },
+      "API": {
+        "CREATE_SUCCESS": "Session created. Scan the QR code to pair the number.",
+        "ACTION_SUCCESS": "Done",
+        "ERROR": "Could not reach the OpenWA gateway"
+      }
+    },
     "SLACK": {
       "HEADER": "Slack",
       "DELETE": "Delete",
@@ -936,7 +999,6 @@
         "SUCCESS_MESSAGE": "The document has been successfully deleted",
         "ERROR_MESSAGE": "There was an error deleting the document, please try again."
       },
-
       "OPTIONS": {
         "VIEW_DETAILS": "View details",
         "SYNC_NOW": "Refresh now",

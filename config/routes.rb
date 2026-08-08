@@ -377,6 +377,16 @@ Rails.application.routes.draw do
                 post :process_event
               end
             end
+            namespace :openwa do
+              resources :sessions, only: [:index, :create, :destroy], param: :session_id do
+                member do
+                  get :qr
+                  post :start
+                  post :stop
+                  post :logout
+                end
+              end
+            end
             resource :slack, only: [:create, :update, :destroy], controller: 'slack' do
               member do
                 get :list_all_channels
