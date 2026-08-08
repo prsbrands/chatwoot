@@ -391,6 +391,11 @@ Rails.application.routes.draw do
               resources :personas, only: [:index, :create, :update, :destroy]
               resources :knowledge, only: [:index, :create, :update, :destroy]
               resources :routes, only: [:index, :create, :destroy]
+              resources :providers, only: [:index, :create, :update, :destroy] do
+                member do
+                  post :sync_models
+                end
+              end
             end
             resource :slack, only: [:create, :update, :destroy], controller: 'slack' do
               member do

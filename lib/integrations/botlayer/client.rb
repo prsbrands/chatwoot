@@ -50,6 +50,26 @@ class Integrations::Botlayer::Client
     post('bot_persona_knowledge', persona_ids.map { |persona_id| { doc_id: doc_id, persona_id: uuid!(persona_id) } })
   end
 
+  def providers
+    get('bot_providers?select=*&order=label.asc')
+  end
+
+  def provider(id)
+    get("bot_providers?id=eq.#{uuid!(id)}&select=*").first
+  end
+
+  def create_provider(attributes)
+    post('bot_providers', attributes).first
+  end
+
+  def update_provider(id, attributes)
+    patch("bot_providers?id=eq.#{uuid!(id)}", attributes).first
+  end
+
+  def delete_provider(id)
+    delete("bot_providers?id=eq.#{uuid!(id)}")
+  end
+
   def routes(account_id)
     get("bot_channel_routes?chatwoot_account_id=eq.#{account_id.to_i}&order=chatwoot_inbox_id.asc")
   end

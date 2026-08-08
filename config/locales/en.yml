@@ -139,6 +139,7 @@ en:
         unique: should be unique in the category and portal
     botlayer:
       not_configured: 'Bot layer is not configured. Set SUPABASE_REST_URL and SUPABASE_SERVICE_ROLE_KEY.'
+      no_models: 'The provider returned no models.'
     openwa:
       not_configured: 'OpenWA gateway is not configured. Set OPENWA_API_URL and OPENWA_API_KEY.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'

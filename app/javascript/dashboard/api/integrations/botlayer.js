@@ -38,6 +38,26 @@ class BotlayerAPI extends ApiClient {
     return axios.delete(`${this.url}/knowledge/${id}`);
   }
 
+  providers() {
+    return axios.get(`${this.url}/providers`);
+  }
+
+  createProvider(data) {
+    return axios.post(`${this.url}/providers`, data);
+  }
+
+  updateProvider(id, data) {
+    return axios.patch(`${this.url}/providers/${id}`, data);
+  }
+
+  deleteProvider(id) {
+    return axios.delete(`${this.url}/providers/${id}`);
+  }
+
+  syncModels(id) {
+    return axios.post(`${this.url}/providers/${id}/sync_models`);
+  }
+
   routes() {
     return axios.get(`${this.url}/routes`);
   }

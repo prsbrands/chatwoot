@@ -201,7 +201,8 @@
       "TABS": {
         "PERSONAS": "Personas",
         "KNOWLEDGE": "Knowledge base",
-        "CHANNELS": "Channels"
+        "CHANNELS": "Channels",
+        "PROVIDERS": "Providers"
       },
       "PERSONAS": {
         "NEW": "New persona",
@@ -219,7 +220,12 @@
         "KEYWORDS": "Handoff keywords",
         "KEYWORDS_HELP": "Comma-separated. When the customer message contains one of these, the conversation is handed to a human.",
         "MAX_TURNS": "Handoff after N customer turns",
-        "DOCS_COUNT": "{count} knowledge docs"
+        "DOCS_COUNT": "{count} knowledge docs",
+        "MODEL_HELP": "Pick from the {count} models synced from this provider, or type any other model id.",
+        "MODEL_EMPTY": "No models synced for this provider yet — type the model id, or use Sync models in the Providers tab.",
+        "OPTIONAL": "Optional",
+        "UNKNOWN_PROVIDER": "Provider \"{provider}\" is not in the catalog — replies will fail. Add it in the Providers tab.",
+        "MISSING_KEY": "{provider} has no API key — replies will fail. Add the key in the Providers tab."
       },
       "KNOWLEDGE": {
         "NEW": "New document",
@@ -253,6 +259,23 @@
         "SAVED": "Saved — applies to the next bot reply",
         "DELETED": "Deleted",
         "ERROR": "Could not reach the bot layer"
+      },
+      "PROVIDERS": {
+        "HELP": "Where the models come from. OpenRouter already fronts Anthropic, OpenAI, Google, xAI and others — add a provider here only to call one directly with your own key.",
+        "NEW": "New provider",
+        "EDIT": "Edit provider",
+        "LABEL": "Name",
+        "BASE_URL": "API base URL",
+        "BASE_URL_HELP": "Without the trailing path — /chat/completions and /models are appended automatically.",
+        "API_STYLE": "API style",
+        "API_KEY": "API key",
+        "API_KEY_HELP": "Stored in the bot layer and used server-side. Leave empty on OpenRouter to keep using the n8n credential.",
+        "KEY_KEEP": "Leave empty to keep the current key",
+        "HAS_KEY": "Key set",
+        "NO_KEY": "No key",
+        "MODEL_COUNT": "{count} models",
+        "SYNC": "Sync models",
+        "SYNCED": "Synced {count} models"
       }
     },
     "SLACK": {

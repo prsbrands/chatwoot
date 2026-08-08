@@ -16,15 +16,25 @@ const { t } = useI18n();
 const store = useStore();
 const getters = useStoreGetters();
 
-const TABS = ['personas', 'knowledge', 'channels'];
+const TABS = ['personas', 'knowledge', 'channels', 'providers'];
 const activeTab = ref('personas');
 
 const personas = ref([]);
 const docs = ref([]);
 const routes = ref([]);
+const providers = ref([]);
 const isLoading = ref(true);
 
-const PROVIDERS = ['openrouter', 'anthropic', 'openai'];
+const API_STYLES = [
+  { value: 'openai', label: 'OpenAI-compatible' },
+  { value: 'anthropic', label: 'Anthropic Messages' },
+];
+
+const providerDialogRef = ref(null);
+const providerForm = ref({});
+const isNewProvider = ref(false);
+const isSavingProvider = ref(false);
+const syncingProviderId = ref(null);
 
 const personaDialogRef = ref(null);
 const personaForm = ref({});
@@ -48,13 +58,43 @@ const personaOptions = computed(() =>
   }))
 );
 
-const providerOptions = PROVIDERS.map(provider => ({
-  value: provider,
-  label: provider,
-}));
+const providerOptions = computed(() =>
+  providers.value
+    .filter(provider => provider.is_active)
+    .map(provider => ({ value: provider.slug, label: provider.label }))
+);
+
+// Modelos do fornecedor selecionado alimentam o datalist: o campo continua
+// aberto para digitar um id que ainda não está no catálogo.
+const modelSuggestions = computed(() => {
+  const provider = providers.value.find(
+    candidate => candidate.slug === personaForm.value.provider
+  );
+  return (provider?.models || []).map(model => model.id);
+});
 
 const personaName = id =>
   personas.value.find(persona => persona.id === id)?.display_name;
+
+// Um provider que não existe no catálogo, ou que precisa de chave e não tem,
+// falha só na hora de responder — melhor avisar já no card.
+const providerIssue = persona => {
+  if (!providers.value.length) return '';
+  const provider = providers.value.find(
+    candidate => candidate.slug === persona.provider
+  );
+  if (!provider) {
+    return t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.UNKNOWN_PROVIDER', {
+      provider: persona.provider,
+    });
+  }
+  if (provider.slug !== 'openrouter' && !provider.api_key) {
+    return t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MISSING_KEY', {
+      provider: provider.label,
+    });
+  }
+  return '';
+};
 
 const docCountFor = persona => {
   const linked = (persona.bot_persona_knowledge || []).length;
@@ -69,14 +109,16 @@ const alertError = error =>
 
 const fetchAll = async () => {
   try {
-    const [personasRes, docsRes, routesRes] = await Promise.all([
+    const [personasRes, docsRes, routesRes, providersRes] = await Promise.all([
       BotlayerAPI.personas(),
       BotlayerAPI.knowledge(),
       BotlayerAPI.routes(),
+      BotlayerAPI.providers(),
     ]);
     personas.value = personasRes.data.personas;
     docs.value = docsRes.data.docs;
     routes.value = routesRes.data.routes;
+    providers.value = providersRes.data.providers;
   } catch (error) {
     alertError(error);
   } finally {
@@ -229,7 +271,75 @@ const saveDoc = async () => {
   }
 };
 
-// --- Delete (personas + docs) ---
+// --- Providers ---
+
+const openProviderDialog = provider => {
+  isNewProvider.value = !provider;
+  providerForm.value = provider
+    ? {
+        id: provider.id,
+        slug: provider.slug,
+        label: provider.label,
+        base_url: provider.base_url,
+        api_style: provider.api_style,
+        api_key: '',
+        has_key: Boolean(provider.api_key),
+        is_active: provider.is_active,
+      }
+    : {
+        slug: '',
+        label: '',
+        base_url: '',
+        api_style: 'openai',
+        api_key: '',
+        has_key: false,
+        is_active: true,
+      };
+  providerDialogRef.value.open();
+};
+
+const saveProvider = async () => {
+  isSavingProvider.value = true;
+  const form = providerForm.value;
+  const payload = {
+    slug: form.slug,
+    label: form.label,
+    base_url: form.base_url,
+    api_style: form.api_style,
+    api_key: form.api_key,
+    is_active: form.is_active,
+  };
+  try {
+    if (isNewProvider.value) await BotlayerAPI.createProvider(payload);
+    else await BotlayerAPI.updateProvider(form.id, payload);
+    providerDialogRef.value.close();
+    useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
+    fetchAll();
+  } catch (error) {
+    alertError(error);
+  } finally {
+    isSavingProvider.value = false;
+  }
+};
+
+const syncModels = async provider => {
+  syncingProviderId.value = provider.id;
+  try {
+    const { data } = await BotlayerAPI.syncModels(provider.id);
+    useAlert(
+      t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.SYNCED', {
+        count: (data.models || []).length,
+      })
+    );
+    fetchAll();
+  } catch (error) {
+    alertError(error);
+  } finally {
+    syncingProviderId.value = null;
+  }
+};
+
+// --- Delete (personas + docs + providers) ---
 
 const openDeleteDialog = (kind, record) => {
   deleteTarget.value = { kind, record };
@@ -240,6 +350,7 @@ const confirmDelete = async () => {
   const { kind, record } = deleteTarget.value;
   try {
     if (kind === 'persona') await BotlayerAPI.deletePersona(record.id);
+    else if (kind === 'provider') await BotlayerAPI.deleteProvider(record.id);
     else await BotlayerAPI.deleteKnowledge(record.id);
     useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.DELETED'));
     fetchAll();
@@ -386,6 +497,13 @@ onMounted(() => {
               </div>
               <p class="line-clamp-2 text-sm text-n-slate-11">
                 {{ persona.description || persona.system_prompt }}
+              </p>
+              <p
+                v-if="providerIssue(persona)"
+                class="flex items-center gap-1 text-xs text-n-ruby-11"
+              >
+                <span class="i-lucide-triangle-alert size-3.5 shrink-0" />
+                {{ providerIssue(persona) }}
               </p>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-n-slate-10">
@@ -549,7 +667,159 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
+
+        <!-- Providers -->
+        <div v-if="activeTab === 'providers'" class="flex flex-col gap-4">
+          <div class="flex items-center justify-between gap-4">
+            <p class="text-sm text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.HELP') }}
+            </p>
+            <Button
+              blue
+              sm
+              icon="i-lucide-circle-plus"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NEW')"
+              @click="openProviderDialog(null)"
+            />
+          </div>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div
+              v-for="provider in providers"
+              :key="provider.id"
+              class="flex flex-col gap-2 rounded-xl bg-n-card p-4 outline outline-1 outline-n-container"
+            >
+              <div class="flex items-start justify-between">
+                <div class="min-w-0">
+                  <p class="font-medium text-n-slate-12">
+                    {{ provider.label }}
+                    <span class="text-xs text-n-slate-10">
+                      ({{ provider.slug }})
+                    </span>
+                  </p>
+                  <p class="truncate text-xs text-n-slate-11">
+                    {{ provider.base_url }}
+                  </p>
+                </div>
+                <span
+                  class="shrink-0 rounded-md px-2 py-0.5 text-xs font-medium"
+                  :class="
+                    provider.api_key
+                      ? 'bg-n-teal-3 text-n-teal-11'
+                      : 'bg-n-amber-3 text-n-amber-11'
+                  "
+                >
+                  {{
+                    provider.api_key
+                      ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.HAS_KEY')
+                      : $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NO_KEY')
+                  }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-n-slate-10">
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.MODEL_COUNT', {
+                      count: (provider.models || []).length,
+                    })
+                  }}
+                  · {{ provider.api_style }}
+                </span>
+                <div class="flex gap-1">
+                  <Button
+                    sm
+                    slate
+                    ghost
+                    icon="i-lucide-refresh-cw"
+                    :is-loading="syncingProviderId === provider.id"
+                    :label="
+                      $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.SYNC')
+                    "
+                    @click="syncModels(provider)"
+                  />
+                  <Button
+                    sm
+                    slate
+                    ghost
+                    icon="i-lucide-pencil"
+                    @click="openProviderDialog(provider)"
+                  />
+                  <Button
+                    sm
+                    ruby
+                    ghost
+                    icon="i-lucide-trash-2"
+                    @click="openDeleteDialog('provider', provider)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Provider dialog -->
+      <Dialog
+        ref="providerDialogRef"
+        :title="
+          isNewProvider
+            ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.NEW')
+            : $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.EDIT')
+        "
+        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
+        :is-loading="isSavingProvider"
+        :disable-confirm-button="
+          isSavingProvider ||
+          !providerForm.label ||
+          !providerForm.slug ||
+          !providerForm.base_url
+        "
+        @confirm="saveProvider"
+      >
+        <div class="flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-3">
+            <Input
+              v-model="providerForm.label"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL')"
+              placeholder="Groq"
+            />
+            <Input
+              v-model="providerForm.slug"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
+              :disabled="!isNewProvider"
+              placeholder="groq"
+            />
+          </div>
+          <Input
+            v-model="providerForm.base_url"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL')"
+            placeholder="https://api.groq.com/openai/v1"
+            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL_HELP')"
+          />
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
+            </span>
+            <Select v-model="providerForm.api_style" :options="API_STYLES" />
+          </div>
+          <Input
+            v-model="providerForm.api_key"
+            type="password"
+            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY')"
+            :placeholder="
+              providerForm.has_key
+                ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.KEY_KEEP')
+                : 'sk-...'
+            "
+            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY_HELP')"
+          />
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
+            </span>
+            <Switch v-model="providerForm.is_active" />
+          </div>
+        </div>
+      </Dialog>
 
       <!-- Persona dialog -->
       <Dialog
@@ -607,17 +877,41 @@ onMounted(() => {
               </span>
               <Select v-model="personaForm.provider" :options="providerOptions" />
             </div>
-            <Input
-              v-model="personaForm.model"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL')"
-              placeholder="deepseek/deepseek-v4-flash-0731"
-            />
-            <Input
-              v-model="personaForm.fallback_model"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK')"
-              placeholder="tencent/hy3"
-            />
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL') }}
+              </span>
+              <input
+                v-model="personaForm.model"
+                list="botlayer-models"
+                class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
+                :placeholder="modelSuggestions[0] || 'provider/model-id'"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK') }}
+              </span>
+              <input
+                v-model="personaForm.fallback_model"
+                list="botlayer-models"
+                class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
+                :placeholder="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.OPTIONAL')"
+              />
+            </div>
+            <datalist id="botlayer-models">
+              <option v-for="id in modelSuggestions" :key="id" :value="id" />
+            </datalist>
           </div>
+          <p class="-mt-2 text-xs text-n-slate-11">
+            {{
+              modelSuggestions.length
+                ? $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_HELP', {
+                    count: modelSuggestions.length,
+                  })
+                : $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_EMPTY')
+            }}
+          </p>
           <div class="grid grid-cols-2 gap-3">
             <Input
               v-model="personaForm.temperature"
@@ -744,7 +1038,8 @@ onMounted(() => {
           $t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.MESSAGE', {
             name:
               deleteTarget?.record?.display_name ||
-              deleteTarget?.record?.title,
+              deleteTarget?.record?.title ||
+              deleteTarget?.record?.label,
           })
         "
         :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.CONFIRM')"
