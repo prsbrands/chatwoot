@@ -11,6 +11,8 @@ import Notion from './Notion.vue';
 import Shopify from './Shopify.vue';
 import Openwa from './Openwa/Index.vue';
 import Botlayer from './Botlayer/Index.vue';
+import BotlayerPersonaEditor from './Botlayer/PersonaEditor.vue';
+import BotlayerKnowledgeEditor from './Botlayer/KnowledgeEditor.vue';
 
 export default {
   routes: [
@@ -121,6 +123,30 @@ export default {
           }),
         },
       ],
+    },
+    // Editores da camada de bots ficam fora do SettingsWrapper (max-w-5xl e
+    // altura automática) para o prompt ocupar a tela inteira.
+    {
+      path: frontendURL(
+        'accounts/:accountId/settings/integrations/botlayer/personas/:personaId'
+      ),
+      name: 'settings_integrations_botlayer_persona',
+      component: BotlayerPersonaEditor,
+      meta: {
+        featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+        permissions: ['administrator'],
+      },
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/settings/integrations/botlayer/knowledge/:docId'
+      ),
+      name: 'settings_integrations_botlayer_knowledge',
+      component: BotlayerKnowledgeEditor,
+      meta: {
+        featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+        permissions: ['administrator'],
+      },
     },
   ],
 };

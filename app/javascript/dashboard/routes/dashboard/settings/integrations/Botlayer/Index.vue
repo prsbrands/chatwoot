@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -14,6 +15,7 @@ import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
 
 const { t } = useI18n();
 const store = useStore();
+const router = useRouter();
 const getters = useStoreGetters();
 
 const TABS = ['personas', 'knowledge', 'channels', 'providers'];
@@ -36,16 +38,6 @@ const isNewProvider = ref(false);
 const isSavingProvider = ref(false);
 const syncingProviderId = ref(null);
 
-const personaDialogRef = ref(null);
-const personaForm = ref({});
-const isNewPersona = ref(false);
-const isSavingPersona = ref(false);
-
-const docDialogRef = ref(null);
-const docForm = ref({});
-const isNewDoc = ref(false);
-const isSavingDoc = ref(false);
-
 const deleteDialogRef = ref(null);
 const deleteTarget = ref(null); // { kind: 'persona' | 'doc', record }
 
@@ -63,45 +55,6 @@ const providerOptions = computed(() =>
     .filter(provider => provider.is_active)
     .map(provider => ({ value: provider.slug, label: provider.label }))
 );
-
-// Combobox próprio (datalist nativo esconde as opções quando o campo já tem
-// valor): dropdown com busca que abre no foco, e o campo continua aceitando
-// qualquer id digitado.
-const openModelPicker = ref(null); // 'model' | 'fallback' | null
-
-const modelsOf = slug => {
-  const provider = providers.value.find(candidate => candidate.slug === slug);
-  return (provider?.models || []).map(model => model.id);
-};
-
-const suggestionsFor = field => {
-  const form = personaForm.value;
-  const slug =
-    field === 'fallback'
-      ? form.fallback_provider || form.provider
-      : form.provider;
-  const all = modelsOf(slug);
-  const query = String(
-    (field === 'fallback' ? form.fallback_model : form.model) || ''
-  ).toLowerCase();
-  if (!query) return all;
-  const filtered = all.filter(id => id.toLowerCase().includes(query));
-  return filtered.length ? filtered : all;
-};
-
-const pickModel = (field, id) => {
-  if (field === 'fallback') personaForm.value.fallback_model = id;
-  else personaForm.value.model = id;
-  openModelPicker.value = null;
-};
-
-const fallbackProviderOptions = computed(() => [
-  {
-    value: '',
-    label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SAME_AS_PRIMARY'),
-  },
-  ...providerOptions.value,
-]);
 
 const personaName = id =>
   personas.value.find(persona => persona.id === id)?.display_name;
@@ -156,153 +109,19 @@ const fetchAll = async () => {
   }
 };
 
-// --- Personas ---
+// --- Personas / Knowledge: editados em página dedicada ---
 
-const openPersonaDialog = persona => {
-  isNewPersona.value = !persona;
-  personaForm.value = persona
-    ? {
-        id: persona.id,
-        slug: persona.slug,
-        display_name: persona.display_name,
-        description: persona.description || '',
-        system_prompt: persona.system_prompt,
-        provider: persona.provider,
-        model: persona.model,
-        fallback_provider: persona.fallback_provider || '',
-        fallback_model: persona.fallback_model || '',
-        temperature: persona.temperature,
-        max_tokens: persona.max_tokens,
-        is_active: persona.is_active,
-        keywords: (persona.handoff_rules?.keywords || []).join(', '),
-        max_turns: persona.handoff_rules?.max_turns || null,
-        handoff_rules: persona.handoff_rules || {},
-      }
-    : {
-        slug: '',
-        display_name: '',
-        description: '',
-        system_prompt: '',
-        provider: 'openrouter',
-        model: '',
-        fallback_provider: '',
-        fallback_model: '',
-        temperature: 0.6,
-        max_tokens: 1200,
-        is_active: true,
-        keywords: '',
-        max_turns: null,
-        handoff_rules: {},
-      };
-  personaDialogRef.value.open();
-};
+const openPersonaEditor = persona =>
+  router.push({
+    name: 'settings_integrations_botlayer_persona',
+    params: { personaId: persona?.id || 'new' },
+  });
 
-const personaPayload = () => {
-  const form = personaForm.value;
-  return {
-    slug: form.slug,
-    display_name: form.display_name,
-    description: form.description,
-    system_prompt: form.system_prompt,
-    provider: form.provider,
-    model: form.model,
-    fallback_provider: form.fallback_provider || null,
-    fallback_model: form.fallback_model || null,
-    temperature: Number(form.temperature),
-    max_tokens: Number(form.max_tokens),
-    is_active: form.is_active,
-    handoff_rules: {
-      ...form.handoff_rules,
-      keywords: form.keywords
-        .split(',')
-        .map(keyword => keyword.trim())
-        .filter(Boolean),
-      max_turns: form.max_turns ? Number(form.max_turns) : null,
-    },
-  };
-};
-
-const savePersona = async () => {
-  isSavingPersona.value = true;
-  try {
-    if (isNewPersona.value) {
-      await BotlayerAPI.createPersona(personaPayload());
-    } else {
-      await BotlayerAPI.updatePersona(personaForm.value.id, personaPayload());
-    }
-    personaDialogRef.value.close();
-    useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
-    fetchAll();
-  } catch (error) {
-    alertError(error);
-  } finally {
-    isSavingPersona.value = false;
-  }
-};
-
-// --- Knowledge ---
-
-const openDocDialog = doc => {
-  isNewDoc.value = !doc;
-  docForm.value = doc
-    ? {
-        id: doc.id,
-        slug: doc.slug,
-        title: doc.title,
-        content: doc.content,
-        is_global: doc.is_global,
-        priority: doc.priority,
-        is_active: doc.is_active,
-        persona_ids: (doc.bot_persona_knowledge || []).map(
-          link => link.persona_id
-        ),
-      }
-    : {
-        slug: '',
-        title: '',
-        content: '',
-        is_global: true,
-        priority: 100,
-        is_active: true,
-        persona_ids: [],
-      };
-  docDialogRef.value.open();
-};
-
-const toggleDocPersona = personaId => {
-  const ids = docForm.value.persona_ids;
-  docForm.value.persona_ids = ids.includes(personaId)
-    ? ids.filter(id => id !== personaId)
-    : [...ids, personaId];
-};
-
-const saveDoc = async () => {
-  isSavingDoc.value = true;
-  const form = docForm.value;
-  const payload = {
-    slug: form.slug,
-    title: form.title,
-    content: form.content,
-    is_global: form.is_global,
-    priority: Number(form.priority),
-    is_active: form.is_active,
-    persona_ids: form.persona_ids,
-  };
-  try {
-    if (isNewDoc.value) {
-      await BotlayerAPI.createKnowledge(payload);
-    } else {
-      await BotlayerAPI.updateKnowledge(form.id, payload);
-    }
-    docDialogRef.value.close();
-    useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
-    fetchAll();
-  } catch (error) {
-    alertError(error);
-  } finally {
-    isSavingDoc.value = false;
-  }
-};
+const openDocEditor = doc =>
+  router.push({
+    name: 'settings_integrations_botlayer_knowledge',
+    params: { docId: doc?.id || 'new' },
+  });
 
 // --- Providers ---
 
@@ -492,7 +311,7 @@ onMounted(() => {
               sm
               icon="i-lucide-circle-plus"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.NEW')"
-              @click="openPersonaDialog(null)"
+              @click="openPersonaEditor(null)"
             />
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -554,7 +373,7 @@ onMounted(() => {
                     slate
                     ghost
                     icon="i-lucide-pencil"
-                    @click="openPersonaDialog(persona)"
+                    @click="openPersonaEditor(persona)"
                   />
                   <Button
                     sm
@@ -577,7 +396,7 @@ onMounted(() => {
               sm
               icon="i-lucide-circle-plus"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.NEW')"
-              @click="openDocDialog(null)"
+              @click="openDocEditor(null)"
             />
           </div>
           <div class="flex flex-col divide-y divide-n-weak">
@@ -615,7 +434,7 @@ onMounted(() => {
                   slate
                   ghost
                   icon="i-lucide-pencil"
-                  @click="openDocDialog(doc)"
+                  @click="openDocEditor(doc)"
                 />
                 <Button
                   sm
@@ -850,254 +669,6 @@ onMounted(() => {
               {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
             </span>
             <Switch v-model="providerForm.is_active" />
-          </div>
-        </div>
-      </Dialog>
-
-      <!-- Persona dialog -->
-      <Dialog
-        ref="personaDialogRef"
-        width="2xl"
-        overflow-y-auto
-        :title="
-          isNewPersona
-            ? $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.NEW')
-            : $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EDIT')
-        "
-        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
-        :is-loading="isSavingPersona"
-        :disable-confirm-button="
-          isSavingPersona ||
-          !personaForm.display_name ||
-          !personaForm.slug ||
-          !personaForm.model
-        "
-        @confirm="savePersona"
-      >
-        <div class="flex flex-col gap-4">
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="personaForm.display_name"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.NAME')"
-            />
-            <Input
-              v-model="personaForm.slug"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
-              :disabled="!isNewPersona"
-            />
-          </div>
-          <Input
-            v-model="personaForm.description"
-            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.DESCRIPTION')"
-          />
-          <div class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.PROMPT') }}
-            </span>
-            <textarea
-              v-model="personaForm.system_prompt"
-              rows="14"
-              class="w-full rounded-lg border border-n-weak bg-n-alpha-black2 p-3 font-mono text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
-            />
-            <span class="text-xs text-n-slate-11">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.PROMPT_HELP') }}
-            </span>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.PROVIDER') }}
-              </span>
-              <Select v-model="personaForm.provider" :options="providerOptions" />
-            </div>
-            <div class="relative flex flex-col gap-1">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL') }}
-              </span>
-              <input
-                v-model="personaForm.model"
-                class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
-                placeholder="provider/model-id"
-                @focus="openModelPicker = 'model'"
-                @blur="openModelPicker = null"
-              />
-              <div
-                v-if="openModelPicker === 'model' && suggestionsFor('model').length"
-                class="absolute top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-n-weak bg-n-solid-1 shadow-lg"
-              >
-                <button
-                  v-for="id in suggestionsFor('model')"
-                  :key="id"
-                  class="block w-full truncate px-3 py-1.5 text-left text-sm text-n-slate-12 hover:bg-n-alpha-1"
-                  @mousedown.prevent="pickModel('model', id)"
-                >
-                  {{ id }}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK_PROVIDER') }}
-              </span>
-              <Select
-                v-model="personaForm.fallback_provider"
-                :options="fallbackProviderOptions"
-              />
-            </div>
-            <div class="relative flex flex-col gap-1">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK') }}
-              </span>
-              <input
-                v-model="personaForm.fallback_model"
-                class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
-                :placeholder="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.OPTIONAL')"
-                @focus="openModelPicker = 'fallback'"
-                @blur="openModelPicker = null"
-              />
-              <div
-                v-if="
-                  openModelPicker === 'fallback' &&
-                  suggestionsFor('fallback').length
-                "
-                class="absolute top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-n-weak bg-n-solid-1 shadow-lg"
-              >
-                <button
-                  v-for="id in suggestionsFor('fallback')"
-                  :key="id"
-                  class="block w-full truncate px-3 py-1.5 text-left text-sm text-n-slate-12 hover:bg-n-alpha-1"
-                  @mousedown.prevent="pickModel('fallback', id)"
-                >
-                  {{ id }}
-                </button>
-              </div>
-            </div>
-          </div>
-          <p class="-mt-2 text-xs text-n-slate-11">
-            {{
-              modelsOf(personaForm.provider).length
-                ? $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_HELP', {
-                    count: modelsOf(personaForm.provider).length,
-                  })
-                : $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_EMPTY')
-            }}
-            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK_HELP') }}
-          </p>
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="personaForm.temperature"
-              type="number"
-              step="0.1"
-              min="0"
-              max="2"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TEMPERATURE')"
-            />
-            <Input
-              v-model="personaForm.max_tokens"
-              type="number"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_TOKENS')"
-            />
-          </div>
-          <Input
-            v-model="personaForm.keywords"
-            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.KEYWORDS')"
-            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.KEYWORDS_HELP')"
-          />
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="personaForm.max_turns"
-              type="number"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_TURNS')"
-            />
-            <div class="flex items-center justify-between gap-2 pt-6">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
-              </span>
-              <Switch v-model="personaForm.is_active" />
-            </div>
-          </div>
-        </div>
-      </Dialog>
-
-      <!-- Knowledge dialog -->
-      <Dialog
-        ref="docDialogRef"
-        width="2xl"
-        overflow-y-auto
-        :title="
-          isNewDoc
-            ? $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.NEW')
-            : $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.EDIT')
-        "
-        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
-        :is-loading="isSavingDoc"
-        :disable-confirm-button="isSavingDoc || !docForm.title || !docForm.slug"
-        @confirm="saveDoc"
-      >
-        <div class="flex flex-col gap-4">
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="docForm.title"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.TITLE')"
-            />
-            <Input
-              v-model="docForm.slug"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
-              :disabled="!isNewDoc"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.CONTENT') }}
-            </span>
-            <textarea
-              v-model="docForm.content"
-              rows="14"
-              class="w-full rounded-lg border border-n-weak bg-n-alpha-black2 p-3 font-mono text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
-            />
-            <span class="text-xs text-n-slate-11">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.CONTENT_HELP') }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.GLOBAL_TOGGLE') }}
-            </span>
-            <Switch v-model="docForm.is_global" />
-          </div>
-          <div v-if="!docForm.is_global" class="flex flex-col gap-2">
-            <span class="text-sm font-medium text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.LINKED') }}
-            </span>
-            <label
-              v-for="persona in personas"
-              :key="persona.id"
-              class="flex items-center gap-2 text-sm text-n-slate-12"
-            >
-              <input
-                type="checkbox"
-                class="rounded border-n-weak"
-                :checked="docForm.persona_ids.includes(persona.id)"
-                @change="toggleDocPersona(persona.id)"
-              />
-              {{ persona.display_name }} ({{ persona.slug }})
-            </label>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="docForm.priority"
-              type="number"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.PRIORITY')"
-              :message="$t('INTEGRATION_SETTINGS.BOTLAYER.KNOWLEDGE.PRIORITY_HELP')"
-            />
-            <div class="flex items-center justify-between gap-2 pt-6">
-              <span class="text-sm text-n-slate-12">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}
-              </span>
-              <Switch v-model="docForm.is_active" />
-            </div>
           </div>
         </div>
       </Dialog>

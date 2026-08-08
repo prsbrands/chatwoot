@@ -228,7 +228,11 @@
         "MISSING_KEY": "{provider} has no API key — replies will fail. Add the key in the Providers tab.",
         "FALLBACK_PROVIDER": "Fallback provider",
         "SAME_AS_PRIMARY": "Same as primary",
-        "FALLBACK_HELP": "The fallback is used when the primary model fails. A fallback on a different provider needs that provider’s API key saved in the Providers tab."
+        "FALLBACK_HELP": "The fallback is used when the primary model fails. A fallback on a different provider needs that provider’s API key saved in the Providers tab.",
+        "SECTION_IDENTITY": "Identity",
+        "SECTION_MODEL": "Model",
+        "SECTION_HANDOFF": "Handoff",
+        "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model"
       },
       "KNOWLEDGE": {
         "NEW": "New document",
