@@ -64,14 +64,44 @@ const providerOptions = computed(() =>
     .map(provider => ({ value: provider.slug, label: provider.label }))
 );
 
-// Modelos do fornecedor selecionado alimentam o datalist: o campo continua
-// aberto para digitar um id que ainda não está no catálogo.
-const modelSuggestions = computed(() => {
-  const provider = providers.value.find(
-    candidate => candidate.slug === personaForm.value.provider
-  );
+// Combobox próprio (datalist nativo esconde as opções quando o campo já tem
+// valor): dropdown com busca que abre no foco, e o campo continua aceitando
+// qualquer id digitado.
+const openModelPicker = ref(null); // 'model' | 'fallback' | null
+
+const modelsOf = slug => {
+  const provider = providers.value.find(candidate => candidate.slug === slug);
   return (provider?.models || []).map(model => model.id);
-});
+};
+
+const suggestionsFor = field => {
+  const form = personaForm.value;
+  const slug =
+    field === 'fallback'
+      ? form.fallback_provider || form.provider
+      : form.provider;
+  const all = modelsOf(slug);
+  const query = String(
+    (field === 'fallback' ? form.fallback_model : form.model) || ''
+  ).toLowerCase();
+  if (!query) return all;
+  const filtered = all.filter(id => id.toLowerCase().includes(query));
+  return filtered.length ? filtered : all;
+};
+
+const pickModel = (field, id) => {
+  if (field === 'fallback') personaForm.value.fallback_model = id;
+  else personaForm.value.model = id;
+  openModelPicker.value = null;
+};
+
+const fallbackProviderOptions = computed(() => [
+  {
+    value: '',
+    label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SAME_AS_PRIMARY'),
+  },
+  ...providerOptions.value,
+]);
 
 const personaName = id =>
   personas.value.find(persona => persona.id === id)?.display_name;
@@ -139,6 +169,7 @@ const openPersonaDialog = persona => {
         system_prompt: persona.system_prompt,
         provider: persona.provider,
         model: persona.model,
+        fallback_provider: persona.fallback_provider || '',
         fallback_model: persona.fallback_model || '',
         temperature: persona.temperature,
         max_tokens: persona.max_tokens,
@@ -154,6 +185,7 @@ const openPersonaDialog = persona => {
         system_prompt: '',
         provider: 'openrouter',
         model: '',
+        fallback_provider: '',
         fallback_model: '',
         temperature: 0.6,
         max_tokens: 1200,
@@ -174,6 +206,7 @@ const personaPayload = () => {
     system_prompt: form.system_prompt,
     provider: form.provider,
     model: form.model,
+    fallback_provider: form.fallback_provider || null,
     fallback_model: form.fallback_model || null,
     temperature: Number(form.temperature),
     max_tokens: Number(form.max_tokens),
@@ -870,47 +903,87 @@ onMounted(() => {
               {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.PROMPT_HELP') }}
             </span>
           </div>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.PROVIDER') }}
               </span>
               <Select v-model="personaForm.provider" :options="providerOptions" />
             </div>
-            <div class="flex flex-col gap-1">
+            <div class="relative flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL') }}
               </span>
               <input
                 v-model="personaForm.model"
-                list="botlayer-models"
                 class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
-                :placeholder="modelSuggestions[0] || 'provider/model-id'"
+                placeholder="provider/model-id"
+                @focus="openModelPicker = 'model'"
+                @blur="openModelPicker = null"
+              />
+              <div
+                v-if="openModelPicker === 'model' && suggestionsFor('model').length"
+                class="absolute top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-n-weak bg-n-solid-1 shadow-lg"
+              >
+                <button
+                  v-for="id in suggestionsFor('model')"
+                  :key="id"
+                  class="block w-full truncate px-3 py-1.5 text-left text-sm text-n-slate-12 hover:bg-n-alpha-1"
+                  @mousedown.prevent="pickModel('model', id)"
+                >
+                  {{ id }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK_PROVIDER') }}
+              </span>
+              <Select
+                v-model="personaForm.fallback_provider"
+                :options="fallbackProviderOptions"
               />
             </div>
-            <div class="flex flex-col gap-1">
+            <div class="relative flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK') }}
               </span>
               <input
                 v-model="personaForm.fallback_model"
-                list="botlayer-models"
                 class="h-10 w-full rounded-lg border border-n-weak bg-n-alpha-black2 px-3 text-sm text-n-slate-12 focus:border-n-brand focus:outline-none"
                 :placeholder="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.OPTIONAL')"
+                @focus="openModelPicker = 'fallback'"
+                @blur="openModelPicker = null"
               />
+              <div
+                v-if="
+                  openModelPicker === 'fallback' &&
+                  suggestionsFor('fallback').length
+                "
+                class="absolute top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-n-weak bg-n-solid-1 shadow-lg"
+              >
+                <button
+                  v-for="id in suggestionsFor('fallback')"
+                  :key="id"
+                  class="block w-full truncate px-3 py-1.5 text-left text-sm text-n-slate-12 hover:bg-n-alpha-1"
+                  @mousedown.prevent="pickModel('fallback', id)"
+                >
+                  {{ id }}
+                </button>
+              </div>
             </div>
-            <datalist id="botlayer-models">
-              <option v-for="id in modelSuggestions" :key="id" :value="id" />
-            </datalist>
           </div>
           <p class="-mt-2 text-xs text-n-slate-11">
             {{
-              modelSuggestions.length
+              modelsOf(personaForm.provider).length
                 ? $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_HELP', {
-                    count: modelSuggestions.length,
+                    count: modelsOf(personaForm.provider).length,
                   })
                 : $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_EMPTY')
             }}
+            {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FALLBACK_HELP') }}
           </p>
           <div class="grid grid-cols-2 gap-3">
             <Input

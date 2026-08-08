@@ -225,7 +225,10 @@
         "MODEL_EMPTY": "No models synced for this provider yet — type the model id, or use Sync models in the Providers tab.",
         "OPTIONAL": "Optional",
         "UNKNOWN_PROVIDER": "Provider \"{provider}\" is not in the catalog — replies will fail. Add it in the Providers tab.",
-        "MISSING_KEY": "{provider} has no API key — replies will fail. Add the key in the Providers tab."
+        "MISSING_KEY": "{provider} has no API key — replies will fail. Add the key in the Providers tab.",
+        "FALLBACK_PROVIDER": "Fallback provider",
+        "SAME_AS_PRIMARY": "Same as primary",
+        "FALLBACK_HELP": "The fallback is used when the primary model fails. A fallback on a different provider needs that provider’s API key saved in the Providers tab."
       },
       "KNOWLEDGE": {
         "NEW": "New document",

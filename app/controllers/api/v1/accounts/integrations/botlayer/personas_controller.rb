@@ -20,7 +20,7 @@ class Api::V1::Accounts::Integrations::Botlayer::PersonasController < Api::V1::A
 
   def persona_params
     permitted = params.permit(:slug, :display_name, :description, :system_prompt, :provider, :model,
-                              :fallback_model, :temperature, :max_tokens, :is_active,
+                              :fallback_provider, :fallback_model, :temperature, :max_tokens, :is_active,
                               handoff_rules: {}).to_h
     # handoff_rules.keywords chega como array; permit com hash aberto não cobre
     # arrays aninhados, então normalizamos aqui a partir do raw.
