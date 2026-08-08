@@ -10,6 +10,7 @@ import Linear from './Linear.vue';
 import Notion from './Notion.vue';
 import Shopify from './Shopify.vue';
 import Openwa from './Openwa/Index.vue';
+import Botlayer from './Botlayer/Index.vue';
 
 export default {
   routes: [
@@ -49,6 +50,15 @@ export default {
           path: 'openwa',
           component: Openwa,
           name: 'settings_integrations_openwa',
+          meta: {
+            featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+            permissions: ['administrator'],
+          },
+        },
+        {
+          path: 'botlayer',
+          component: Botlayer,
+          name: 'settings_integrations_botlayer',
           meta: {
             featureFlag: FEATURE_FLAGS.INTEGRATIONS,
             permissions: ['administrator'],

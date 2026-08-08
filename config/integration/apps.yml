@@ -29,6 +29,12 @@ openwa:
   i18n_key: openwa
   hook_type: account
   allow_multiple_hooks: false
+botlayer:
+  id: botlayer
+  logo: botlayer.png
+  i18n_key: botlayer
+  hook_type: account
+  allow_multiple_hooks: false
 openai:
   id: openai
   logo: openai.png

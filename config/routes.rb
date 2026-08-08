@@ -387,6 +387,11 @@ Rails.application.routes.draw do
                 end
               end
             end
+            namespace :botlayer do
+              resources :personas, only: [:index, :create, :update, :destroy]
+              resources :knowledge, only: [:index, :create, :update, :destroy]
+              resources :routes, only: [:index, :create, :destroy]
+            end
             resource :slack, only: [:create, :update, :destroy], controller: 'slack' do
               member do
                 get :list_all_channels

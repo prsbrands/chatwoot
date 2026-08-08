@@ -191,6 +191,70 @@
         "ERROR": "Could not reach the OpenWA gateway"
       }
     },
+    "BOTLAYER": {
+      "HEADER": "Bot Personas",
+      "DESCRIPTION": "The brain behind your agent bots: personas with prompts and model settings, the knowledge base that feeds them, and which inbox each persona answers. Changes apply to the next message — no deploy needed.",
+      "LOADING": "Loading bot personas",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "SAVE": "Save",
+      "TABS": {
+        "PERSONAS": "Personas",
+        "KNOWLEDGE": "Knowledge base",
+        "CHANNELS": "Channels"
+      },
+      "PERSONAS": {
+        "NEW": "New persona",
+        "EDIT": "Edit persona",
+        "NAME": "Name",
+        "SLUG": "Slug",
+        "DESCRIPTION": "Description (internal)",
+        "PROMPT": "System prompt",
+        "PROMPT_HELP": "The persona's identity and rules. The knowledge base is appended automatically — don't paste it here. Merge fields contact.first_name, contact.email and contact.call_summary (written between double curly braces) are replaced with real contact data.",
+        "PROVIDER": "Provider",
+        "MODEL": "Model",
+        "FALLBACK": "Fallback model",
+        "TEMPERATURE": "Temperature",
+        "MAX_TOKENS": "Max tokens",
+        "KEYWORDS": "Handoff keywords",
+        "KEYWORDS_HELP": "Comma-separated. When the customer message contains one of these, the conversation is handed to a human.",
+        "MAX_TURNS": "Handoff after N customer turns",
+        "DOCS_COUNT": "{count} knowledge docs"
+      },
+      "KNOWLEDGE": {
+        "NEW": "New document",
+        "EDIT": "Edit document",
+        "TITLE": "Title",
+        "CONTENT": "Content (Markdown)",
+        "CONTENT_HELP": "Composed into the system prompt of every linked persona (or all personas when global).",
+        "GLOBAL": "Global — all personas",
+        "GLOBAL_TOGGLE": "Global (feeds every persona)",
+        "LINKED": "Linked personas",
+        "UNLINKED": "Not linked to any persona",
+        "PRIORITY": "Priority",
+        "PRIORITY_HELP": "Lower numbers are composed first.",
+        "CHARS": "characters"
+      },
+      "CHANNELS": {
+        "HELP": "Choose which persona answers each inbox and switch the bot on or off per channel. Remember the inbox also needs the agent bot assigned (Settings → Inboxes → Bot Configuration) for the webhook to fire.",
+        "INBOX": "Inbox",
+        "PERSONA": "Persona",
+        "ACTIVE": "Bot active",
+        "ACTIONS": "Actions",
+        "SAVE": "Save",
+        "NO_PERSONA": "Select a persona"
+      },
+      "DELETE": {
+        "TITLE": "Delete",
+        "MESSAGE": "Delete \"{name}\"? This cannot be undone.",
+        "CONFIRM": "Delete"
+      },
+      "API": {
+        "SAVED": "Saved — applies to the next bot reply",
+        "DELETED": "Deleted",
+        "ERROR": "Could not reach the bot layer"
+      }
+    },
     "SLACK": {
       "HEADER": "Slack",
       "DELETE": "Delete",

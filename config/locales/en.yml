@@ -137,6 +137,8 @@ en:
     categories:
       locale:
         unique: should be unique in the category and portal
+    botlayer:
+      not_configured: 'Bot layer is not configured. Set SUPABASE_REST_URL and SUPABASE_SERVICE_ROLE_KEY.'
     openwa:
       not_configured: 'OpenWA gateway is not configured. Set OPENWA_API_URL and OPENWA_API_KEY.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
@@ -394,6 +396,10 @@ en:
     dashboard_apps:
       name: 'Dashboard Apps'
       description: 'Dashboard Apps allow you to create and embed applications that display user information, orders, or payment history, providing more context to your customer support agents.'
+    botlayer:
+      name: 'Bot Personas'
+      short_description: 'Edit your AI agent personas, models and knowledge base.'
+      description: 'Manage the brain behind your agent bots: personas with prompts and model settings, the knowledge base that feeds them, and which inbox each persona answers.'
     openwa:
       name: 'WhatsApp Sessions'
       short_description: 'Pair and manage WhatsApp numbers connected through the OpenWA gateway.'

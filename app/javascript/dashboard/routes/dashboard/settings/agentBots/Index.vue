@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -23,10 +24,20 @@ const MODAL_TYPES = {
 };
 
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
 
 const agentBots = useMapGetter('agentBots/getBots');
 const uiFlags = useMapGetter('agentBots/getUIFlags');
+const appIntegrations = useMapGetter('integrations/getAppIntegrations');
+
+const hasBotlayer = computed(() =>
+  appIntegrations.value.some(app => app.id === 'botlayer')
+);
+
+const goToBotPersonas = () => {
+  router.push({ name: 'settings_integrations_botlayer' });
+};
 
 const selectedBot = ref({});
 const searchQuery = ref('');
@@ -88,6 +99,7 @@ const confirmDeletion = () => {
 
 onMounted(() => {
   store.dispatch('agentBots/get');
+  store.dispatch('integrations/get');
 });
 </script>
 
@@ -113,6 +125,15 @@ onMounted(() => {
           </span>
         </template>
         <template #actions>
+          <Button
+            v-if="hasBotlayer"
+            :label="$t('AGENT_BOTS.BOT_PERSONAS_LINK')"
+            size="sm"
+            slate
+            faded
+            icon="i-lucide-brain"
+            @click="goToBotPersonas"
+          />
           <Button
             :label="$t('AGENT_BOTS.ADD.TITLE')"
             size="sm"
