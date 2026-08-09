@@ -22,8 +22,12 @@ class Voice::CallConfigService
   private
 
   def persona
-    @persona ||= client.resolved_persona(@route.bot_persona_slug) ||
-                 raise(MisconfiguredError, "persona '#{@route.bot_persona_slug}' not found in the bot layer")
+    @persona ||= begin
+      slug = @route.bot_persona_slug.presence ||
+             raise(MisconfiguredError, "#{@route.phone_number} is not routed to a bot")
+
+      client.resolved_persona(slug) || raise(MisconfiguredError, "persona '#{slug}' not found in the bot layer")
+    end
   end
 
   def providers

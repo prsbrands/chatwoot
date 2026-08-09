@@ -1,5 +1,5 @@
 class VoiceAgent::ConfigsController < VoiceAgent::BaseController
-  rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
+  # Número sem rota cai no 404 do próprio Chatwoot, que já responde antes daqui.
   rescue_from Voice::CallConfigService::MisconfiguredError, Integrations::Botlayer::Client::ApiError, with: :render_misconfigured
 
   # O serviço de mídia pergunta pelo número discado, que é o que ele recebe do
@@ -10,10 +10,6 @@ class VoiceAgent::ConfigsController < VoiceAgent::BaseController
   end
 
   private
-
-  def render_not_found
-    render json: { error: "no enabled voice route for #{params[:phone_number]}" }, status: :not_found
-  end
 
   def render_misconfigured(exception)
     Rails.logger.error("VOICE_CONFIG_MISCONFIGURED number=#{params[:phone_number]} #{exception.message}")
