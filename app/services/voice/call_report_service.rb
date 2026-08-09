@@ -11,6 +11,7 @@ class Voice::CallReportService
     conversation = build_conversation
     record_transcript(conversation)
     record_summary(conversation)
+    enrich_contact
     update_call(conversation)
     conversation
   end
@@ -90,6 +91,36 @@ class Voice::CallReportService
       private: true,
       content: summary
     )
+  end
+
+  # Quem ligou ditou nome, empresa e às vezes e-mail durante a conversa. Aqui
+  # isso deixa de ser texto no transcrito e vira o cadastro do contato.
+  #
+  # O país sai do próprio número, que é dado duro. A cidade não: número de
+  # telefone não diz onde a pessoa está — só onde a linha foi habilitada, e em
+  # celular nem isso. Ela só é gravada quando quem ligou a menciona.
+  def enrich_contact
+    contact = contact_inbox.contact
+    attributes = contact.additional_attributes || {}
+
+    contact.name = @params[:name] if @params[:name].present? && contact.name == caller_number
+    contact.email = @params[:email] if @params[:email].present? && contact.email.blank?
+
+    attributes['company_name'] = @params[:company] if @params[:company].present?
+    attributes['city'] = @params[:city] if @params[:city].present?
+    attributes['country'] = country_of(caller_number) if country_of(caller_number).present?
+    # Quem liga de um celular usa o mesmo número no WhatsApp, salvo quando dita
+    # outro durante a conversa.
+    attributes['whatsapp'] = @params[:whatsapp].presence || caller_number
+
+    contact.additional_attributes = attributes
+    Contacts::SyncAttributes.new(contact).perform
+    contact.save!
+  end
+
+  def country_of(number)
+    parsed = TelephoneNumber.parse(number)
+    parsed.valid? ? parsed.country&.country_id : nil
   end
 
   def update_call(conversation)

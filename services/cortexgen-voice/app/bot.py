@@ -11,6 +11,7 @@ lugar certo é o Silero, local.
 """
 
 import asyncio
+import json
 import time
 
 import httpx
@@ -160,15 +161,11 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         params=VADParams(stop_secs=persona["endpoint_ms"] / 1000)
     )
 
-    # A frase de abertura entra no histórico como fala do próprio bot. Sem isso
-    # ela é só áudio: o modelo não sabe que já atendeu e se apresenta de novo na
-    # resposta seguinte.
+    # A abertura não é semeada no contexto: o agregador já registra o que o bot
+    # fala, inclusive a saudação. Semear além disso a duplicava no histórico e
+    # no transcrito da conversa.
     opening = persona.get("first_message")
-    messages = [{"role": "system", "content": persona["system_prompt"]}]
-    if opening:
-        messages.append({"role": "assistant", "content": opening})
-
-    context = LLMContext(messages=messages)
+    context = LLMContext(messages=[{"role": "system", "content": persona["system_prompt"]}])
     # Interromper é o padrão do Pipecat. Uma persona não-interrompível é a que
     # cala quem ligou enquanto o bot fala.
     #
@@ -252,7 +249,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
             "from_number": from_number,
             "duration_seconds": duration,
             "transcript": _transcript_of(context),
-            "summary": await _summarise(context, config["llm"]),
+            **await _read_the_call(context, config["llm"]),
         }
     )
 
@@ -267,40 +264,52 @@ def _transcript_of(context: LLMContext) -> list[dict]:
     ]
 
 
-async def _summarise(context: LLMContext, llm: dict) -> str:
-    """Duas linhas sobre o que a chamada rendeu, para quem for retomar o lead.
+READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON, sin texto alrededor:
 
-    Best-effort de propósito: um resumo que falha não pode levar junto a
+{"summary": "...", "name": "...", "email": "...", "company": "...", "city": "...", "whatsapp": "..."}
+
+- summary: dos o tres frases en español. Quién llamó, qué necesita, cuál es el siguiente paso.
+- name: el nombre de la persona tal como lo dijo. null si no lo dio.
+- email: solo si lo dictó. Une las letras deletreadas. null si no lo dio.
+- company: el nombre de la empresa. Une las letras si lo deletreó. null si no lo dio.
+- city: solo si mencionó dónde está. Nunca la adivines por el país. null si no la dijo.
+- whatsapp: solo si dio un número distinto del que llamó. null en cualquier otro caso.
+"""
+
+
+async def _read_the_call(context: LLMContext, llm: dict) -> dict:
+    """Resumo e os dados do lead, numa passada só.
+
+    Quem liga dita nome, empresa e e-mail em voz alta, muitas vezes soletrando.
+    Extrair isso aqui é o que transforma a chamada em contato preenchido em vez
+    de um número de telefone sem nome.
+
+    Best-effort de propósito: uma extração que falha não pode levar junto a
     transcrição, que é o que realmente importa registrar.
     """
     turns = _transcript_of(context)
     if not turns:
-        return ""
+        return {}
 
     conversation = "\n".join(f"{t['role']}: {t['content']}" for t in turns)
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=25) as client:
             response = await client.post(
                 f"{llm['base_url'].rstrip('/')}/chat/completions",
                 headers={"Authorization": f"Bearer {llm['api_key']}"},
                 json={
                     "model": llm["model"],
-                    "max_tokens": 200,
+                    "max_tokens": 400,
+                    "response_format": {"type": "json_object"},
                     "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                "Resume esta llamada telefónica en dos o tres frases, en español. "
-                                "Di quién llamó, qué necesita y cuál es el siguiente paso. "
-                                "Sin preámbulo."
-                            ),
-                        },
+                        {"role": "system", "content": READING_PROMPT},
                         {"role": "user", "content": conversation},
                     ],
                 },
             )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+        raw = response.json()["choices"][0]["message"]["content"]
+        return {key: value for key, value in json.loads(raw).items() if value}
     except Exception as error:
-        logger.warning(f"summary skipped: {type(error).__name__}: {error}")
-        return ""
+        logger.warning(f"call reading skipped: {type(error).__name__}: {error}")
+        return {}
