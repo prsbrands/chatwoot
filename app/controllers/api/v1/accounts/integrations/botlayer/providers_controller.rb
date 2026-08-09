@@ -34,6 +34,10 @@ class Api::V1::Accounts::Integrations::Botlayer::ProvidersController < Api::V1::
 
   private
 
+  def required_feature
+    'ai_providers'
+  end
+
   def account_id
     Current.account.id
   end

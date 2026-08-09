@@ -65,9 +65,9 @@ class Integrations::App
     when 'notion'
       notion_enabled?(account)
     when 'openwa'
-      Integrations::Openwa::Client.configured?
+      openwa_enabled?(account)
     when 'botlayer', 'ai_providers'
-      Integrations::Botlayer::Client.configured?
+      botlayer_enabled?(account)
     else
       true
     end
@@ -93,9 +93,9 @@ class Integrations::App
     when 'dashboard_apps'
       account.dashboard_apps.exists?
     when 'openwa'
-      Integrations::Openwa::Client.configured?
+      openwa_enabled?(account)
     when 'botlayer', 'ai_providers'
-      Integrations::Botlayer::Client.configured?
+      botlayer_enabled?(account)
     else
       account.hooks.exists?(app_id: id)
     end
@@ -137,5 +137,16 @@ class Integrations::App
 
   def notion_enabled?(account)
     account.feature_enabled?('notion_integration') && GlobalConfigService.load('NOTION_CLIENT_ID', nil).present?
+  end
+
+  def openwa_enabled?(account)
+    account.feature_enabled?('whatsapp_sessions') && Integrations::Openwa::Client.configured?
+  end
+
+  # A aba de personas e a de chaves de LLM são liberadas por conta separadamente:
+  # ceder o painel de bots não obriga a ceder as chaves, e vice-versa.
+  def botlayer_enabled?(account)
+    feature = params[:id] == 'ai_providers' ? 'ai_providers' : 'bot_personas'
+    account.feature_enabled?(feature) && Integrations::Botlayer::Client.configured?
   end
 end

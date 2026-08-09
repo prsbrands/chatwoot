@@ -151,7 +151,6 @@
 - name: shopify_integration
   display_name: Shopify Integration
   enabled: false
-  chatwoot_internal: true
 - name: search_with_gin
   display_name: Search messages with GIN
   enabled: false
@@ -258,5 +257,17 @@
   column: feature_flags_ext_1
 - name: delayed_automations
   display_name: Delayed Automations
+  enabled: false
+  column: feature_flags_ext_1
+- name: whatsapp_sessions
+  display_name: WhatsApp Sessions
+  enabled: false
+  column: feature_flags_ext_1
+- name: bot_personas
+  display_name: Bot Personas
+  enabled: false
+  column: feature_flags_ext_1
+- name: ai_providers
+  display_name: AI Providers
   enabled: false
   column: feature_flags_ext_1

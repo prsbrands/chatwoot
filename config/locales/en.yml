@@ -138,10 +138,10 @@ en:
       locale:
         unique: should be unique in the category and portal
     botlayer:
-      not_configured: 'Bot layer is not configured. Set SUPABASE_REST_URL and SUPABASE_SERVICE_ROLE_KEY.'
+      not_configured: 'Bot layer is not configured. Set the Supabase REST URL and service role key in Super Admin → Settings → Bot Layer.'
       no_models: 'The provider returned no models.'
     openwa:
-      not_configured: 'OpenWA gateway is not configured. Set OPENWA_API_URL and OPENWA_API_KEY.'
+      not_configured: 'OpenWA gateway is not configured. Set the gateway URL and API key in Super Admin → Settings → WhatsApp Gateway.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
       invalid_inbox: 'The selected inbox must be an API channel inbox.'
     dyte:

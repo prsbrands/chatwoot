@@ -2,6 +2,7 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
   NAME_FORMAT = /\A[a-z0-9][a-z0-9-]{2,49}\z/
 
   before_action -> { check_admin_authorization? }
+  before_action :ensure_feature_enabled
   before_action :ensure_configured
 
   rescue_from Integrations::Openwa::Client::ApiError, with: :render_openwa_error
@@ -78,6 +79,11 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
     return true if permitted_params[:inbox_id].blank?
 
     Current.account.inboxes.find(permitted_params[:inbox_id]).channel_type == 'Channel::Api'
+  end
+
+  # Ligado por conta no Super Admin.
+  def ensure_feature_enabled
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('whatsapp_sessions')
   end
 
   def ensure_configured

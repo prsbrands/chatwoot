@@ -90,17 +90,17 @@ class Integrations::Openwa::ProvisionService
   end
 
   def fetch_persona_id
-    slug = ENV.fetch('OPENWA_BOT_PERSONA_SLUG', 'nathan-whatsapp')
+    slug = GlobalConfigService.load('OPENWA_BOT_PERSONA_SLUG', 'nathan-whatsapp')
     response = HTTParty.get("#{supabase_rest_url}/bot_personas?slug=eq.#{slug}&select=id", headers: supabase_headers)
     response.success? ? response.parsed_response.dig(0, 'id') : nil
   end
 
   def supabase_rest_url
-    ENV.fetch('SUPABASE_REST_URL', nil)&.chomp('/')
+    GlobalConfigService.load('SUPABASE_REST_URL', nil)&.chomp('/')
   end
 
   def supabase_service_key
-    ENV.fetch('SUPABASE_SERVICE_ROLE_KEY', nil)
+    GlobalConfigService.load('SUPABASE_SERVICE_ROLE_KEY', nil)
   end
 
   def supabase_headers

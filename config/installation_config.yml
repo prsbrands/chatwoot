@@ -583,3 +583,32 @@
   value: 'https://us.cloud.langfuse.com'
   locked: false
 ## ---- End of LLM Observability ---- ##
+
+## ------ Configs added for the WhatsApp Gateway (OpenWA) ------ ##
+- name: OPENWA_API_URL
+  display_title: 'OpenWA API URL'
+  description: 'Base URL of the OpenWA gateway, e.g. https://com.cortexgen.cloud'
+  locked: false
+- name: OPENWA_API_KEY
+  display_title: 'OpenWA API Key'
+  description: 'API_MASTER_KEY of the OpenWA gateway, sent as the X-API-Key header'
+  locked: false
+  type: secret
+- name: OPENWA_BOT_PERSONA_SLUG
+  display_title: 'OpenWA Bot Persona Slug'
+  description: 'Persona assigned to inboxes provisioned from the WhatsApp Sessions page'
+  value: 'nathan-whatsapp'
+  locked: false
+## ------ End of Configs added for the WhatsApp Gateway (OpenWA) ------ ##
+
+## ------ Configs added for the Bot Layer (Supabase) ------ ##
+- name: SUPABASE_REST_URL
+  display_title: 'Supabase REST URL'
+  description: 'PostgREST endpoint of the bot layer, e.g. https://supabase.cortexgen.cloud/rest/v1'
+  locked: false
+- name: SUPABASE_SERVICE_ROLE_KEY
+  display_title: 'Supabase Service Role Key'
+  description: 'Service role key for the bot layer. RLS is on without policies, so only this key can read the bot_ tables'
+  locked: false
+  type: secret
+## ------ End of Configs added for the Bot Layer (Supabase) ------ ##

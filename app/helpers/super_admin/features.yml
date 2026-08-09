@@ -104,3 +104,23 @@ shopify:
   enabled: true
   icon: 'icon-shopify'
   config_key: 'shopify'
+
+# ------- Bot Stack ------- #
+openwa:
+  name: 'WhatsApp Gateway'
+  description: 'Gateway that hosts the WhatsApp sessions provisioned from the dashboard.'
+  enabled: true
+  icon: 'icon-whatsapp-line'
+  config_key: 'openwa'
+botlayer:
+  name: 'Bot Layer'
+  description: 'Supabase database holding bot personas, knowledge base and channel routes.'
+  enabled: true
+  icon: 'icon-robot-line'
+  config_key: 'botlayer'
+ai_assistant:
+  name: 'AI Assistant'
+  description: 'OpenAI-compatible endpoint used by the writing assistant (rewrite, summarise, reply suggestions).'
+  enabled: true
+  icon: 'icon-captain'
+  config_key: 'captain'

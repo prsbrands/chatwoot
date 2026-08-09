@@ -3,8 +3,11 @@ class Integrations::Openwa::Client
 
   ADAPTER_PLUGIN_ID = 'chatwoot-adapter'.freeze
 
+  # Configuração fica em Super Admin → Settings → WhatsApp Gateway. O
+  # GlobalConfigService cai no ENV enquanto o InstallationConfig não existir, e
+  # grava o valor do ENV na primeira leitura.
   def self.configured?
-    ENV['OPENWA_API_URL'].present? && ENV['OPENWA_API_KEY'].present?
+    GlobalConfigService.load('OPENWA_API_URL', nil).present? && GlobalConfigService.load('OPENWA_API_KEY', nil).present?
   end
 
   def sessions
@@ -61,11 +64,11 @@ class Integrations::Openwa::Client
   private
 
   def base_url
-    ENV.fetch('OPENWA_API_URL').chomp('/')
+    GlobalConfigService.load('OPENWA_API_URL', nil).chomp('/')
   end
 
   def headers
-    { 'X-API-Key' => ENV.fetch('OPENWA_API_KEY'), 'Content-Type' => 'application/json' }
+    { 'X-API-Key' => GlobalConfigService.load('OPENWA_API_KEY', nil), 'Content-Type' => 'application/json' }
   end
 
   def get(path)

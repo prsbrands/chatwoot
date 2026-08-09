@@ -5,8 +5,11 @@ class Integrations::Botlayer::Client
 
   UUID_FORMAT = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/
 
+  # Configuração fica em Super Admin → Settings → Bot Layer. O
+  # GlobalConfigService cai no ENV enquanto o InstallationConfig não existir, e
+  # grava o valor do ENV na primeira leitura.
   def self.configured?
-    ENV['SUPABASE_REST_URL'].present? && ENV['SUPABASE_SERVICE_ROLE_KEY'].present?
+    GlobalConfigService.load('SUPABASE_REST_URL', nil).present? && GlobalConfigService.load('SUPABASE_SERVICE_ROLE_KEY', nil).present?
   end
 
   def personas
@@ -101,11 +104,11 @@ class Integrations::Botlayer::Client
   end
 
   def base_url
-    ENV.fetch('SUPABASE_REST_URL').chomp('/')
+    GlobalConfigService.load('SUPABASE_REST_URL', nil).chomp('/')
   end
 
   def headers(prefer = nil)
-    key = ENV.fetch('SUPABASE_SERVICE_ROLE_KEY')
+    key = GlobalConfigService.load('SUPABASE_SERVICE_ROLE_KEY', nil)
     base = { 'apikey' => key, 'Authorization' => "Bearer #{key}", 'Content-Type' => 'application/json' }
     base['Prefer'] = prefer if prefer
     base
