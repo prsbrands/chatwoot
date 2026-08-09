@@ -389,7 +389,7 @@ Rails.application.routes.draw do
             end
             namespace :twilio do
               resource :credentials, only: [:show, :create, :destroy]
-              resources :numbers, only: [:index]
+              resources :numbers, only: [:index, :create]
             end
             namespace :botlayer do
               resources :personas, only: [:index, :create, :update, :destroy]

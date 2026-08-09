@@ -18,8 +18,14 @@ class TwilioAPI extends ApiClient {
     return axios.delete(`${this.url}/credentials`);
   }
 
-  numbers() {
-    return axios.get(`${this.url}/numbers`);
+  numbers({ search, pageUrl } = {}) {
+    return axios.get(`${this.url}/numbers`, {
+      params: { search: search || undefined, page_url: pageUrl || undefined },
+    });
+  }
+
+  provisionSms(data) {
+    return axios.post(`${this.url}/numbers`, data);
   }
 }
 

@@ -4,6 +4,8 @@
 class Integrations::Twilio::AccountClient
   class ApiError < StandardError; end
 
+  PAGE_SIZE = 25
+
   pattr_initialize [:credential!]
 
   # O nome da conta no Twilio serve de confirmação visual de que a chave é da
@@ -14,13 +16,23 @@ class Integrations::Twilio::AccountClient
     raise ApiError, twilio_message(e)
   end
 
-  def phone_numbers
-    client.incoming_phone_numbers.list.map { |number| serialize(number) }
+  # Uma página por vez: `list` pagina sozinho e traz a conta inteira, o que numa
+  # conta grande vira muitas chamadas ao Twilio a cada abertura da tela. A busca
+  # é feita pelo próprio Twilio (`phone_number` casa por trecho), não em memória.
+  def phone_numbers(search: nil, page_url: nil)
+    page = page_url.present? ? client.incoming_phone_numbers.get_page(page_url) : first_page(search)
+    { numbers: page.map { |number| serialize(number) }, next_page_url: page.next_page_url }
   rescue ::Twilio::REST::RestError => e
     raise ApiError, twilio_message(e)
   end
 
   private
+
+  def first_page(search)
+    filters = { page_size: PAGE_SIZE }
+    filters[:phone_number] = search if search.present?
+    client.incoming_phone_numbers.page(**filters)
+  end
 
   def serialize(number)
     {

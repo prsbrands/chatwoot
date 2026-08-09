@@ -4,8 +4,22 @@ class Api::V1::Accounts::Integrations::Twilio::NumbersController < Api::V1::Acco
   # Devolve os números com as capabilities do Twilio e com a inbox já ligada a
   # cada um, para a tela mostrar o que dá para fazer antes de o cliente tentar.
   def index
-    numbers = client.phone_numbers.map { |number| number.merge(inbox: inbox_for(number[:phone_number])) }
-    render json: { numbers: numbers, sms_webhook_url: sms_webhook_url }
+    page = client.phone_numbers(search: params[:search], page_url: params[:page_url])
+    numbers = page[:numbers].map { |number| number.merge(inbox: inbox_for(number[:phone_number])) }
+    render json: { numbers: numbers, next_page_url: page[:next_page_url], sms_webhook_url: sms_webhook_url }
+  end
+
+  # Provisiona a inbox de SMS do número e aponta o webhook no próprio Twilio.
+  def create
+    inbox = Integrations::Twilio::ProvisionSmsService.new(
+      account: Current.account,
+      credential: credential,
+      phone_number: params[:phone_number],
+      name: params[:name]
+    ).perform
+    render json: { inbox: { id: inbox.id, name: inbox.name } }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
   end
 
   private

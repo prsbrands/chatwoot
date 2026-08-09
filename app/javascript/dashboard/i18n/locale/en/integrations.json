@@ -596,12 +596,26 @@
         "CAPABILITIES": "Can do",
         "INBOX": "Inbox",
         "UNLINKED": "Not connected yet",
-        "NONE": "No capabilities"
+        "NONE": "No capabilities",
+        "SEARCH": "Search by number",
+        "NO_MATCH": "No number matches that search.",
+        "ACTIONS": "Actions",
+        "CONNECT_SMS": "Connect SMS",
+        "NO_SMS": "No SMS on this number",
+        "LOAD_MORE": "Load more",
+        "A2P_NOTICE": "US number: sending needs A2P 10DLC registration approved in Twilio."
       },
       "API": {
         "CONNECTED": "Twilio connected",
         "DISCONNECTED": "Twilio disconnected",
         "ERROR": "Could not reach Twilio"
+      },
+      "PROVISION": {
+        "TITLE": "Connect this number for SMS",
+        "MESSAGE": "Creates an inbox for {number} and points its Twilio SMS webhook here. Nothing else on the number changes.",
+        "INBOX_NAME": "Inbox name",
+        "CONFIRM": "Create inbox",
+        "SUCCESS": "Inbox created and webhook set on Twilio"
       }
     }
   },

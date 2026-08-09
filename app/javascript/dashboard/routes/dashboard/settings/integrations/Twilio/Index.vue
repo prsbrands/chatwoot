@@ -1,6 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useDebounceFn } from '@vueuse/core';
+import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import TwilioAPI from 'dashboard/api/integrations/twilio';
@@ -11,14 +14,22 @@ import SettingsLayout from '../../SettingsLayout.vue';
 import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
 
 const { t } = useI18n();
+const store = useStore();
+const router = useRouter();
 
 const isLoading = ref(true);
 const isSaving = ref(false);
+const isLoadingMore = ref(false);
 const connection = ref({ connected: false });
 const numbers = ref([]);
+const nextPageUrl = ref(null);
+const search = ref('');
 const smsWebhookUrl = ref('');
 const form = ref({ account_sid: '', auth_token: '' });
 const disconnectDialogRef = ref(null);
+const provisionDialogRef = ref(null);
+const provisionTarget = ref(null);
+const inboxName = ref('');
 
 const canSubmit = computed(
   () => form.value.account_sid.trim() && form.value.auth_token.trim()
@@ -29,10 +40,14 @@ const alertError = error =>
     error.response?.data?.error || t('INTEGRATION_SETTINGS.TWILIO.API.ERROR')
   );
 
-const fetchNumbers = async () => {
+const fetchNumbers = async ({ append = false } = {}) => {
   try {
-    const { data } = await TwilioAPI.numbers();
-    numbers.value = data.numbers;
+    const { data } = await TwilioAPI.numbers({
+      search: search.value,
+      pageUrl: append ? nextPageUrl.value : null,
+    });
+    numbers.value = append ? [...numbers.value, ...data.numbers] : data.numbers;
+    nextPageUrl.value = data.next_page_url;
     smsWebhookUrl.value = data.sms_webhook_url;
   } catch (error) {
     alertError(error);
@@ -49,6 +64,19 @@ const fetchAll = async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+// A busca roda no Twilio, não em memória — sem debounce seria uma chamada à API
+// por tecla digitada.
+const runSearch = useDebounceFn(() => fetchNumbers(), 400);
+watch(search, () => {
+  if (connection.value.connected) runSearch();
+});
+
+const loadMore = async () => {
+  isLoadingMore.value = true;
+  await fetchNumbers({ append: true });
+  isLoadingMore.value = false;
 };
 
 const connect = async () => {
@@ -80,6 +108,30 @@ const confirmDisconnect = async () => {
   }
 };
 
+const openProvisionDialog = number => {
+  provisionTarget.value = number;
+  inboxName.value = number.friendly_name || `SMS ${number.phone_number}`;
+  provisionDialogRef.value.open();
+};
+
+const confirmProvision = async () => {
+  isSaving.value = true;
+  try {
+    await TwilioAPI.provisionSms({
+      phone_number: provisionTarget.value.phone_number,
+      name: inboxName.value,
+    });
+    useAlert(t('INTEGRATION_SETTINGS.TWILIO.PROVISION.SUCCESS'));
+    provisionDialogRef.value.close();
+    store.dispatch('inboxes/get');
+    await fetchNumbers();
+  } catch (error) {
+    alertError(error);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 const copyWebhook = async () => {
   await copyTextToClipboard(smsWebhookUrl.value);
   useAlert(t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.COPIED'));
@@ -91,6 +143,15 @@ const capabilityList = number =>
   Object.entries(number.capabilities)
     .filter(([, enabled]) => enabled)
     .map(([name]) => name.toUpperCase());
+
+// O 10DLC bloqueia o envio, não a capability — o Twilio segue reportando SMS
+// num número americano não registrado. Só o console do Twilio sabe o status
+// real, então aqui é aviso, não diagnóstico.
+const needsA2pNotice = number =>
+  number.capabilities.sms && number.phone_number.startsWith('+1');
+
+const goToInbox = inbox =>
+  router.push({ name: 'settings_inbox_show', params: { inboxId: inbox.id } });
 
 onMounted(fetchAll);
 </script>
@@ -186,13 +247,26 @@ onMounted(fetchAll);
         </div>
 
         <!-- Números -->
-        <div class="flex flex-col gap-2">
-          <p class="text-sm font-medium text-n-slate-12">
-            {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.TITLE') }}
-          </p>
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-4">
+            <p class="text-sm font-medium text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.TITLE') }}
+            </p>
+            <Input
+              v-model="search"
+              class="w-64"
+              :placeholder="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SEARCH')"
+            />
+          </div>
+
           <p v-if="!numbers.length" class="text-sm text-n-slate-11">
-            {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.EMPTY') }}
+            {{
+              search
+                ? $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NO_MATCH')
+                : $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.EMPTY')
+            }}
           </p>
+
           <table v-else class="min-w-full divide-y divide-n-weak">
             <thead>
               <tr class="text-left text-sm text-n-slate-11">
@@ -202,8 +276,11 @@ onMounted(fetchAll);
                 <th class="py-2 pr-4 font-medium">
                   {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CAPABILITIES') }}
                 </th>
-                <th class="py-2 font-medium">
+                <th class="py-2 pr-4 font-medium">
                   {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.INBOX') }}
+                </th>
+                <th class="py-2 font-medium text-right">
+                  {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.ACTIONS') }}
                 </th>
               </tr>
             </thead>
@@ -216,8 +293,15 @@ onMounted(fetchAll);
                   <p class="text-xs text-n-slate-11">
                     {{ number.friendly_name }}
                   </p>
+                  <p
+                    v-if="needsA2pNotice(number)"
+                    class="mt-1 flex items-center gap-1 text-xs text-n-amber-11"
+                  >
+                    <span class="i-lucide-info size-3 shrink-0" />
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.A2P_NOTICE') }}
+                  </p>
                 </td>
-                <td class="py-3 pr-4">
+                <td class="py-3 pr-4 align-top">
                   <div class="flex flex-wrap gap-1">
                     <span
                       v-for="capability in capabilityList(number)"
@@ -234,19 +318,73 @@ onMounted(fetchAll);
                     </span>
                   </div>
                 </td>
-                <td class="py-3">
-                  <span v-if="number.inbox" class="text-n-slate-12">
+                <td class="py-3 pr-4 align-top">
+                  <button
+                    v-if="number.inbox"
+                    class="text-n-brand hover:underline"
+                    @click="goToInbox(number.inbox)"
+                  >
                     {{ number.inbox.name }}
-                  </span>
+                  </button>
                   <span v-else class="text-n-slate-10">
                     {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.UNLINKED') }}
+                  </span>
+                </td>
+                <td class="py-3 text-right align-top whitespace-nowrap">
+                  <Button
+                    v-if="!number.inbox"
+                    sm
+                    blue
+                    ghost
+                    :label="
+                      $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CONNECT_SMS')
+                    "
+                    :disabled="!number.capabilities.sms"
+                    @click="openProvisionDialog(number)"
+                  />
+                  <span
+                    v-if="!number.capabilities.sms"
+                    class="block text-xs text-n-slate-10"
+                  >
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NO_SMS') }}
                   </span>
                 </td>
               </tr>
             </tbody>
           </table>
+
+          <div v-if="nextPageUrl" class="flex justify-center pt-2">
+            <Button
+              sm
+              slate
+              faded
+              :label="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.LOAD_MORE')"
+              :is-loading="isLoadingMore"
+              @click="loadMore"
+            />
+          </div>
         </div>
       </div>
+
+      <Dialog
+        ref="provisionDialogRef"
+        :title="$t('INTEGRATION_SETTINGS.TWILIO.PROVISION.TITLE')"
+        :description="
+          $t('INTEGRATION_SETTINGS.TWILIO.PROVISION.MESSAGE', {
+            number: provisionTarget?.phone_number,
+          })
+        "
+        :confirm-button-label="
+          $t('INTEGRATION_SETTINGS.TWILIO.PROVISION.CONFIRM')
+        "
+        :is-loading="isSaving"
+        @confirm="confirmProvision"
+      >
+        <Input
+          v-model="inboxName"
+          :label="$t('INTEGRATION_SETTINGS.TWILIO.PROVISION.INBOX_NAME')"
+        />
+      </Dialog>
 
       <Dialog
         ref="disconnectDialogRef"
