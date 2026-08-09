@@ -11,7 +11,9 @@ lugar certo é o Silero, local.
 """
 
 import asyncio
+import time
 
+import httpx
 from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
@@ -36,12 +38,15 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketTransport,
 )
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
+from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy import (
+    MuteUntilFirstBotCompleteUserMuteStrategy,
+)
 from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
     SpeechTimeoutUserTurnStopStrategy,
 )
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
-from .chatwoot import ConfigError
+from .chatwoot import ConfigError, report_call
 
 
 def _language(code: str | None):
@@ -122,7 +127,7 @@ def _tts(config: dict, language: Language | None) -> ElevenLabsTTSService:
     )
 
 
-async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> None:
+async def run_call(websocket, stream_id: str, call_id: str, from_number: str, config: dict) -> None:
     """Conduz uma chamada até o WebSocket fechar."""
     persona = config["persona"]
     # Escutar e falar são decisões separadas: o transcritor pode estar em
@@ -187,7 +192,13 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
             # Rede de segurança para quando a transcrição não volta (ruído de
             # linha). O padrão de 5 s é uma eternidade numa chamada.
             user_turn_stop_timeout=2.0,
-            user_mute_strategies=[] if persona["interruptible"] else [AlwaysUserMuteStrategy()],
+            # A saudação nunca é interrompível, mesmo em persona interrompível:
+            # quem atende costuma dizer "alô?" assim que a linha abre, e isso
+            # cortava a abertura no meio. Depois da primeira fala do bot, vale a
+            # escolha da persona.
+            user_mute_strategies=[MuteUntilFirstBotCompleteUserMuteStrategy()]
+            if persona["interruptible"]
+            else [AlwaysUserMuteStrategy()],
         ),
     )
 
@@ -229,5 +240,67 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
     # PipelineTask (idle_timeout_secs), que é o caso que custa por minuto sem
     # ninguém do outro lado.
     logger.info(f"call {call_id} started as '{persona['slug']}'")
+    started_at = time.monotonic()
     await PipelineRunner(handle_sigint=False).run(task)
-    logger.info(f"call {call_id} finished")
+    duration = int(time.monotonic() - started_at)
+    logger.info(f"call {call_id} finished after {duration}s")
+
+    await report_call(
+        {
+            "call_sid": call_id,
+            "phone_number": config["call"]["phone_number"],
+            "from_number": from_number,
+            "duration_seconds": duration,
+            "transcript": _transcript_of(context),
+            "summary": await _summarise(context, config["llm"]),
+        }
+    )
+
+
+# O prompt do sistema é instrução, não conversa, e a abertura escrita já está no
+# histórico como fala do bot — as duas ficam de fora do transcrito.
+def _transcript_of(context: LLMContext) -> list[dict]:
+    return [
+        {"role": message["role"], "content": message["content"]}
+        for message in context.get_messages()
+        if message.get("role") in ("user", "assistant") and isinstance(message.get("content"), str)
+    ]
+
+
+async def _summarise(context: LLMContext, llm: dict) -> str:
+    """Duas linhas sobre o que a chamada rendeu, para quem for retomar o lead.
+
+    Best-effort de propósito: um resumo que falha não pode levar junto a
+    transcrição, que é o que realmente importa registrar.
+    """
+    turns = _transcript_of(context)
+    if not turns:
+        return ""
+
+    conversation = "\n".join(f"{t['role']}: {t['content']}" for t in turns)
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(
+                f"{llm['base_url'].rstrip('/')}/chat/completions",
+                headers={"Authorization": f"Bearer {llm['api_key']}"},
+                json={
+                    "model": llm["model"],
+                    "max_tokens": 200,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                "Resume esta llamada telefónica en dos o tres frases, en español. "
+                                "Di quién llamó, qué necesita y cuál es el siguiente paso. "
+                                "Sin preámbulo."
+                            ),
+                        },
+                        {"role": "user", "content": conversation},
+                    ],
+                },
+            )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+    except Exception as error:
+        logger.warning(f"summary skipped: {type(error).__name__}: {error}")
+        return ""

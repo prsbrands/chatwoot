@@ -50,6 +50,7 @@ async def voice_stream(websocket: WebSocket) -> None:
             websocket=websocket,
             stream_id=call_data["stream_id"],
             call_id=call_data["call_id"],
+            from_number=custom.get("from_number", ""),
             config=config,
         )
     except ConfigError as error:
