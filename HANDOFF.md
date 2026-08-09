@@ -1,0 +1,366 @@
+# HANDOFF — CortexGen Chat
+
+Última sessão: 2026-08-09 · Instância: https://prs.cortexgen.cloud
+
+---
+
+## ▶️ RETOMAR AQUI — Fase 3c + primeira chamada do bot
+
+Produção está em **`6ff9e88ce`** (o commit `b44254315` está no GitHub mas **ainda não foi para a imagem** — sobe no próximo deploy; é só uma mensagem de erro de diagnóstico).
+
+**Fases 0, 1, 2 entregues e validadas com tráfego real. A Fase 3 está no ar, faltando só a chave da ElevenLabs para a primeira chamada atendida por bot.**
+
+### O que falta para ouvir o bot atender (tudo pelo painel, sem deploy)
+
+1. **Settings → Integrations → AI Providers → ElevenLabs** → colar a chave. O preset já preenche URL e formato.
+2. **Bot Personas → uma persona → seção Voz**: transcritor = OpenRouter, modelo `deepgram/nova-3`; voz = ElevenLabs, `voice_id` da biblioteca; idioma `es`; primeira mensagem.
+3. **Twilio → Voz → rota do +16893539100**: "Atendida por" = Voice bot (ou manter humano e pôr "se ninguém atender" = passar para o bot, que é o transbordo).
+
+**Não usar um Nathan de texto como está**: o prompt tem 11,7 KB e registro escrito. Voz precisa de prompt curto e falado — clonar e encurtar. Prompt longo em chamada é latência direta.
+
+### Fase 3 — o que já está em produção
+
+| Peça | Onde |
+|---|---|
+| `bot_providers.kinds` (`llm`/`stt`/`tts`) + preset ElevenLabs | `db/botlayer/bot_voice.sql`, aplicado |
+| Campos de voz na persona + view `bot_persona_resolved` | idem |
+| Rota com `answer_mode`/`no_answer_action`/`bot_persona_slug` | migration `20260810000001`, aplicada |
+| TwiML `<Connect><Stream>` | `app/controllers/twilio/voice_routing_controller.rb` |
+| Endpoint `/voice_agent/config` (Bearer) | `app/controllers/voice_agent/`, `app/services/voice/` |
+| Serviço `cortexgen-voice` | `services/cortexgen-voice/`, rodando em `/opt/cortexgen-voice` |
+| `wss://prs.cortexgen.cloud/voice-stream` | location no vhost do painel |
+
+**Verificado em 09/08:** health 200; handshake WebSocket real através do nginx OK; endpoint de config responde 401 sem token, 404 em número desconhecido, 422 em rota sem bot. Backup do vhost em `/root/prs.vhost.bak-*`.
+
+### Correção de premissa que economizou uma conta
+
+**O OpenRouter serve Deepgram** — `deepgram/nova-3`, US$0,0043/min, o mesmo preço do Deepgram direto, na mesma chave que já responde as mensagens. Não aparece em `/api/v1/models` porque não é modelo de chat; está em `/api/v1/providers`. Mas é **REST em lote** (`/api/v1/audio/transcriptions`), não streaming: `/api/v1/realtime` dá 404. Por isso o VAD (Silero) roda local, recorta o turno e manda o trecho. O Pipecat ainda carrega sozinho o Smart Turn v3 local, que julga se a frase acabou em vez de só medir silêncio. TTS é ElevenLabs direto, que faz streaming de verdade.
+
+### Ainda aberto na Fase 3/4
+
+- **3c — fim de chamada vira conversa**: transcrição, resumo e duração numa inbox de voz. Não construído.
+- **Custo e latência por chamada**: `PipelineTask` já sobe com `enable_metrics`/`enable_usage_metrics`; falta coletar e gravar.
+- **Concorrência**: quantas chamadas simultâneas a VPS aguenta é medição, não estimativa.
+- Chamada **saindo** do softphone segue sem funcionar (`voice_url` do domínio SIP é nil) — lacuna da Fase 2.
+
+### Armadilha: a API do Pipecat muda entre versões menores
+
+Na 1.7 o `allow_interruptions` do `PipelineParams` **não existe mais** (virou `user_mute_strategies` no agregador), o VAD saiu do transport e virou `VADProcessor` no pipeline, e `model=`/`voice_id=` viraram `settings=Settings(...)`. Nada disso quebra no build — só na chamada. Por isso o `smoke.py` vai dentro da imagem e **roda antes de subir**: instancia cada peça com config falsa, sem gastar crédito. Foi ele que pegou os três.
+
+---
+
+Plano completo em `PLAN-TWILIO-VOZ.md`.
+
+### O que já funciona em produção
+
+| Fase | Commit | Entrega |
+|---|---|---|
+| 0 | `d6c5771c3` | Twilio conectado **por conta** (Settings → Integrations → Twilio), validado contra a API antes de gravar, token criptografado. Números listados com as capabilities de cada um |
+| 1 | `19c59c3d5` | Inbox de SMS em 1 clique, com o `sms_url` gravado no número pela API. Paginação (`page_size: 25`) + busca do lado do Twilio. Aviso de A2P 10DLC em `+1` |
+| 2 | `fa80e1eda` | Voz entrando: rotas próprias, domínio SIP e credenciais provisionados pelo painel, roteamento por número, transbordo para mensagem quando não atendem |
+
+**Provado com tráfego real em 09/08:**
+- SMS entrando e saindo no **+16893539100** (inbox 15, conversa 17, saída `delivered` — o A2P não barrou)
+- Chamada de voz entrando, tocando no Zoiper e **atendida** (`TwilioVoiceCall` com `status=completed`, `+16893291777 → +16893539100`)
+- Domínio SIP **`cortexgen-prs.sip.twilio.com`** criado pelo painel, credencial `paulo` registrada no Zoiper
+
+**Migrations aplicadas:** `20260809000001` (`twilio_credentials`), `20260809000002` (`twilio_voice_routes`, `twilio_voice_calls`).
+**Flags ligadas na conta 1:** `whatsapp_sessions`, `bot_personas`, `ai_providers`, `twilio_integration`.
+
+### Lacunas conhecidas, por ordem de importância
+
+1. **Chamada SAINDO do softphone não funciona** — o domínio SIP está com `voice_url = nil`, então o Twilio não sabe o que fazer com uma chamada originada no Zoiper e devolve ocupado. Não foi construído porque a Fase 2 era receber. Exige decidir qual número aparece como identificador, restrição de destino e registro da chamada.
+2. **`bot_providers` só tem provedores de LLM.** Voz precisa de STT e TTS, que o OpenRouter não faz. Falta a coluna `kind` (`llm`/`stt`/`tts`) — adiada de propósito na Fase 0 porque nada a leria até a Fase 3.
+3. **Paginação/busca só na aba Números**; a aba Voz lista tudo direto.
+4. **Assistente de escrita CortexGen AI nunca foi testado de verdade** — chave OpenAI gravada, endpoint vazio (= `api.openai.com`). Abrir uma conversa e usar reescrever/resumir. Se falhar, os erros úteis são `captain.api_key_missing` e qualquer coisa do `Llm::FeatureRouter` (modelo fora do catálogo de `config/llm.yml`).
+5. Aba Channels com a coluna Agent bot: ligar o switch e conferir em Settings → Inboxes → Bot Configuration que o vínculo nasceu sozinho.
+6. Widget real no site; handoff do bot ("quiero hablar con un consultor" deve virar `open`); multi-turno com histórico no prompt.
+7. Limpar contatos/conversas de teste e as inboxes duplicadas de WhatsApp (#12, #13, #14).
+
+### Os 9 outros números do Twilio são da GoHighLevel
+
+Só o **+16893539100** migrou para cá. Os demais seguem apontados para `msgsndr.com` / `leadconnectorhq.com`, e **4 dos 6 domínios SIP servem a GHL em produção**. O painel os lista como externos e sem botão de editar, de propósito: reapontar um deles derrubaria a telefonia de um cliente. Não mudar isso sem pedir.
+
+## Protocolo de deploy (custou duas quedas em 09/08)
+
+1. `git push` do Mac
+2. `git pull` na VPS
+3. `docker build -t cortexgen-chat:test`
+4. **Teste de fumaça: SUBIR a imagem `:test` numa porta livre e exigir HTTP 200.** Não é opcional e não é o mesmo que o passo 3 — ver abaixo
+5. Só então `docker build -t cortexgen-chat:v1` + `docker compose up -d --force-recreate rails sidekiq`
+6. **Esperar em loop até `/api` devolver 200** (~24 s). **Nunca** encadear `docker compose exec` logo após o `up -d`
+7. `docker compose ps` + as 3 rotas; rollback para o commit anterior se o passo 6 estourar
+
+### Por que o passo 4 existe
+
+**`docker build` compila os assets e carrega o código, mas não sobe o Rails.** Erros de boot — callback inexistente, initializer quebrado, constante ausente — passam pelo build e só aparecem quando o servidor monta. Foi assim que `skip_before_action :verify_authenticity_token` (callback que o `ApplicationController` do Chatwoot não instala) passou no `:test` verde e deixou o site em crash-loop por 4 minutos.
+
+```bash
+docker run -d --name cgtest --network cortexgen-chat_default --env-file .env \
+  -e RAILS_ENV=production -e NODE_ENV=production -e INSTALLATION_ENV=docker \
+  -p 127.0.0.1:3099:3000 --entrypoint bundle cortexgen-chat:test exec rails s -p 3000 -b 0.0.0.0
+sleep 25
+curl -s -o /dev/null -w '%{http_code}\n' -H 'X-Forwarded-Proto: https' -H 'Host: prs.cortexgen.cloud' http://127.0.0.1:3099/api
+docker rm -f cgtest
+```
+
+Sem `X-Forwarded-Proto: https` a resposta é 301, não 200 — não confundir com falha.
+
+### Migrations não rodam sozinhas
+
+O `docker/entrypoints/rails.sh` **não** executa `db:migrate`. Aplicar à mão antes de recriar os containers:
+
+```bash
+docker run --rm --network cortexgen-chat_default --env-file .env -e RAILS_ENV=production \
+  cortexgen-chat:test bundle exec rails db:migrate
+```
+
+### O rollback custa um rebuild
+
+A tag `:v1` é sobrescrita a cada deploy, então voltar exige `git checkout <sha>` + build. Vale migrar para tags versionadas (`:v1-<sha>`) — ainda não feito.
+
+### Nenhum lint roda no checkout do Mac
+
+Sem `node_modules` e sem rbenv, `rubocop` e `eslint` nunca rodam localmente. O `docker build` é o único gate de sintaxe, e o passo 4 é o único gate de boot.
+
+### Acesso do Claude
+
+`.claude/settings.local.json` (fora do git) libera `git push` e `ssh` para `187.77.20.155` com a chave `id_ed25519_cortexgen`. O Claude executa push, deploy e testes direto.
+
+## Bugs corrigidos (não repetir)
+
+### Guard descartava tudo (sessão 07/08)
+O Chatwoot atribui a conversa **ao próprio agent bot**, então o payload chega com `meta.assignee_type = "AgentBot"`. O filtro "humano já assumiu" lia qualquer `assignee` preenchido e abortava — o Nathan se filtrava. Correção: `if (meta.assignee_type === 'User') return [];`
+
+### Historico com 401 "Authorization failed" (sessão 08/08)
+Token de **Agent Bot só serve para uma whitelist fechada** de endpoints — `app/controllers/concerns/access_token_auth_helper.rb` (`BOT_ACCESSIBLE_ENDPOINTS`): em `conversations` só `show/toggle_status/toggle_typing_status/toggle_priority/create/update/custom_attributes`; em `messages` só `create`. **`messages#index` (o GET do Historico) não está na lista** → 401. E `conversations#show` não substitui: devolve só a última mensagem.
+Correção: nó **Historico** usa credencial `Chat User Token` (Header Auth `api_access_token` com token de **User** do painel, Profile Settings → Access Token). **Responde** e **Handoff** continuam com o token do bot (`CortexGen Chat Bot (api_access_token)`) — é isso que assina a resposta como Nathan.
+
+---
+
+## Estado dos subsistemas
+
+### Infra ✅
+- VPS srv1365122 (`187.77.20.155`), stack em `/opt/cortexgen-chat` (imagem `cortexgen-chat:v1`)
+- rails (porta 3021) + sidekiq + postgres pgvector + redis — isolado do Chatwoot antigo (`chat.cortexgen.cloud`, porta 3020)
+- nginx + Let's Encrypt (renova sozinho, expira 2026-11-05)
+- Fork `prsbrands/chatwoot`, branch `feature/cortexgen-whitelabel`. Produção e GitHub sincronizados em `9d2c4ef94`
+- Edição Community/MIT: `DISABLE_ENTERPRISE=1`, `DISABLE_TELEMETRY=true`
+- Conta: **PRS Global Business** (id 1), flag `disable_branding` ativa
+
+### Canais ✅
+| Inbox | Canal | Como conecta |
+|---|---|---|
+| 2 — WA Com Cortex | WhatsApp (API) | OpenWA `com.cortexgen.cloud`, plugin chatwoot-adapter instância `teste`, ingress `/api/ingress/chatwoot-adapter/teste/chatwoot` |
+| 8 — prsbrands | Instagram DM | App Meta **CortexComm** (1012302828635509), webhook `/webhooks/instagram` |
+| 9 — PRS Brands | Facebook Messenger | Mesmo app, webhook `/bot`, Login Config `1809600620222184` |
+| 10 — Website | Widget do site | Token `MrtKJhxPBc9DgjjCaU4so6o1`, cor #7C3AED |
+
+- Instâncias do chatwoot-adapter **só podem ser criadas via API REST** (o painel gera um secret que nunca bate). Receita: README em github.com/rmyndharis/OpenWA-plugins/tree/main/chatwoot-adapter
+- App Review da Meta não foi feito — funciona para as contas próprias (admin do app). Só necessário se terceiros forem conectar.
+
+### Camada de bots — Supabase self-hosted ✅
+`supabase.cortexgen.cloud` (container `supabase-db`), schema `public`, prefixo `bot_`.
+
+| Objeto | Papel |
+|---|---|
+| `bot_personas` | Identidade, `system_prompt`, provider, `model`, `fallback_model`, temperature, `max_tokens`, `handoff_rules` |
+| `bot_channel_routes` | inbox → persona; `is_active` liga/desliga o bot no canal; `overrides` jsonb; `channel_kind` text\|voice |
+| `bot_knowledge_docs` / `bot_persona_knowledge` | Base de conhecimento; `is_global` entra no prompt de todas as personas |
+| `bot_conversation_state` | Memória curta por conversa (ainda **não usada** pelo workflow) |
+| `bot_interactions` | Log por chamada: modelo, tokens, latência, status |
+| `bot_route_resolved` (view) | O que o n8n consome: 1 GET por inbox, devolve `composed_prompt` = persona + conhecimento |
+
+- **RLS ligado sem policies**: anon key retorna `[]`, só a `service_role` lê. View com `security_invoker = true`. Chaves em `/opt/supabase/.env`.
+- Personas ativas: **`nathan-website`** (inbox 10), **`nathan-social-dm`** (inboxes 8/9) e **`nathan-whatsapp`** (inbox 2) — as duas últimas são clones do nathan-website com etiqueta do canal, criadas 2026-08-08 via `persona_nathan_social.sql` / `persona_nathan_whatsapp.sql` (scratchpad). Todas as 4 rotas ativas.
+- Persona `atendimento-prs` está **obsoleta, não usar como está**: aponta `provider: anthropic` / `claude-sonnet-5` — o workflow chama OpenRouter e esse ID de modelo quebraria na chamada. Se reaproveitar (ex.: WhatsApp), trocar para openrouter + modelo válido ou clonar de um dos Nathans.
+- Base `prs-brands-core` (6,6 KB, global) vinda de `md/prs-brands-knowledge-base.md`. Decisões editoriais: escrita em espanhol; seção 10 (notas internas) excluída; seção 8 virou **guardrails** — proibido citar percentuais de resultado, inventar preço/prazo ou confirmar agenda.
+- Prompt final do Nathan ≈ 11,6 KB (~3k tokens).
+- SQL versionável no scratchpad: `bot_layer.sql`, `bot_seed.sql`, `bot_knowledge.sql`, `kb_prsbrands.sql`, `persona_nathan.sql`, `openrouter.sql`. **Vale mover para o repo** se a camada virar permanente.
+
+### Workflow n8n ✅ (publicado e testado, 3,9 s de latência)
+`pd5V9pdaldRLUu4C` · webhook `https://n8n.cortexgen.cloud/webhook/cortexgen-bot`
+
+```
+Webhook → Guard → Persona (Supabase) → Historico (10 últimas msgs)
+  → MontaPrompt → LLM (OpenRouter, reasoning off) → Interpreta → Responde
+  → Log (bot_interactions) → PrecisaHandoff → Handoff (toggle_status: open)
+```
+
+- Credenciais por nó: **Persona/Log** `Supabase account 2` · **LLM** `OpenRouter account 2` · **Historico** `Chat User Token` (token de User) · **Responde/Handoff** `CortexGen Chat Bot (api_access_token)` (token do bot).
+- **Provider OpenRouter**, formato OpenAI-compat. Primário `deepseek/deepseek-v4-flash-0731` ($0.09/$0.18 por M, 1.05M ctx), fallback `tencent/hy3` ($0.13/$0.53, 262K) via o array `models` — o roteador cai no segundo na mesma chamada. Trocar de modelo = UPDATE em `bot_personas`, sem mexer no workflow.
+- Merge fields do GHL (`{{contact.first_name}}`, `{{contact.email}}`, `{{contact.call_summary}}`) são substituídos no `MontaPrompt` pelos dados do contato Chatwoot. O atributo `call_summary` existe nos contatos.
+- Handoff **determinístico** (keywords + `max_turns` + `content_filter`), não depende do modelo decidir.
+- Webhook responde 200 imediato (`responseMode: onReceived`) — senão o Chatwoot considera falha e reenvia enquanto o modelo pensa.
+- Erros do OpenRouter vêm no corpo com HTTP 200; `Interpreta` detecta e falha explicitamente.
+
+### Operação do bot no painel do Chatwoot
+
+- **Onde ver as conversas do bot**: elas ficam com status **Pending** (o painel abre no filtro Open por padrão — trocar o filtro de status no topo da lista, ou usar "All Conversations"). Quando o handoff dispara, o workflow faz `toggle_status: open` e a conversa entra na fila Open normal — esse é o sinal para humano assumir.
+- **Humano pode intervir a qualquer momento**: se a conversa for atribuída a um User, o Guard se retira sozinho (`assignee_type === 'User'`).
+- **Atribuição do bot é por inbox, em DUAS camadas que precisam concordar**:
+  1. Chatwoot: Settings → Inboxes → *inbox* → **Bot Configuration** → selecionar "Nathan" (é o que faz o webhook disparar). Hoje: só inbox 10.
+  2. Supabase: rota em `bot_channel_routes` com `is_active = true` (é o que dá persona ao `MontaPrompt`). Hoje: só inbox 10; rotas 2/8/9 inativas.
+  Só Chatwoot ligado → Guard passa mas MontaPrompt descarta (sem persona). Só Supabase → webhook nem dispara.
+- **"Give the team a way to reach you." / "Get notified by email" NÃO são do bot** — são o *email collect box* do widget (`inbox.enable_email_collect`, template disparado por `app/services/message_templates/hook_execution_service.rb` quando o contato não tem e-mail). O visitante via como cartão pedindo e-mail. **Desligado na inbox 10 em 2026-08-08** (`enable_email_collect: false`) — o prompt do Nathan já pede e-mail no momento certo da conversa. Religar (se quiser): Settings → Inboxes → Website — PRS Brands → Configuration → "Enable email collect box". Esses templates também disparam o webhook do bot, mas o Guard os descarta (`message_type !== 'incoming'`).
+
+---
+
+## Armadilhas descobertas (custaram tempo)
+
+- **SDK do n8n MCP**: parâmetros só persistem em `config: { parameters: {...} }`. Usar `config: {...}` direto ou `parameters: {...}` passa na validação (`valid: true`) e grava o nó **vazio**, sem erro. Conferir sempre lendo `workflow_entity.nodes` no sqlite de `n8n-y4jd-n8n-1` (`/home/node/.n8n/database.sqlite`) — o mesmo banco serve para ler execuções (`execution_entity` / `execution_data`, formato de string-table: valores numéricos são índices no array).
+- **`update_workflow` do n8n MCP APAGA as credenciais** dos nós HTTP (e regenera os IDs dos nós) — o campo `credentials` no código SDK é descartado silenciosamente. Receita para editar o workflow do bot sem clique manual: (1) `docker exec n8n-y4jd-n8n-1 n8n export:workflow --id=pd5V9pdaldRLUu4C --output=/tmp/wf.json`; (2) editar o JSON (nós, e reinjetar `credentials: {tipo: {id, name}}` — ids na tabela `credentials_entity`); (3) `n8n import:workflow --input=...` (desativa o workflow!); (4) publicar de novo (MCP `publish_workflow` reativa). Sintaxe do SDK que valida: nós como objetos `{type, version, name, config:{parameters}}` e `wf.add(a).to(b).to(c)`.
+- **Cópia do sqlite do n8n para debug**: copiar também o `-wal` (`database.sqlite-wal`), senão a cópia fica minutos atrasada e execuções recentes "não existem".
+- **Claude Sonnet 5 / Opus 5** (se um dia voltar para a Anthropic direto): rejeitam `temperature`/`top_p`/`top_k` com **HTTP 400**, e o *adaptive thinking* é o padrão quando `thinking` é omitido — com `max_tokens` limitando pensamento + resposta juntos. Mandar `thinking: {type:'disabled'}` ou dar folga no `max_tokens`.
+- **Endpoint público de widget**: `/public/api/v1/inboxes/{token}/...` é para inbox do tipo **API**, não para widget de site. Para testar o widget, injetar a mensagem via `rails runner` (receita no topo).
+
+---
+
+## Pendências
+
+### 1. E-mail — bloqueado por rede (a mais antiga)
+`mail.prsbrands.com` (GreenGeeks, 65.60.38.74) é **inalcançável da VPS**: ping 100% loss e timeout em todas as portas (25/80/443/465/587/993). `mtr` mostra a rota morrendo no salto 4 — borda da Hostinger → GreenGeeks. É bloqueio de rede/edge, **não** o firewall CSF do servidor (por isso o suporte "não vê bloqueio"; o whitelist de 24h não teve efeito). Da rede local do Paulo tudo conecta.
+
+O `.env` já está com SMTP correto (`mail.prsbrands.com:465`, `postmaster@prsbrands.com`, senha gravada, `SMTP_TLS=true`) — só não trafega.
+
+**Recomendado:** relay transacional (Brevo 300/dia ou Resend 3k/mês) mantendo remetente `@prsbrands.com`, validando SPF/DKIM por DNS; trocar `SMTP_*` no `.env` + `docker compose up -d --force-recreate rails sidekiq`. IMAP sofre o mesmo bloqueio → inbox de e-mail terá que ser por **encaminhamento** (`MAILER_INBOUND_EMAIL_DOMAIN` + ingress Mailgun/SES).
+
+**Enquanto isso:** reset de senha e convites de agente não saem.
+
+### 2. Expandir o bot para os outros canais ✅ (WhatsApp validado com número real em 2026-08-09)
+**Instagram (8) e Messenger (9): funcionando** ✅ — testados com DM real em 2026-08-08, rotas ativas com `nathan-social-dm`. (Diagnóstico útil do primeiro DM sem resposta, execução 9455: webhook e Guard OK, `Persona` voltou `[]` porque a rota estava inativa — o sintoma de rota inativa é o bot ficar mudo com execução `success`.)
+**WhatsApp (2): funcionando** ✅ — validado em 2026-08-09 com número real: bot desconectado e reconectado num número novo pela página de sessões, respondendo. Persona `nathan-whatsapp` (`persona_nathan_whatsapp.sql` no scratchpad), canal via OpenWA em `com.cortexgen.cloud` (2 plugins próprios + chatwoot-adapter). Gestão de sessões pelo painel é a pendência 4.
+
+### 3. Agente de voz
+Canal de voz nativo é enterprise (fora do escopo MIT). Desenho combinado: a chamada acontece no stack de voz próprio (`voice-agent` / `voicept.cortexgen.cloud` na mesma VPS) e o n8n empurra transcrição + resumo + gravação para uma **inbox API "Voz"** no Chatwoot. `bot_channel_routes.channel_kind` já prevê `voice`.
+
+### 4. Sessões do WhatsApp pelo painel — CONSTRUÍDO em 2026-08-08 (commit `9eabcc9fe`)
+Decisões do Paulo: público em duas etapas (interno → clientes finais) e página nativa no fork. Motivação extra: o plugin **`prs-agent` v0.2.2** no OpenWA (sessão `teste`) faz papel parecido com o do Nathan — número novo em sessão nova evita o conflito e usa a integração Chatwoot+n8n.
+
+**O que foi entregue (fase 1, admin-only):**
+- Card "WhatsApp Sessions" em Settings → Integrations (aparece só com `OPENWA_API_URL`/`OPENWA_API_KEY` no env) → página que lista sessões com status/telefone/inbox, cria sessão nova, mostra **QR para parear** (polling 3 s até `ready`), start/stop/logout/delete.
+- Backend: `lib/integrations/openwa/client.rb` (client HTTParty, header `X-API-Key`), `lib/integrations/openwa/provision_service.rb` (orquestração), controller `api/v1/accounts/{id}/integrations/openwa/sessions` (admin-only via `check_admin_authorization?`; erros do gateway → 422 com mensagem).
+- **Provisionamento em 1 clique**: sessão OpenWA → inbox `Channel::Api` com `webhook_url` = ingress do adapter (webhook **escopado à inbox**, assinado com `channel.secret` — melhor que webhook de conta, que manda eventos de todos os canais) → instância do adapter cunhada via REST com `secret = channel.secret` (mata a armadilha do 401) → vínculo `AgentBotInbox` (bot selecionável no dialog) → rota em `bot_channel_routes` via PostgREST (persona de `OPENWA_BOT_PERSONA_SLUG`, default `nathan-whatsapp`) → start da sessão. Rollback best-effort se algum passo falhar.
+- Deleção remove sessão + instâncias do adapter; **inbox é preservada** (apagar inbox destrói conversas — fica no fluxo normal de Settings → Inboxes).
+- Env no `/opt/cortexgen-chat/.env` (backup em `.env.bak-openwa`): `OPENWA_API_URL=https://com.cortexgen.cloud`, `OPENWA_API_KEY` (= API_MASTER_KEY do container openwa-api), `SUPABASE_REST_URL`, `SUPABASE_SERVICE_ROLE_KEY` (de `/opt/supabase/.env`), `OPENWA_BOT_PERSONA_SLUG=nathan-whatsapp`.
+
+**Melhorias de UX (commit `4faef5c54`, feedback do Paulo no primeiro uso):** a lista mostra o **nome** da inbox (não `#id`); o dialog de criação tem seletor de inbox — padrão "criar inbox nova" (recomendado), mas dá para **reaproveitar uma inbox de API existente** (o webhook dela é reapontado para o ingress da sessão; inboxes já usadas por outra sessão não aparecem); textos deixam explícito que **cada sessão = um número**, que várias sessões rodam em paralelo e que nada precisa ser criado antes. Inbox reaproveitada nunca é destruída no rollback; vínculo de bot e rota Supabase viraram upsert.
+
+**Deploy + dry-run validados em 2026-08-08**: imagem rebuildada, envs ativas, e um provisionamento de teste (`zz-teste-painel`) criou toda a cadeia — sessão com QR real (`qr_ready` + imagem), inbox com webhook no ingress, instância do adapter, Nathan vinculado e rota no Supabase (`bot_route=created`) — e foi limpo em seguida. Falta só o teste com pareamento de número real, que exige o telefone.
+
+**Fase 2 (pendente):** multi-tenant — mapear conta ↔ sessão (hoje a página lista TODAS as sessões do gateway, ok para uso interno), esconder sessões de outras contas, e provisionamento self-service por cliente.
+
+**API do OpenWA (referência):** NestJS em `127.0.0.1:2785` (público via nginx `com.cortexgen.cloud`), auth header `X-API-Key`, spec em `/home/n8n-deploy/apps/openwa/openapi.json`. Sessões: `POST/GET /api/sessions`, `/{id}/qr` (devolve `{qrCode: dataURL, status}`), `/start|stop|logout`, status ∈ created|initializing|qr_ready|authenticating|ready|disconnected|action_required|failed. Instâncias de plugin: `/api/integration/plugins/chatwoot-adapter/instances`.
+
+### 5. Bot Personas no painel — CONSTRUÍDO em 2026-08-08 (commit `0644c3d23`)
+Pedido do Paulo (com referência aos cards do GHL): o usuário editar ele mesmo persona, modelos e base de conhecimento do bot, sem SQL.
+
+**Entregue (admin-only, mesmo padrão do OpenWA — Rails proxya o Supabase com a service key; card some sem as envs):**
+- Card **"Bot Personas"** em Settings → Integrations + botão "Bot personas" na tela de **Bots** (Settings → Bots).
+- Aba **Personas**: cards por persona; editor com prompt (textarea mono), provider/model/fallback, temperature, max_tokens, keywords de handoff (vírgula) e max_turns, ativo/inativo. Slug travado na edição. Criar/excluir persona (excluir falha com mensagem se houver rota apontando — FK).
+- Aba **Knowledge base**: docs markdown com global/vinculado por persona (checkboxes), prioridade, ativo. Salvar reescreve os vínculos em `bot_persona_knowledge`.
+- Aba **Channels**: tabela inbox → persona com switch liga/desliga (upsert em `bot_channel_routes`); lembra na ajuda que a inbox também precisa do agent bot no Bot Configuration.
+- Backend: `lib/integrations/botlayer/client.rb` (PostgREST, valida UUIDs antes de interpolar em filtros) + controllers em `api/v1/accounts/{id}/integrations/botlayer/{personas,knowledge,routes}`.
+- **Mudança de prompt/modelo vale na próxima mensagem** — o workflow n8n lê a view a cada chamada, sem deploy.
+- Fase 2 junto com o multi-tenant do OpenWA: personas não têm coluna de conta (globais); ok para uso interno.
+**Editores em página dedicada (commit `93347405d`)** — o textarea do prompt aparecia com 2 linhas: `rows="14"` não segura altura dentro do flex column limitado do Dialog (o item encolhe). Persona e documento saíram do modal para **páginas full-screen**, montadas **fora do `SettingsWrapper`** (que impõe `max-w-5xl` e altura automática) — rotas de nível superior em `integrations.routes.js`. Layout: editor grande à esquerda (`flex-1` + `min-h-0`, o `min-h-0` é o que impede o encolhimento) e sidebar de configurações à direita. O header da persona mostra **quantos caracteres chegam ao modelo** (prompt + base de conhecimento), que antes era invisível. Combobox virou componente compartilhado `ModelCombobox.vue`.
+
+**AI Providers como integração própria + chaves por conta (commit `335873044`)** — pergunta do Paulo: "onde o cliente a quem eu cedo o painel coloca as chaves dele?". Respostas:
+- **Canais de mensageria (Twilio, 360dialog, WhatsApp Cloud, Telegram, Line, Bandwidth, e-mail)**: já é nativo do Chatwoot — Settings → Inboxes → Add Inbox, credenciais por conta e criptografadas (`encrypts :auth_token`). Não duplicar.
+- **LLMs**: era a lacuna real. A aba Providers saiu de dentro de Bot Personas e virou o card **AI Providers** em Integrations, com **`bot_providers.chatwoot_account_id`** (unique por conta+slug, SQL em `bot_providers_per_account.sql`) — cada conta só lê/escreve as próprias chaves (filtro aplicado no client PostgREST em toda operação). A view resolve o provider dentro da conta da rota.
+- Presets de 1 clique (OpenRouter, Anthropic, OpenAI, Groq, DeepSeek, Mistral) preenchem URL + api_style; só falta colar a chave. Chave nunca volta ao browser (mascarada).
+- **Bug de largura corrigido**: as páginas de editor renderizavam com ~890px porque o root era flex item sem `flex-1` dentro do `<main class="flex flex-1">` do Dashboard.vue. Editor de conhecimento perdeu a sidebar (design errado para documento) — metadados em barra compacta no topo, texto em largura total.
+
+- **Uma tela só para ligar o bot num canal — RESOLVIDO**: antes exigia duas chaves em telas diferentes (Bot Configuration na inbox + switch da rota em Channels) — no caso da `numero2`, mensagens chegavam e a rota estava ativa, mas o `AgentBotInbox` não existia e o bot ficou mudo. Agora a aba **Channels** tem coluna **Agent bot** (obrigatória, já pré-selecionada quando a conta tem um único bot) e o `routes_controller` sincroniza as duas pontas: salvar com o switch ligado cria/ativa o `AgentBotInbox`; desligar o switch ou apagar a rota **desfaz o vínculo** — mas só se o bot ligado for o da própria rota, para não mexer em bot atribuído por fora. Bots globais passaram a ser resolvidos por `AgentBot.accessible_to` (o `account.agent_bots.find` do provisionamento OpenWA daria 404 num bot global listado no seletor).
+**Catálogo de fornecedores (commit `948fad663`)** — o campo de modelo era texto livre e o provider não fazia nada (o workflow mandava tudo para o OpenRouter; `atendimento-prs` com `anthropic`+`claude-sonnet-5` teria quebrado). Agora:
+- Tabela **`bot_providers`** (`slug`, `label`, `base_url`, `api_style` openai|anthropic, `api_key`, `models` jsonb) — SQL em `bot_providers.sql` no scratchpad. `CHECK` de `bot_personas.provider` removido; a view `bot_route_resolved` ganhou `provider_base_url`/`provider_api_style`/`provider_api_key` **no fim** (`CREATE OR REPLACE VIEW` só permite acrescentar colunas no final — reordenar exige DROP).
+- Aba **Providers**: cadastrar qualquer endpoint OpenAI-compat ou Anthropic com chave própria; botão **Sync models** lê o `/models` do fornecedor e grava o catálogo (nada de lista fixa envelhecendo). Chave mascarada na leitura; campo vazio na edição mantém a atual.
+- Campo de modelo virou `input` + `datalist`: sugere os modelos sincronizados **e** aceita ID digitado. Vale para principal e fallback.
+- Card da persona avisa em vermelho quando o provider não existe no catálogo ou não tem chave.
+- **Workflow provider-aware**: `MontaPrompt` monta URL/headers/body pelo `api_style` e ramifica no nó **EscolheProvider** — OpenRouter segue pela credencial do n8n (chave nunca entra nos dados de execução), demais fornecedores vão pelo **LLMCustom** com headers montados. Estilo anthropic manda `system` fora do array, **omite `temperature`** e envia `thinking:{type:'disabled'}` (Claude 5 rejeita temperature com 400). `Interpreta` lê os dois formatos de resposta e de usage.
+- Validado em produção: conversas 9 e 10 responderam em **4,8 s / 4,4 s** pelo caminho OpenRouter após a mudança; **Sync models** do OpenRouter trouxe **400 modelos** ao vivo.
+
+**Combobox + fallback cross-provider (commit `778d2bb43`, feedback do Paulo):**
+- O campo de modelo usava `<datalist>` nativo, que **esconde as opções quando o campo já tem valor** (por isso "a lista não carrega") — trocado por combobox próprio: abre no foco, filtra ao digitar, aceita qualquer ID.
+- Fallback ganhou linha própria com **Fallback provider** (Select, "Same as primary" = null) + Fallback model (combobox com o catálogo do provider do fallback). Coluna `bot_personas.fallback_provider` nova; view expõe `fallback_provider_{base_url,api_style,api_key}` (SQL `bot_fallback_provider.sql` no scratchpad).
+- Workflow: nós **TentaFallback** (IF) + **LLMFallback** (HTTP) depois do LLM/LLMCustom, que agora têm `onError: continueRegularOutput` (erro vira dado). `MontaPrompt` monta `fallbackSpec` (URL/headers/body do provider do fallback); `Interpreta` detecta o formato da resposta pelo shape (openai|anthropic), não pelo contexto.
+- **Regra da chave**: fallback em outro provider (ou retry separado no mesmo) só acontece se a chave do provider do fallback estiver gravada no `bot_providers` — sem chave, só o fallback nativo do array do OpenRouter (que NÃO cobre erro de validação, ex. modelo inexistente: o request morre antes do roteamento).
+- **Provado E2E** com provider mock (workflow `ZZ Mock LLM`, arquivado): primário com modelo inválido → LLMFallback chamou o mock → resposta postada na conversa 13, log `mock-fallback-1`. Regressão do caminho normal OK (conversas 11 e 14, ~2,6 s).
+
+- **Deploy validado em 2026-08-08**: client lê personas (4), docs (`prs-brands-core`) e rotas (inboxes 2/8/9/10/12 ativas) em produção. Obs.: as experiências do Paulo com o pareamento criaram inboxes extras ("WhatsApp — Numero2" #14, "WhatsApp — Prs" duplicadas ~#12/#13) e uma rota ativa na inbox 12 — dá para revisar/limpar pela própria aba Channels + Settings → Inboxes.
+
+### 6. Super Admin — conciliação com o painel de conta (2026-08-09)
+
+Auditoria do que fizemos no Agent Dashboard vs. o que o Super Admin enxerga. **Branding já estava ok** (nav diz "CortexGen Chat", cards premium podados do `app/helpers/super_admin/features.yml` no commit de white label). **Agent bots** também: com o `AgentBot.accessible_to` de hoje, bot global criado no Super Admin funciona no painel de conta.
+
+**Entregue:**
+- **Feature flags por conta**: `whatsapp_sessions`, `bot_personas`, `ai_providers` em `config/features.yml` (`column: feature_flags_ext_1`, `enabled: false`). Aparecem em Super Admin → Accounts → Edit. Checadas em `Integrations::App#active?/enabled?` (esconde o card) **e** nos controllers (`raise Pundit::NotAuthorizedError`, que é o gate de verdade). `bot_personas` e `ai_providers` são separadas de propósito: ceder o painel de bots não obriga a ceder as chaves de LLM.
+- **Config global saiu do ENV**: `OPENWA_API_URL/KEY/BOT_PERSONA_SLUG` e `SUPABASE_REST_URL/SERVICE_ROLE_KEY` passaram a ser lidas por `GlobalConfigService.load`, com entradas em `config/installation_config.yml` e páginas **Super Admin → Settings → WhatsApp Gateway / Bot Layer**. O `GlobalConfigService` cai no ENV enquanto o `InstallationConfig` não existir e **grava o valor do ENV na primeira leitura** — não precisa migrar nada, e as envs do `.env` podem sair depois.
+- **Prontidão das outras integrações** (nenhuma ligada, decisão do Paulo): `shopify_integration` perdeu `chatwoot_internal` (a flag era invisível no Super Admin self-hosted, então o card nunca ligava) e a página **AI Assistant** (`config_key: captain`) voltou ao Super Admin. Agora toda integração listada no painel é conectável só colando credencial — exceto o card **OpenAI**, ver abaixo.
+
+**Card OpenAI é morto** — não há processor para `'openai'` no `HookJob` e a implementação está em `enterprise/`. Com `DISABLE_ENTERPRISE=1` o cliente cola a chave e nada acontece. Decidir: remover do `config/integration/apps.yml` ou apontar para a nossa camada de bots.
+
+**Achado que corrige uma premissa**: os serviços de escrita do composer (`rewrite`, `summarize`, `reply_suggestion`, `label_suggestion`) estão em `lib/captain/` e `lib/llm/` — **árvore MIT**, não enterprise. `Llm::Config` lê `CAPTAIN_OPEN_AI_API_KEY` + `CAPTAIN_OPEN_AI_ENDPOINT` do `InstallationConfig` e o `openai_api_base` é configurável, ou seja **aponta para o OpenRouter que já usamos**. O que está em `enterprise/` é o Captain "produto" (assistentes, documentos, RAG). Falta validar ponta a ponta; a flag `captain_integration` está marcada `premium`.
+
+**Ainda aberto (fase 2 multi-tenant):** `bot_personas` e `bot_knowledge_docs` não têm coluna de conta (só `bot_channel_routes` e `bot_providers` têm) — admin da conta B edita persona da conta A.
+
+### 7. CortexGen AI — assistente de escrita (2026-08-09, commit `0759ce331`)
+
+O "Captain" do Chatwoot são **duas coisas** com o mesmo nome:
+
+| | Captain **produto** | Captain **tasks** |
+|---|---|---|
+| O que é | Assistentes, documentos, RAG, copilot lateral | Assistente de escrita do compositor: reescrever, resumir, sugerir resposta, sugerir etiquetas |
+| Código | `enterprise/` | `lib/captain/` + `lib/llm/` — **MIT** |
+| Flag | `captain_integration` (premium, off) | `captain_tasks` — `enabled: true`, **já ligada em toda conta** |
+
+Só o segundo é nosso. Renomeado para **CortexGen AI** em todas as strings EN visíveis; rotas, flags e classes seguem `captain*` de propósito, para não divergir do upstream.
+
+**De quem é a chave** — `lib/captain/base_task_service.rb:179`, precedência:
+1. **Chave da conta**: card **OpenAI** em Settings → Integrations do cliente (`account.hooks` do app `openai`). Todos os 7 serviços de tarefa marcam `use_account_openai_hook? = true`.
+2. **Fallback, chave nossa**: `CAPTAIN_OPEN_AI_API_KEY` em Super Admin → Settings → CortexGen AI.
+
+O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugestões de etiqueta. **O card OpenAI não é decorativo** — ele não processa eventos (não está no `HookJob`), é cofre de chave. Não remover.
+
+**Pegadinha do endpoint**: `api_base` lê só `CAPTAIN_OPEN_AI_ENDPOINT`, que é **global**. Todas as chaves — a nossa e a dos clientes — têm que ser do mesmo fornecedor. Decisão de 2026-08-09: **começar com OpenAI direto** (endpoint vazio = `https://api.openai.com/`).
+
+**Para trocar por OpenRouter depois** não basta trocar o endpoint: `config/llm.yml` é um catálogo fechado por feature (default `gpt-4.1-mini`) e o `Llm::FeatureRouter` só aceita modelo dessa lista, validada contra `config/llm_models.json`. Os IDs teriam que virar `openai/gpt-4.1-mini` etc. — reescrita do catálogo, ~meio dia.
+
+`CAPTAIN_OPEN_AI_MODEL` **não afeta o assistente de escrita** (só o runtime de agents em `config/initializers/ai_agents.rb`); os modelos vêm do `config/llm.yml` por feature.
+
+### 8. Cosméticas
+- **Logos** são placeholders gerados (círculo violeta + "C", #7C3AED) — trocar pela arte oficial mantendo os nomes de arquivo em `public/brand-assets/`, favicons em `public/`, e assets em `app/javascript/{widget,dashboard,design-system}`; depois rebuildar a imagem.
+- **Locales não-EN** ainda dizem "Chatwoot" (`app/javascript/dashboard/i18n/locale/pt_BR/` etc.).
+- **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
+- **Segurança do webhook**: `https://n8n.cortexgen.cloud/webhook/cortexgen-bot` é um endpoint aberto. O Chatwoot assina os payloads (`X-Chatwoot-Signature`, HMAC com o Webhook Secret do bot); validar no Guard são ~10 linhas.
+
+---
+
+## Operação
+
+```bash
+# Deploy — SEMPRE construir com :test antes (ver "Protocolo de deploy" no topo)
+cd /opt/cortexgen-chat/src && git pull \
+  && docker build -f docker/Dockerfile -t cortexgen-chat:test . \
+  && docker build -f docker/Dockerfile -t cortexgen-chat:v1 . \
+  && cd .. && docker compose up -d --force-recreate rails sidekiq \
+  && docker compose ps
+```
+
+```bash
+# Serviço de voz — o smoke test NÃO é opcional (ver armadilha do Pipecat no topo)
+cd /opt/cortexgen-voice && docker compose build \
+  && docker compose run --rm --entrypoint python voice smoke.py \
+  && docker compose up -d && curl -s localhost:8095/health
+```
+
+- Logs do bot de voz: `docker logs -f cortexgen-voice`
+- Logs: `docker compose logs -f rails` em `/opt/cortexgen-chat`
+- **Mudança no `.env` exige `up -d --force-recreate`** — `restart` não relê o env
+- Rails console: `docker compose exec rails bundle exec rails console`
+- Supabase: `docker exec supabase-db psql -U postgres -d postgres`
+- Acesso SSH: `ssh -i ~/.ssh/id_ed25519_cortexgen root@187.77.20.155`
+
+## Decisão de licença (não reabrir sem motivo)
+
+Rodamos a **edição Community (MIT)** com `DISABLE_ENTERPRISE=1`. Isso é o que torna o white label legal e desliga o job noturno que reverteria o branding. SLA, Captain AI, custom roles, audit logs, SAML e canal de voz ficam de fora — são da licença comercial da Chatwoot. Para tê-los, é comprar a assinatura e remover o env var.
