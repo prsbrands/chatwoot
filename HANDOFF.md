@@ -8,15 +8,12 @@
 
 Produção está em **`ba368f2a7`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
-**Fases 0, 1, 2 entregues e validadas com tráfego real. A Fase 3 está no ar, faltando só a chave da ElevenLabs para a primeira chamada atendida por bot.**
+**Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
 
-### O que falta para ouvir o bot atender (tudo pelo painel, sem deploy)
+**Duas coisas para ajustar na persona antes de mostrar para cliente:**
 
-1. **Settings → Integrations → AI Providers** → clicar em **ElevenLabs** e em **Deepgram** e colar só a chave de cada um. Presets ficam no topo da tela; URL, protocolo e capacidades já vêm preenchidos e só aparecem se clicar em "avançado".
-2. **Bot Personas → uma persona → seção Voz**: transcritor = Deepgram, modelo `nova-3`; voz = ElevenLabs, `voice_id` da biblioteca; idioma `es`; primeira mensagem.
-3. **Twilio → Voz → rota do +16893539100**: "Atendida por" = Voice bot (ou manter humano e pôr "se ninguém atender" = passar para o bot, que é o transbordo).
-
-**Não usar um Nathan de texto como está**: o prompt tem 11,7 KB e registro escrito. Voz precisa de prompt curto e falado — clonar e encurtar. Prompt longo em chamada é latência direta.
+1. **Trocar `openai/gpt-4.1` por `openai/gpt-4.1-mini`** — 5× mais barato e menos irregular na latência (ver correção abaixo).
+2. **Encurtar o prompt.** Tem 14,5 KB de registro escrito, com instrução de se apresentar que faz o bot repetir a apresentação depois da frase de abertura. Voz quer prompt curto e falado.
 
 ### Fase 3 — o que já está em produção
 
@@ -45,7 +42,7 @@ Preço igual nos dois (US$0,0043/min). **Usar o direto** — 300 ms é muito qua
 
 O OpenRouter serve Deepgram mesmo, mas **só em lote**: `/api/v1/audio/transcriptions` existe, `/api/v1/realtime` dá 404. Não aparece em `/api/v1/models` porque não é modelo de chat — está em `/api/v1/providers`. (Verificar em `/models` foi um erro meu que o Paulo corrigiu.)
 
-Em qualquer um dos dois o Silero roda local para os turnos, e o Pipecat carrega sozinho o Smart Turn v3 local, que julga se a frase acabou em vez de só medir silêncio. TTS é ElevenLabs direto, que faz streaming.
+Em qualquer um dos dois o Silero roda local para os turnos. **O Smart Turn v3 foi desligado** — ver "Primeira chamada real" mais abaixo. TTS é ElevenLabs direto, que faz streaming.
 
 **Cartesia (TTS) e Gemini (LLM) não estão ligados** — o Paulo tem as chaves, mas nenhuma persona aponta para elas e cada uma exige uma ramificação no `_stt`/`_tts` do serviço. São ~10 minutos cada quando houver motivo (comparar voz, ou tirar o hop do OpenRouter no LLM).
 
