@@ -27,6 +27,10 @@ const API_STYLES = [
 // se quer duplicar.
 const KINDS = ['llm', 'stt', 'tts'];
 
+// Deepgram e ElevenLabs são falados pelo SDK deles, que já sabe o próprio
+// endereço. Pedir URL nesses casos é pedir o que o usuário não tem para dar.
+const STYLES_WITH_OWN_ENDPOINT = ['deepgram', 'elevenlabs'];
+
 // Atalhos para os fornecedores mais comuns: preenchem URL, formato e para que
 // servem, restando só a chave. Base URLs conforme a documentação de cada API.
 const PRESETS = [
@@ -115,13 +119,35 @@ const toggleKind = kind => {
 // para listar.
 const servesModels = provider => (provider.kinds || ['llm']).includes('llm');
 
+const needsBaseUrl = computed(
+  () => !STYLES_WITH_OWN_ENDPOINT.includes(form.value.api_style)
+);
+
+// Botão desabilitado sem dizer por quê é um beco sem saída: quem não sabe qual
+// campo falta fica clicando num botão morto.
+const missing = computed(() => {
+  const gaps = [];
+  const data = form.value;
+  if (!data.label) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL'));
+  if (!data.slug) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG'));
+  if (needsBaseUrl.value && !data.base_url) {
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL'));
+  }
+  if (!data.kinds?.length) {
+    gaps.push(t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS'));
+  }
+  return gaps;
+});
+
 const save = async () => {
   isSaving.value = true;
   const data = form.value;
   const payload = {
     slug: data.slug,
     label: data.label,
-    base_url: data.base_url,
+    // A coluna é NOT NULL, e um fornecedor com endereço próprio não tem URL
+    // para gravar.
+    base_url: data.base_url || '',
     api_style: data.api_style,
     kinds: data.kinds,
     api_key: data.api_key,
@@ -311,13 +337,7 @@ onMounted(fetchProviders);
         "
         :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
         :is-loading="isSaving"
-        :disable-confirm-button="
-          isSaving ||
-          !form.label ||
-          !form.slug ||
-          !form.base_url ||
-          !form.kinds?.length
-        "
+        :disable-confirm-button="isSaving || missing.length > 0"
         @confirm="save"
       >
         <div class="flex flex-col gap-4">
@@ -373,6 +393,7 @@ onMounted(fetchProviders);
               />
             </div>
             <Input
+              v-if="needsBaseUrl"
               v-model="form.base_url"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL')"
               placeholder="https://api.groq.com/openai/v1"
@@ -380,6 +401,9 @@ onMounted(fetchProviders);
                 $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL_HELP')
               "
             />
+            <p v-else class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.OWN_ENDPOINT') }}
+            </p>
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
@@ -417,6 +441,14 @@ onMounted(fetchProviders);
             </span>
             <Switch v-model="form.is_active" />
           </div>
+
+          <p v-if="missing.length" class="text-xs text-n-amber-11">
+            {{
+              $t('INTEGRATION_SETTINGS.AI_PROVIDERS.MISSING', {
+                fields: missing.join(', '),
+              })
+            }}
+          </p>
         </div>
       </Dialog>
 

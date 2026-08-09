@@ -197,6 +197,8 @@
       "LOADING": "Loading providers",
       "QUICK_ADD": "Pick your provider and paste the key — everything else is filled in for you:",
       "ADVANCED": "Provider not listed, or need to change the endpoint?",
+      "OWN_ENDPOINT": "This provider is reached through its own SDK, so there is no URL to enter.",
+      "MISSING": "Still needed before saving: {fields}",
       "KINDS": "This key is used for",
       "KINDS_HELP": "A voice call needs three things, and one account often covers more than one of them: OpenRouter answers and transcribes, OpenAI does all three. Tick everything this key is allowed to do.",
       "KIND": {
