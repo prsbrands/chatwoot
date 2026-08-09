@@ -4,9 +4,9 @@
 
 ---
 
-## ▶️ RETOMAR AQUI — Fase 3c + primeira chamada do bot
+## ▶️ RETOMAR AQUI — fallback de LLM na chamada
 
-Produção está em **`c3cb18037`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
+Produção está em **`ba368f2a7`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
 **Fases 0, 1, 2 entregues e validadas com tráfego real. A Fase 3 está no ar, faltando só a chave da ElevenLabs para a primeira chamada atendida por bot.**
 
@@ -49,10 +49,42 @@ Em qualquer um dos dois o Silero roda local para os turnos, e o Pipecat carrega 
 
 **Cartesia (TTS) e Gemini (LLM) não estão ligados** — o Paulo tem as chaves, mas nenhuma persona aponta para elas e cada uma exige uma ramificação no `_stt`/`_tts` do serviço. São ~10 minutos cada quando houver motivo (comparar voz, ou tirar o hop do OpenRouter no LLM).
 
+### Fase 3c entregue — a chamada vira conversa, contato e lead
+
+Ao desligar, o serviço de mídia manda transcrição, duração e os dados do lead para `/voice_agent/calls`. O Chatwoot cria conversa numa inbox **própria de voz** (`Voz — <número>`, tipo `Channel::Api`, gravada em `twilio_voice_routes.voice_inbox_id`).
+
+**Por que inbox separada e não a de SMS do mesmo número:** naquela, mensagem de saída é enviada de verdade pelo Twilio — devolver ao cliente a transcrição da própria ligação por SMS seria um acidente caro. Inbox de API não envia nada sozinha.
+
+**Enriquecimento do contato** (mesma chamada de IA que faz o resumo, um request só): nome, e-mail, empresa e cidade saem da conversa; **país sai do número** via `TelephoneNumber` (`country_id` → ISO); WhatsApp assume o número de origem salvo se ditarem outro. Convenção do Chatwoot: `additional_attributes['country']` guarda o ISO e o `Contacts::SyncAttributes` espelha para `country_code`; `['city']` vira `location`; o contato passa a `lead`.
+
+**Cidade NÃO sai do telefone, de propósito.** O gem não fornece, e número diz onde a linha foi habilitada — em celular nem isso. O prompt de extração manda explicitamente não adivinhar cidade pelo país. Preencher por DDD daria dado errado com cara de certo.
+
+### Paciência ao soletrar — o que quebrou e como
+
+Numa chamada real quem ligou soletrou "arrowgen" e o bot respondeu na quarta letra:
+
+```
+[incoming] Yo voy a deletrear
+[incoming] a r r o
+[outgoing] Gracias,          ← cortou aqui
+```
+
+Silêncio sozinho não distingue fim de frase de pausa entre duas letras. Agora quem decide é o modelo: o Pipecat pede que ele marque cada resposta como turno completo ou incompleto (`FilterIncompleteUserTurnStrategies`), e só o completo libera a fala. **Sai de graça** — é a mesma resposta que já estava sendo gerada. As instruções padrão do Pipecat cobrem ser cortado e pensar alto; o caso de ditado foi acrescentado por cima.
+
+Interruptor visível na persona (`voice_wait_for_complete_turn`, padrão ligado) porque o mecanismo depende de o modelo obedecer a um formato — modelo pequeno que ignorar deixaria o bot mudo, que é exatamente a falha do Smart Turn.
+
+**Saudação cortada** foi outra coisa: quem atende diz "alô?" e isso interrompia a abertura. `MuteUntilFirstBotCompleteUserMuteStrategy` cala quem ligou até o bot terminar a primeira fala.
+
+### Correção: a latência do LLM varia muito mais do que a primeira medição sugeria
+
+Medi 0,103 s numa chamada e registrei como típico. Nas seguintes: **0,575 s, 1,132 s e 1,341 s**. O `gpt-4.1` é irregular, então trocar para `gpt-4.1-mini` ajuda latência **e** custo (5× mais barato: US$0,024 vs US$0,120 numa chamada de 3 min). Benchmark completo em https://claude.ai/code/artifact/bb9db886-7084-4e34-882d-3a9338cc8b73
+
 ### Ainda aberto na Fase 3/4
 
-- **3c — fim de chamada vira conversa**: transcrição, resumo e duração numa inbox de voz. Não construído.
+- **Fallback de LLM na chamada**: a persona já tem `fallback_provider`/`fallback_model` gravados e o serviço de voz **não os lê** — o bot de texto lê. Hoje um erro do OpenRouter derruba a chamada. É a lacuna nº 1.
+- **Aviso de alterações não salvas no editor de persona**: medi que os saves funcionam (três PATCH, tamanhos crescentes, 200 OK), mas sair pela seta ← descarta tudo em silêncio.
 - **Custo e latência por chamada**: `PipelineTask` já sobe com `enable_metrics`/`enable_usage_metrics`; falta coletar e gravar.
+- **Pronúncia**: a ElevenLabs lê "PRS" como "PE, r, essi". Contornado escrevendo foneticamente na frase de abertura; dicionário de pronúncia resolveria de verdade.
 - **Concorrência**: quantas chamadas simultâneas a VPS aguenta é medição, não estimativa.
 - Chamada **saindo** do softphone segue sem funcionar (`voice_url` do domínio SIP é nil) — lacuna da Fase 2.
 
