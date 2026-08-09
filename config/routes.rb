@@ -718,6 +718,12 @@ Rails.application.routes.draw do
     end
   end
 
+  # O que o serviço de mídia consome durante uma chamada. Autenticado por
+  # segredo compartilhado, não pela assinatura do Twilio.
+  namespace :voice_agent do
+    resource :config, only: [:show], controller: 'configs'
+  end
+
   get 'microsoft/callback', to: 'microsoft/callbacks#show'
   get 'google/callback', to: 'google/callbacks#show'
   get 'instagram/callback', to: 'instagram/callbacks#show'

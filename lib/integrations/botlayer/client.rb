@@ -4,6 +4,7 @@ class Integrations::Botlayer::Client
   class ApiError < StandardError; end
 
   UUID_FORMAT = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/
+  SLUG_FORMAT = /\A[a-z0-9][a-z0-9-]*\z/
 
   # Configuração fica em Super Admin → Settings → Bot Layer. O
   # GlobalConfigService cai no ENV enquanto o InstallationConfig não existir, e
@@ -26,6 +27,12 @@ class Integrations::Botlayer::Client
 
   def delete_persona(id)
     delete("bot_personas?id=eq.#{uuid!(id)}")
+  end
+
+  # Persona com a base de conhecimento já concatenada. É o que a chamada de voz
+  # consome: uma leitura, sem montar prompt do lado do Rails.
+  def resolved_persona(slug)
+    get("bot_persona_resolved?persona_slug=eq.#{slug!(slug)}&select=*").first
   end
 
   def knowledge_docs
@@ -99,6 +106,12 @@ class Integrations::Botlayer::Client
 
   def uuid!(value)
     raise ApiError, "invalid uuid: #{value}" unless value.to_s.match?(UUID_FORMAT)
+
+    value
+  end
+
+  def slug!(value)
+    raise ApiError, "invalid slug: #{value}" unless value.to_s.match?(SLUG_FORMAT)
 
     value
   end
