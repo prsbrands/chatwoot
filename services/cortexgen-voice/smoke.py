@@ -49,13 +49,23 @@ from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
 )
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
+from app.bot import _turn_strategies
+
 analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.6))
-strategies = UserTurnStrategies(
-    stop=[SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=0.6)]
-)
-# Se o Pipecat voltar a decidir o fim de turno sozinho, a chamada trava em
-# silêncio de 5 s — foi assim na primeira chamada real.
-assert type(strategies.stop[0]).__name__ == "SpeechTimeoutUserTurnStopStrategy"
+
+# Sem espera pelo fim do raciocínio, o turno fecha só por silêncio. Se o Pipecat
+# voltar a decidir isso sozinho, a chamada trava em silêncio de 5 s — foi assim
+# na primeira chamada real.
+plain = _turn_strategies({"endpoint_ms": 600, "wait_for_complete_turn": False})
+assert [type(s).__name__ for s in plain.stop] == ["SpeechTimeoutUserTurnStopStrategy"], plain.stop
+
+# Com espera, o silêncio vira só gatilho e quem fecha o turno é o modelo — é o
+# que segura o bot enquanto alguém soletra um e-mail.
+gated = _turn_strategies({"endpoint_ms": 600, "wait_for_complete_turn": True})
+assert "LLMTurnCompletionUserTurnStopStrategy" in [type(s).__name__ for s in gated.stop], gated.stop
+print("turn strategies:", [type(s).__name__ for s in gated.stop])
+
+strategies = plain
 pair = LLMContextAggregatorPair(
     LLMContext(messages=[{"role": "system", "content": "hola"}]),
     user_params=LLMUserAggregatorParams(

@@ -51,6 +51,7 @@ const emptyForm = () => ({
   voice_greeting_delay_ms: 300,
   voice_endpoint_ms: 600,
   voice_interruptible: true,
+  voice_wait_for_complete_turn: true,
 });
 
 // Um fornecedor só aparece onde a chave dele foi autorizada a servir.
@@ -305,6 +306,7 @@ const save = async () => {
     voice_greeting_delay_ms: Number(data.voice_greeting_delay_ms),
     voice_endpoint_ms: Number(data.voice_endpoint_ms),
     voice_interruptible: data.voice_interruptible,
+    voice_wait_for_complete_turn: data.voice_wait_for_complete_turn,
     handoff_rules: {
       ...data.handoff_rules,
       keywords: data.keywords
@@ -665,6 +667,17 @@ onMounted(load);
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.INTERRUPTIBLE') }}
               </span>
               <Switch v-model="form.voice_interruptible" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm text-n-slate-12">
+                  {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN') }}
+                </span>
+                <Switch v-model="form.voice_wait_for_complete_turn" />
+              </div>
+              <span class="text-xs text-n-slate-11">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN_HELP') }}
+              </span>
             </div>
           </section>
 

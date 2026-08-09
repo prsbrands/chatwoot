@@ -279,6 +279,8 @@
         "FIRST_MESSAGE": "First message",
         "FIRST_MESSAGE_HELP": "Spoken word for word the moment the call connects, before the model is consulted — so every caller hears the same opening and hears it immediately. It is also added to the conversation, so the bot knows it has already introduced itself.",
         "INTERRUPTIBLE": "Customer can interrupt",
+        "WAIT_TURN": "Wait until the caller finishes",
+        "WAIT_TURN_HELP": "The model judges whether the caller has actually finished before the bot answers, so it holds on through the pauses in a spelled-out email instead of talking over them. It costs nothing extra — the same reply decides it. Turn this off if you switch to a small model that stops answering: the model has to follow a response format for this to work.",
         "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model"
       },
       "KNOWLEDGE": {

@@ -56,7 +56,8 @@ class Voice::CallConfigService
       stt_language: persona['stt_language'],
       greeting_delay_ms: persona['voice_greeting_delay_ms'],
       endpoint_ms: persona['voice_endpoint_ms'],
-      interruptible: persona['voice_interruptible']
+      interruptible: persona['voice_interruptible'],
+      wait_for_complete_turn: persona['voice_wait_for_complete_turn']
     }
   end
 

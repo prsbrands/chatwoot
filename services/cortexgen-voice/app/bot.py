@@ -24,6 +24,7 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import (
+    FilterIncompleteUserTurnStrategies,
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
@@ -45,9 +46,48 @@ from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy im
 from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
     SpeechTimeoutUserTurnStopStrategy,
 )
+from pipecat.turns.user_turn_completion_mixin import (
+    USER_TURN_COMPLETION_INSTRUCTIONS,
+    UserTurnCompletionConfig,
+)
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
 from .chatwoot import ConfigError, report_call
+
+
+# O Pipecat já ensina o modelo a marcar se quem fala terminou. Falta o caso que
+# nos custou uma ligação: ditar letra por letra, com pausas longas entre elas,
+# que o silêncio sozinho lê como fim de frase.
+SPELLING_INSTRUCTIONS = f"""{USER_TURN_COMPLETION_INSTRUCTIONS}
+
+DICTATION — treat this as INCOMPLETE SHORT (○), always:
+- The user announced they are about to spell or dictate something
+  ("voy a deletrear", "te lo deletreo", "apunta", "let me spell that")
+- The last thing you received is loose letters, digits or fragments
+  ("a r r o", "jota o ese e", "cero seis")
+- A part-built email, domain or document number that is not usable yet
+Only mark ✓ once the spelled item is whole. Someone reciting an email pauses
+between letters, and answering into that pause is how you make them start over.
+"""
+
+
+def _turn_strategies(persona: dict) -> UserTurnStrategies:
+    """Quem decide que o turno de quem ligou acabou.
+
+    Por silêncio sempre; e, quando a persona pede, com o modelo julgando se a
+    frase realmente terminou antes de o bot responder. Esse julgamento sai de
+    graça: é a mesma chamada que já gera a resposta.
+    """
+    detector = [
+        SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=persona["endpoint_ms"] / 1000)
+    ]
+    if not persona.get("wait_for_complete_turn", True):
+        return UserTurnStrategies(stop=detector)
+
+    return FilterIncompleteUserTurnStrategies(
+        stop=detector,
+        config=UserTurnCompletionConfig(instructions=SPELLING_INSTRUCTIONS),
+    )
 
 
 def _language(code: str | None):
@@ -179,13 +219,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=vad_analyzer,
-            user_turn_strategies=UserTurnStrategies(
-                stop=[
-                    SpeechTimeoutUserTurnStopStrategy(
-                        user_speech_timeout=persona["endpoint_ms"] / 1000
-                    )
-                ]
-            ),
+            user_turn_strategies=_turn_strategies(persona),
             # Rede de segurança para quando a transcrição não volta (ruído de
             # linha). O padrão de 5 s é uma eternidade numa chamada.
             user_turn_stop_timeout=2.0,

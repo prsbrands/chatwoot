@@ -63,7 +63,12 @@ alter table bot_personas
   -- Os três tempos que definem a sensação da conversa.
   add column if not exists voice_greeting_delay_ms integer not null default 300,
   add column if not exists voice_endpoint_ms integer not null default 600,
-  add column if not exists voice_interruptible boolean not null default true;
+  add column if not exists voice_interruptible boolean not null default true,
+  -- O próprio modelo julga se quem ligou terminou o raciocínio, e o turno fica
+  -- aberto enquanto não terminou. É o que impede o bot de responder no meio de
+  -- alguém soletrando um e-mail. Interruptor porque o mecanismo depende de o
+  -- modelo obedecer a um formato: se ele não obedecer, o bot para de responder.
+  add column if not exists voice_wait_for_complete_turn boolean not null default true;
 
 comment on column bot_personas.voice_greeting_delay_ms is
   'Espera antes do bot falar quando a chamada conecta. Curto demais e ele fala por cima do "alô".';
@@ -120,8 +125,9 @@ select
   p.voice_greeting_delay_ms,
   p.voice_endpoint_ms,
   p.voice_interruptible,
-  -- Acrescentada no fim: CREATE OR REPLACE VIEW só aceita coluna nova no final.
-  p.stt_language
+  -- Acrescentadas no fim: CREATE OR REPLACE VIEW só aceita coluna nova no final.
+  p.stt_language,
+  p.voice_wait_for_complete_turn
 from bot_personas p
 left join knowledge k on k.persona_id = p.id;
 
