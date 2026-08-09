@@ -390,6 +390,14 @@ Rails.application.routes.draw do
             namespace :twilio do
               resource :credentials, only: [:show, :create, :destroy]
               resources :numbers, only: [:index, :create]
+              resources :voice_routes, only: [:index, :create, :destroy]
+              resources :sip, only: [:index, :create] do
+                member do
+                  get :credentials
+                  post :create_credential
+                  delete :destroy_credential
+                end
+              end
             end
             namespace :botlayer do
               resources :personas, only: [:index, :create, :update, :destroy]
@@ -696,6 +704,11 @@ Rails.application.routes.draw do
   namespace :twilio do
     resources :callback, only: [:create]
     resources :delivery_status, only: [:create]
+
+    # Roteamento de voz próprio. As rotas de voz da Chatwoot logo abaixo são da
+    # edição enterprise e não existem nesta instalação.
+    post 'voice/incoming', to: 'voice_routing#incoming', as: :voice_incoming
+    post 'voice/dial_status', to: 'voice_routing#dial_status', as: :voice_dial_status
 
     if ChatwootApp.enterprise?
       post 'voice/call/:phone', to: 'voice#call_twiml', as: :voice_call

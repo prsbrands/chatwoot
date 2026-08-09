@@ -26,6 +26,17 @@ class Integrations::Twilio::AccountClient
     raise ApiError, twilio_message(e)
   end
 
+  # Aponta o voice_url do número para o nosso roteamento. Só é chamado para o
+  # número que o cliente escolheu — os demais seguem com o destino que têm.
+  def point_voice_webhook(phone_number, url)
+    number = client.incoming_phone_numbers.list(phone_number: phone_number).first
+    raise ApiError, "Number #{phone_number} not found in this Twilio account" if number.blank?
+
+    client.incoming_phone_numbers(number.sid).update(voice_url: url, voice_method: 'POST')
+  rescue ::Twilio::REST::RestError => e
+    raise ApiError, twilio_message(e)
+  end
+
   private
 
   def first_page(search)

@@ -12,10 +12,14 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import SettingsLayout from '../../SettingsLayout.vue';
 import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
+import TwilioVoice from './Voice.vue';
 
 const { t } = useI18n();
 const store = useStore();
 const router = useRouter();
+
+const TABS = ['numbers', 'voice'];
+const activeTab = ref('numbers');
 
 const isLoading = ref(true);
 const isSaving = ref(false);
@@ -221,6 +225,25 @@ onMounted(fetchAll);
           />
         </div>
 
+        <div class="flex gap-1 border-b border-n-weak">
+          <button
+            v-for="tab in TABS"
+            :key="tab"
+            class="px-4 py-2 text-sm font-medium -mb-px border-b-2"
+            :class="
+              activeTab === tab
+                ? 'border-n-brand text-n-brand'
+                : 'border-transparent text-n-slate-11 hover:text-n-slate-12'
+            "
+            @click="activeTab = tab"
+          >
+            {{ $t(`INTEGRATION_SETTINGS.TWILIO.TABS.${tab.toUpperCase()}`) }}
+          </button>
+        </div>
+
+        <TwilioVoice v-if="activeTab === 'voice'" :numbers="numbers" />
+
+        <template v-else>
         <!-- Webhook de SMS -->
         <div class="flex flex-col gap-2">
           <p class="text-sm font-medium text-n-slate-12">
@@ -364,6 +387,7 @@ onMounted(fetchAll);
             />
           </div>
         </div>
+        </template>
       </div>
 
       <Dialog
