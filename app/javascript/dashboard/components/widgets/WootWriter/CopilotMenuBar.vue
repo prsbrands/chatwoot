@@ -3,6 +3,8 @@ import { computed, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useElementSize, useWindowSize } from '@vueuse/core';
 import { useMapGetter } from 'dashboard/composables/store';
+import { useAccount } from 'dashboard/composables/useAccount';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownBody from 'next/dropdown-menu/base/DropdownBody.vue';
@@ -33,6 +35,7 @@ const props = defineProps({
 const emit = defineEmits(['executeCopilotAction']);
 
 const { t } = useI18n();
+const { isCloudFeatureEnabled } = useAccount();
 
 const replyMode = useMapGetter('draftMessages/getReplyEditorMode');
 
@@ -136,11 +139,16 @@ const generalMenuItems = computed(() => {
     });
   }
 
-  items.push({
-    label: t('INTEGRATION_SETTINGS.OPEN_AI.REPLY_OPTIONS.ASK_COPILOT'),
-    key: 'ask_copilot',
-    icon: 'i-fluent-circle-sparkle-24-regular',
-  });
+  // Copilot needs an assistant, which belongs to Captain. The other entries here
+  // run on the account's own AI key, so without this check the menu offers one
+  // action that always fails.
+  if (isCloudFeatureEnabled(FEATURE_FLAGS.CAPTAIN)) {
+    items.push({
+      label: t('INTEGRATION_SETTINGS.OPEN_AI.REPLY_OPTIONS.ASK_COPILOT'),
+      key: 'ask_copilot',
+      icon: 'i-fluent-circle-sparkle-24-regular',
+    });
+  }
 
   return items;
 });
