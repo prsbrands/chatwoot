@@ -36,6 +36,10 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketTransport,
 )
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
+from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
+    SpeechTimeoutUserTurnStopStrategy,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
 from .chatwoot import ConfigError
 
@@ -156,10 +160,27 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
     )
     # Interromper é o padrão do Pipecat. Uma persona não-interrompível é a que
     # cala quem ligou enquanto o bot fala.
+    #
+    # O fim de turno é por silêncio, e não pelo Smart Turn que o Pipecat usa por
+    # padrão. O modelo semântico julgava espanhol ao telefone como frase
+    # inacabada e devolvia INCOMPLETE, então o turno só fechava no timeout de 5 s
+    # — tempo suficiente para quem ligou achar que a linha caiu, falar de novo e
+    # essa fala interromper a resposta que finalmente vinha. Silêncio permanente.
+    # Com o silêncio como critério, o "fim de turno" da persona manda de fato.
     aggregators = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=vad_analyzer,
+            user_turn_strategies=UserTurnStrategies(
+                stop=[
+                    SpeechTimeoutUserTurnStopStrategy(
+                        user_speech_timeout=persona["endpoint_ms"] / 1000
+                    )
+                ]
+            ),
+            # Rede de segurança para quando a transcrição não volta (ruído de
+            # linha). O padrão de 5 s é uma eternidade numa chamada.
+            user_turn_stop_timeout=2.0,
             user_mute_strategies=[] if persona["interruptible"] else [AlwaysUserMuteStrategy()],
         ),
     )

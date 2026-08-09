@@ -44,13 +44,28 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.processors.audio.vad_processor import VADProcessor
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
 
+from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
+    SpeechTimeoutUserTurnStopStrategy,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
+
 analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.6))
+strategies = UserTurnStrategies(
+    stop=[SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=0.6)]
+)
+# Se o Pipecat voltar a decidir o fim de turno sozinho, a chamada trava em
+# silêncio de 5 s — foi assim na primeira chamada real.
+assert type(strategies.stop[0]).__name__ == "SpeechTimeoutUserTurnStopStrategy"
 pair = LLMContextAggregatorPair(
     LLMContext(messages=[{"role": "system", "content": "hola"}]),
     user_params=LLMUserAggregatorParams(
-        vad_analyzer=analyzer, user_mute_strategies=[AlwaysUserMuteStrategy()]
+        vad_analyzer=analyzer,
+        user_turn_strategies=strategies,
+        user_turn_stop_timeout=2.0,
+        user_mute_strategies=[AlwaysUserMuteStrategy()],
     ),
 )
+print("turn stop:", type(pair.user()).__name__, "via", type(strategies.stop[0]).__name__)
 print("vad:", type(VADProcessor(vad_analyzer=analyzer)).__name__)
 print("aggregators:", type(pair.user()).__name__, type(pair.assistant()).__name__)
 
