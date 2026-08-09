@@ -6,7 +6,7 @@ class TwilioAPI extends ApiClient {
     super('integrations/twilio', { accountScoped: true });
   }
 
-  get credentials() {
+  credentials() {
     return axios.get(`${this.url}/credentials`);
   }
 
