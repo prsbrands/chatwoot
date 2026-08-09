@@ -18,6 +18,7 @@ const API_STYLES = [
   { value: 'openai', label: 'OpenAI-compatible' },
   { value: 'anthropic', label: 'Anthropic Messages' },
   { value: 'elevenlabs', label: 'ElevenLabs' },
+  { value: 'deepgram', label: 'Deepgram' },
 ];
 
 // O que cada chave serve. Um mesmo fornecedor pode servir mais de uma coisa — a
@@ -31,6 +32,7 @@ const KINDS = ['llm', 'stt', 'tts'];
 const PRESETS = [
   { slug: 'openrouter', label: 'OpenRouter', base_url: 'https://openrouter.ai/api/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
   { slug: 'elevenlabs', label: 'ElevenLabs', base_url: 'https://api.elevenlabs.io/v1', api_style: 'elevenlabs', kinds: ['tts'] },
+  { slug: 'deepgram', label: 'Deepgram', base_url: 'https://api.deepgram.com/v1', api_style: 'deepgram', kinds: ['stt'] },
   { slug: 'anthropic', label: 'Anthropic', base_url: 'https://api.anthropic.com/v1', api_style: 'anthropic', kinds: ['llm'] },
   { slug: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1', api_style: 'openai', kinds: ['llm', 'stt', 'tts'] },
   { slug: 'groq', label: 'Groq', base_url: 'https://api.groq.com/openai/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
@@ -47,6 +49,7 @@ const isNew = ref(false);
 const isSaving = ref(false);
 const syncingId = ref(null);
 const toDelete = ref(null);
+const showAdvanced = ref(false);
 
 const availablePresets = computed(() =>
   PRESETS.filter(
@@ -72,6 +75,10 @@ const fetchProviders = async () => {
 
 const openDialog = (provider, preset) => {
   isNew.value = !provider;
+  // Quem cola uma chave de fornecedor conhecido não deveria ver URL, protocolo
+  // e capacidades: o preset já sabe tudo isso, e mostrar os campos abertos faz
+  // parecer que precisam ser preenchidos. Só o endpoint desconhecido abre.
+  showAdvanced.value = !provider && !preset;
   form.value = provider
     ? {
         id: provider.id,
@@ -189,6 +196,25 @@ onMounted(fetchProviders);
     </template>
     <template #body>
       <div class="flex w-full flex-col gap-6">
+        <!-- Caminho comum primeiro: quem chega aqui tem uma chave na mão. -->
+        <div v-if="availablePresets.length" class="flex flex-col gap-2">
+          <p class="text-sm text-n-slate-11">
+            {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.QUICK_ADD') }}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <Button
+              v-for="preset in availablePresets"
+              :key="preset.slug"
+              sm
+              slate
+              outline
+              icon="i-lucide-plus"
+              :label="preset.label"
+              @click="openDialog(null, preset)"
+            />
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div
             v-for="provider in providers"
@@ -271,24 +297,6 @@ onMounted(fetchProviders);
           </div>
         </div>
 
-        <div v-if="availablePresets.length" class="flex flex-col gap-2">
-          <p class="text-sm text-n-slate-11">
-            {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.QUICK_ADD') }}
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <Button
-              v-for="preset in availablePresets"
-              :key="preset.slug"
-              sm
-              slate
-              outline
-              icon="i-lucide-plus"
-              :label="preset.label"
-              @click="openDialog(null, preset)"
-            />
-          </div>
-        </div>
-
         <p class="text-xs text-n-slate-11">
           {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.CHANNELS_NOTE') }}
         </p>
@@ -313,56 +321,23 @@ onMounted(fetchProviders);
         @confirm="save"
       >
         <div class="flex flex-col gap-4">
-          <div class="grid grid-cols-2 gap-3">
-            <Input
-              v-model="form.label"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL')"
-              placeholder="Groq"
-            />
-            <Input
-              v-model="form.slug"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
-              :disabled="!isNew"
-              placeholder="groq"
-            />
-          </div>
-          <Input
-            v-model="form.base_url"
-            :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL')"
-            placeholder="https://api.groq.com/openai/v1"
-            :message="
-              $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL_HELP')
-            "
-          />
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
+          <!-- Fornecedor conhecido: só a chave. O resto o preset já sabe. -->
+          <div
+            v-if="!showAdvanced"
+            class="flex flex-wrap items-center gap-2 rounded-lg bg-n-alpha-1 px-3 py-2"
+          >
+            <span class="text-sm font-medium text-n-slate-12">
+              {{ form.label }}
             </span>
-            <Select v-model="form.api_style" :options="API_STYLES" />
-          </div>
-          <div class="flex flex-col gap-2">
-            <span class="text-sm text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS') }}
-            </span>
-            <div class="flex gap-4">
-              <label
-                v-for="kind in KINDS"
-                :key="kind"
-                class="flex cursor-pointer items-center gap-2"
-              >
-                <Checkbox
-                  :model-value="form.kinds?.includes(kind)"
-                  @change="toggleKind(kind)"
-                />
-                <span class="text-sm text-n-slate-12">
-                  {{ $t(`INTEGRATION_SETTINGS.AI_PROVIDERS.KIND.${kind}`) }}
-                </span>
-              </label>
-            </div>
-            <span class="text-xs text-n-slate-11">
-              {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS_HELP') }}
+            <span
+              v-for="kind in form.kinds"
+              :key="kind"
+              class="rounded bg-n-alpha-2 px-1.5 py-0.5 text-xs font-medium uppercase text-n-slate-11"
+            >
+              {{ $t(`INTEGRATION_SETTINGS.AI_PROVIDERS.KIND.${kind}`) }}
             </span>
           </div>
+
           <Input
             v-model="form.api_key"
             type="password"
@@ -374,6 +349,68 @@ onMounted(fetchProviders);
             "
             :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY_HELP')"
           />
+
+          <button
+            v-if="!showAdvanced"
+            class="self-start text-xs text-n-slate-11 underline"
+            @click="showAdvanced = true"
+          >
+            {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.ADVANCED') }}
+          </button>
+
+          <template v-if="showAdvanced">
+            <div class="grid grid-cols-2 gap-3">
+              <Input
+                v-model="form.label"
+                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL')"
+                placeholder="Groq"
+              />
+              <Input
+                v-model="form.slug"
+                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG')"
+                :disabled="!isNew"
+                placeholder="groq"
+              />
+            </div>
+            <Input
+              v-model="form.base_url"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL')"
+              placeholder="https://api.groq.com/openai/v1"
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL_HELP')
+              "
+            />
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
+              </span>
+              <Select v-model="form.api_style" :options="API_STYLES" />
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS') }}
+              </span>
+              <div class="flex gap-4">
+                <label
+                  v-for="kind in KINDS"
+                  :key="kind"
+                  class="flex cursor-pointer items-center gap-2"
+                >
+                  <Checkbox
+                    :model-value="form.kinds?.includes(kind)"
+                    @change="toggleKind(kind)"
+                  />
+                  <span class="text-sm text-n-slate-12">
+                    {{ $t(`INTEGRATION_SETTINGS.AI_PROVIDERS.KIND.${kind}`) }}
+                  </span>
+                </label>
+              </div>
+              <span class="text-xs text-n-slate-11">
+                {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS_HELP') }}
+              </span>
+            </div>
+          </template>
+
           <div class="flex items-center justify-between gap-2">
             <span class="text-sm text-n-slate-12">
               {{ $t('INTEGRATION_SETTINGS.BOTLAYER.ACTIVE') }}

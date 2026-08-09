@@ -14,6 +14,7 @@ from app.bot import _language, _llm, _stt, _tts
 
 FAKE = {
     "stt": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1", "model": "deepgram/nova-3"},
+    "stt_direct": {"api_style": "deepgram", "api_key": "k", "base_url": "", "model": "nova-3"},
     "llm": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1",
             "model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.6, "max_tokens": 400},
     "tts": {"api_style": "elevenlabs", "api_key": "k", "voice_id": "v", "model": "eleven_flash_v2_5"},
@@ -26,7 +27,8 @@ for field in ("voice", "model", "language"):
 language = _language("es")
 print("language:", language)
 
-print("stt:", type(_stt(FAKE["stt"], language)).__name__)
+print("stt via openrouter:", type(_stt(FAKE["stt"], language, 600)).__name__)
+print("stt via deepgram:  ", type(_stt(FAKE["stt_direct"], language, 600)).__name__)
 print("llm:", type(_llm(FAKE["llm"])).__name__)
 print("tts:", type(_tts(FAKE["tts"], language)).__name__)
 
@@ -52,11 +54,16 @@ pair = LLMContextAggregatorPair(
 print("vad:", type(VADProcessor(vad_analyzer=analyzer)).__name__)
 print("aggregators:", type(pair.user()).__name__, type(pair.assistant()).__name__)
 
-for bad, fn in (("stt", _stt), ("tts", _tts)):
-    try:
-        fn({**FAKE[bad], "api_style": "nonsense"}, language)
-        raise SystemExit(f"{bad} accepted a provider it cannot speak to")
-    except Exception as error:
-        print(f"{bad} rejects unknown api_style: {type(error).__name__}")
+try:
+    _stt({**FAKE["stt"], "api_style": "nonsense"}, language, 600)
+    raise SystemExit("stt accepted a provider it cannot speak to")
+except Exception as error:
+    print("stt rejects unknown api_style:", type(error).__name__)
+
+try:
+    _tts({**FAKE["tts"], "api_style": "nonsense"}, language)
+    raise SystemExit("tts accepted a provider it cannot speak to")
+except Exception as error:
+    print("tts rejects unknown api_style:", type(error).__name__)
 
 print("\nSMOKE OK")

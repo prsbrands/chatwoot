@@ -1,4 +1,4 @@
-pipecat-ai[openai,elevenlabs,silero,websocket]==1.7.0
+pipecat-ai[openai,deepgram,elevenlabs,silero,websocket]==1.7.0
 fastapi==0.121.2
 uvicorn[standard]==0.42.0
 httpx==0.28.1

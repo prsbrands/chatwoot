@@ -195,7 +195,8 @@
       "HEADER": "AI Providers",
       "DESCRIPTION": "API keys your AI agents use to answer conversations. Keys are stored on the server and never sent back to the browser. Each provider syncs its own model catalog.",
       "LOADING": "Loading providers",
-      "QUICK_ADD": "Add a known provider (fills in the URL and API style — you only enter the key):",
+      "QUICK_ADD": "Pick your provider and paste the key — everything else is filled in for you:",
+      "ADVANCED": "Provider not listed, or need to change the endpoint?",
       "KINDS": "This key is used for",
       "KINDS_HELP": "A voice call needs three things, and one account often covers more than one of them: OpenRouter answers and transcribes, OpenAI does all three. Tick everything this key is allowed to do.",
       "KIND": {

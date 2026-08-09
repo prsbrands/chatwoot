@@ -31,15 +31,15 @@ alter table bot_providers
 -- seria uma segunda conta para o mesmo modelo pelo mesmo preço.
 update bot_providers set kinds = '{llm,stt}' where slug = 'openrouter';
 
--- A ElevenLabs não fala nem OpenAI nem Anthropic — tem protocolo próprio, e é
--- ele que o serviço de voz usa para receber o áudio em streaming. Fingir que é
--- 'openai' faria a linha passar no CHECK e quebrar em quem lê o campo.
+-- ElevenLabs e Deepgram não falam nem OpenAI nem Anthropic — cada um tem
+-- protocolo próprio, e é por ele que o áudio trafega em streaming. Fingir que
+-- são 'openai' faria a linha passar no CHECK e quebrar em quem lê o campo.
 alter table bot_providers
   drop constraint if exists bot_providers_api_style_check;
 
 alter table bot_providers
   add constraint bot_providers_api_style_check
-  check (api_style = any (array['openai', 'anthropic', 'elevenlabs']));
+  check (api_style = any (array['openai', 'anthropic', 'elevenlabs', 'deepgram']));
 
 -- 2. Como a persona soa --------------------------------------------------------
 --

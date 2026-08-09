@@ -26,6 +26,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.processors.audio.vad_processor import VADProcessor
 from pipecat.serializers.twilio import TwilioFrameSerializer
+from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.services.openai.stt import OpenAISTTService
@@ -50,16 +51,35 @@ def _language(code: str | None) -> Language | None:
         ) from error
 
 
-def _stt(config: dict, language: Language | None) -> OpenAISTTService:
-    style = config["api_style"]
-    if style != "openai":
-        raise ConfigError(f"transcription provider speaks '{style}'; only OpenAI-compatible is wired up")
+def _stt(config: dict, language: Language | None, endpoint_ms: int):
+    """Transcrição, em streaming quando o fornecedor permite.
 
-    return OpenAISTTService(
-        api_key=config["api_key"],
-        base_url=config["base_url"],
-        settings=OpenAISTTService.Settings(model=config["model"], language=language),
-    )
+    O Deepgram direto fala WebSocket e devolve texto enquanto a pessoa ainda
+    fala. Pelo OpenRouter o mesmo modelo chega no endpoint de arquivo, e o turno
+    só é transcrito depois de fechado — o que custa uns 300 ms por resposta.
+    """
+    style = config["api_style"]
+
+    if style == "deepgram":
+        return DeepgramSTTService(
+            api_key=config["api_key"],
+            settings=DeepgramSTTService.Settings(
+                model=config["model"],
+                language=language,
+                # O mesmo "fim de turno" da persona, agora decidido pelo próprio
+                # Deepgram, que ouve o áudio em vez de só cronometrar silêncio.
+                endpointing=endpoint_ms,
+            ),
+        )
+
+    if style == "openai":
+        return OpenAISTTService(
+            api_key=config["api_key"],
+            base_url=config["base_url"],
+            settings=OpenAISTTService.Settings(model=config["model"], language=language),
+        )
+
+    raise ConfigError(f"transcription provider speaks '{style}'; wire up Deepgram or an OpenAI-compatible one")
 
 
 def _llm(config: dict) -> OpenAILLMService:
@@ -140,7 +160,7 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
         [
             transport.input(),
             VADProcessor(vad_analyzer=vad_analyzer),
-            _stt(config["stt"], language),
+            _stt(config["stt"], language, persona["endpoint_ms"]),
             aggregators.user(),
             _llm(config["llm"]),
             _tts(config["tts"], language),
