@@ -609,7 +609,7 @@
       "BUTTON_TXT": "Buy more credits",
       "DOCUMENTS": "Documents",
       "RESPONSES": "Credits",
-      "UPGRADE": "CortexGen AI is not available on the free plan, upgrade now to get access to assistants, copilot and more.",
+      "UPGRADE": "CortexGen AI is not available on this plan.",
       "REFRESH_CREDITS": "Refresh"
     },
     "CHAT_WITH_US": {
