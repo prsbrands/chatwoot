@@ -83,7 +83,7 @@ Plano completo em `PLAN-TWILIO-VOZ.md`.
 ### Lacunas conhecidas, por ordem de importância
 
 1. **Chamada SAINDO do softphone não funciona** — o domínio SIP está com `voice_url = nil`, então o Twilio não sabe o que fazer com uma chamada originada no Zoiper e devolve ocupado. Não foi construído porque a Fase 2 era receber. Exige decidir qual número aparece como identificador, restrição de destino e registro da chamada.
-2. **`bot_providers` só tem provedores de LLM.** Voz precisa de STT e TTS, que o OpenRouter não faz. Falta a coluna `kind` (`llm`/`stt`/`tts`) — adiada de propósito na Fase 0 porque nada a leria até a Fase 3.
+2. ~~`bot_providers` só tem provedores de LLM~~ — **resolvido na Fase 3** com `kinds text[]` (array, não coluna singular: a mesma conta de OpenAI serve os três e a chave é o que não se quer duplicar). Ver "Dois caminhos de transcrição" no topo.
 3. **Paginação/busca só na aba Números**; a aba Voz lista tudo direto.
 4. **Assistente de escrita CortexGen AI nunca foi testado de verdade** — chave OpenAI gravada, endpoint vazio (= `api.openai.com`). Abrir uma conversa e usar reescrever/resumir. Se falhar, os erros úteis são `captain.api_key_missing` e qualquer coisa do `Llm::FeatureRouter` (modelo fora do catálogo de `config/llm.yml`).
 5. Aba Channels com a coluna Agent bot: ligar o switch e conferir em Settings → Inboxes → Bot Configuration que o vínculo nasceu sozinho.
