@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
@@ -73,13 +73,61 @@ const ttsProviderOptions = computed(() => [
   ...providersServing('tts'),
 ]);
 
-// Uma chamada precisa das três pontas. Sem isso a persona segue válida para
-// texto, mas não pode ser escolhida numa rota de voz.
-const voiceReady = computed(
-  () =>
-    Boolean(form.value?.stt_provider) &&
-    Boolean(form.value?.tts_provider) &&
-    Boolean(form.value?.tts_voice_id)
+// Cada fornecedor tem um modelo que é a escolha certa por padrão. Deixar isso
+// como placeholder cinza fazia o campo parecer preenchido — e um modelo vazio
+// não falha: cai no default do fornecedor, calado.
+const DEFAULT_MODELS = {
+  stt: {
+    deepgram: 'nova-3',
+    openrouter: 'deepgram/nova-3',
+    openai: 'gpt-4o-transcribe',
+    groq: 'whisper-large-v3',
+  },
+  tts: {
+    elevenlabs: 'eleven_flash_v2_5',
+    openai: 'tts-1',
+  },
+};
+
+watch(
+  () => form.value?.stt_provider,
+  slug => {
+    if (slug && !form.value.stt_model) {
+      form.value.stt_model = DEFAULT_MODELS.stt[slug] || '';
+    }
+  }
+);
+
+watch(
+  () => form.value?.tts_provider,
+  slug => {
+    if (slug && !form.value.tts_model) {
+      form.value.tts_model = DEFAULT_MODELS.tts[slug] || '';
+    }
+  }
+);
+
+// O que ainda falta para a persona conseguir atender. Idioma entra na lista
+// porque vazio não dá erro: o fornecedor assume inglês e a chamada sai errada
+// sem nada reclamar.
+const voiceGaps = computed(() => {
+  const data = form.value;
+  if (!data) return [];
+  const gaps = [];
+  if (!data.stt_provider) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER'));
+  if (!data.tts_provider) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER'));
+  if (data.tts_provider && !data.tts_voice_id) {
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID'));
+  }
+  if (!data.voice_language) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_LANGUAGE'));
+  return gaps;
+});
+
+const voiceReady = computed(() => voiceGaps.value.length === 0);
+
+// Prompt longo é latência direta numa chamada: o modelo relê tudo a cada turno.
+const promptIsHeavyForVoice = computed(
+  () => voiceReady.value && totalChars.value > 8000
 );
 
 const fallbackProviderOptions = computed(() => [
@@ -428,6 +476,25 @@ onMounted(load);
             <p class="text-xs text-n-slate-11">
               {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_HELP') }}
             </p>
+            <p v-if="voiceGaps.length" class="text-xs text-n-amber-11">
+              {{
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_GAPS', {
+                  fields: voiceGaps.join(', '),
+                })
+              }}
+            </p>
+            <!-- Ligar o bot num número não passa pela aba Channels, que é o
+                 mapa de inboxes de mensagem. -->
+            <p v-else class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_WHERE') }}
+            </p>
+            <p v-if="promptIsHeavyForVoice" class="text-xs text-n-amber-11">
+              {{
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_PROMPT_HEAVY', {
+                  total: totalChars.toLocaleString(),
+                })
+              }}
+            </p>
 
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
@@ -444,7 +511,6 @@ onMounted(load);
               v-if="form.stt_provider"
               v-model="form.stt_model"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_MODEL')"
-              placeholder="deepgram/nova-3"
             />
 
             <div class="flex flex-col gap-1">
@@ -469,7 +535,6 @@ onMounted(load);
               <Input
                 v-model="form.tts_model"
                 :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_MODEL')"
-                placeholder="eleven_flash_v2_5"
               />
             </template>
 

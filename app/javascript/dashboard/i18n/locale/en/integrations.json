@@ -251,6 +251,9 @@
         "SECTION_HANDOFF": "Handoff",
         "SECTION_VOICE": "Voice",
         "VOICE_HELP": "Fill this in and the persona can answer phone calls. Leave it empty and it stays a text-only persona.",
+        "VOICE_GAPS": "Not ready for calls yet — still missing: {fields}. An empty language is not an error: the provider quietly falls back to English.",
+        "VOICE_WHERE": "Calls only reach this persona once a number points at it in Settings → Integrations → Twilio → Voice. The Channels tab is for message inboxes, not phone numbers.",
+        "VOICE_PROMPT_HEAVY": "{total} characters is a lot for a phone call — the model re-reads all of it every turn, and that is latency the caller hears. Voice usually wants a short, spoken-sounding prompt.",
         "VOICE_NONE": "Not set",
         "VOICE_READY": "Can answer calls",
         "VOICE_OFF": "Text only",
@@ -284,7 +287,7 @@
         "CHARS": "characters"
       },
       "CHANNELS": {
-        "HELP": "Choose which persona answers each inbox and switch the bot on or off per channel. Saving also assigns the agent bot to the inbox, so the channel is fully switched on from here — no extra step in Settings → Inboxes.",
+        "HELP": "Choose which persona answers each inbox and switch the bot on or off per channel. Saving also assigns the agent bot to the inbox, so the channel is fully switched on from here — no extra step in Settings → Inboxes. This covers written messages only: to have a persona answer phone calls, route the number in Settings → Integrations → Twilio → Voice.",
         "INBOX": "Inbox",
         "PERSONA": "Persona",
         "BOT": "Agent bot",
