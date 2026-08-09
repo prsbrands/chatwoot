@@ -277,7 +277,7 @@
         "GREETING_MS": "Wait before speaking (ms)",
         "TIMING_HELP": "End of turn is the silence that tells the bot you finished talking: too short and it cuts you off mid-thought, too long and it feels deaf. Wait before speaking keeps it from talking over your “hello”.",
         "FIRST_MESSAGE": "First message",
-        "FIRST_MESSAGE_HELP": "What the bot says when it picks up. Leave empty to let the model open the call.",
+        "FIRST_MESSAGE_HELP": "Spoken word for word the moment the call connects, before the model is consulted — so every caller hears the same opening and hears it immediately. It is also added to the conversation, so the bot knows it has already introduced itself.",
         "INTERRUPTIBLE": "Customer can interrupt",
         "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model"
       },

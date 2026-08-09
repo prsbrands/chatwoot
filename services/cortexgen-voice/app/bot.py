@@ -155,9 +155,15 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
         params=VADParams(stop_secs=persona["endpoint_ms"] / 1000)
     )
 
-    context = LLMContext(
-        messages=[{"role": "system", "content": persona["system_prompt"]}]
-    )
+    # A frase de abertura entra no histórico como fala do próprio bot. Sem isso
+    # ela é só áudio: o modelo não sabe que já atendeu e se apresenta de novo na
+    # resposta seguinte.
+    opening = persona.get("first_message")
+    messages = [{"role": "system", "content": persona["system_prompt"]}]
+    if opening:
+        messages.append({"role": "assistant", "content": opening})
+
+    context = LLMContext(messages=messages)
     # Interromper é o padrão do Pipecat. Uma persona não-interrompível é a que
     # cala quem ligou enquanto o bot fala.
     #
@@ -211,7 +217,8 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
         # Falar em cima do "alô" faz o cliente pedir para repetir a chamada
         # inteira.
         await asyncio.sleep(persona["greeting_delay_ms"] / 1000)
-        opening = persona.get("first_message")
+        # Com abertura escrita, ela é falada como está — sem passar pelo modelo,
+        # que é o que faz a primeira frase ser sempre a mesma e sempre rápida.
         await task.queue_frames([TTSSpeakFrame(opening) if opening else LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")

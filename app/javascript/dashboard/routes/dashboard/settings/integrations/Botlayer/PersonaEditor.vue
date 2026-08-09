@@ -170,6 +170,12 @@ const voiceGaps = computed(() => {
   // Só a transcrição precisa saber o idioma de antemão; a voz pode seguir o
   // texto, então em branco ali não é lacuna.
   if (!data.stt_language) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_LANGUAGE'));
+  // Quem atende telefone diz sempre a mesma coisa ao atender. Deixar o modelo
+  // improvisar a abertura muda o texto a cada chamada e custa o tempo de uma
+  // ida ao modelo antes da primeira palavra.
+  if (!data.voice_first_message) {
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FIRST_MESSAGE'));
+  }
   return gaps;
 });
 
