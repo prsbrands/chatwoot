@@ -40,15 +40,20 @@ from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStra
 from .chatwoot import ConfigError
 
 
-def _language(code: str | None) -> Language | None:
+def _language(code: str | None):
+    """Idioma como o fornecedor espera receber.
+
+    Os dois campos vêm de um Select no painel, então não há digitação livre para
+    validar aqui. Códigos fora do enum do Pipecat passam adiante como string —
+    é o caso de 'multi', que o Deepgram entende (troca de idioma no meio da
+    chamada) e o enum não conhece.
+    """
     if not code:
         return None
     try:
         return Language(code)
-    except ValueError as error:
-        raise ConfigError(
-            f"'{code}' is not a language the voice stack knows — use a code like 'es' or 'pt-BR'"
-        ) from error
+    except ValueError:
+        return code
 
 
 def _stt(config: dict, language: Language | None, endpoint_ms: int):
@@ -116,7 +121,10 @@ def _tts(config: dict, language: Language | None) -> ElevenLabsTTSService:
 async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> None:
     """Conduz uma chamada até o WebSocket fechar."""
     persona = config["persona"]
-    language = _language(persona.get("language"))
+    # Escutar e falar são decisões separadas: o transcritor pode estar em
+    # 'multi' enquanto a voz segue o texto que o modelo escreveu.
+    stt_language = _language(persona.get("stt_language"))
+    tts_language = _language(persona.get("language"))
 
     # auto_hang_up ficaria dependente de credencial da Twilio aqui dentro. Não
     # precisa: quando este WebSocket fecha, o `<Connect>` acaba e a chamada cai.
@@ -160,10 +168,10 @@ async def run_call(websocket, stream_id: str, call_id: str, config: dict) -> Non
         [
             transport.input(),
             VADProcessor(vad_analyzer=vad_analyzer),
-            _stt(config["stt"], language, persona["endpoint_ms"]),
+            _stt(config["stt"], stt_language, persona["endpoint_ms"]),
             aggregators.user(),
             _llm(config["llm"]),
-            _tts(config["tts"], language),
+            _tts(config["tts"], tts_language),
             transport.output(),
             aggregators.assistant(),
         ]

@@ -50,7 +50,10 @@ class Voice::CallConfigService
       display_name: persona['display_name'],
       system_prompt: persona['composed_prompt'],
       first_message: persona['voice_first_message'],
+      # `language` é o da voz; o do transcritor é separado porque pode ser
+      # 'multi', e forçar um idioma na voz nem sempre é o que se quer.
       language: persona['voice_language'],
+      stt_language: persona['stt_language'],
       greeting_delay_ms: persona['voice_greeting_delay_ms'],
       endpoint_ms: persona['voice_endpoint_ms'],
       interruptible: persona['voice_interruptible']

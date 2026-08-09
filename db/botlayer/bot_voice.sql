@@ -53,6 +53,11 @@ alter table bot_personas
   add column if not exists tts_provider text,
   add column if not exists tts_voice_id text,
   add column if not exists tts_model text,
+  -- Dois idiomas porque são duas perguntas diferentes. O que o transcritor
+  -- escuta pode ser 'multi' (o Deepgram troca de idioma no meio da frase); o
+  -- que a voz fala costuma ser melhor em branco, porque a ElevenLabs deduz do
+  -- texto e o multilingual_v2 sequer aceita idioma forçado.
+  add column if not exists stt_language text,
   add column if not exists voice_language text,
   add column if not exists voice_first_message text,
   -- Os três tempos que definem a sensação da conversa.
@@ -114,7 +119,9 @@ select
   p.voice_first_message,
   p.voice_greeting_delay_ms,
   p.voice_endpoint_ms,
-  p.voice_interruptible
+  p.voice_interruptible,
+  -- Acrescentada no fim: CREATE OR REPLACE VIEW só aceita coluna nova no final.
+  p.stt_language
 from bot_personas p
 left join knowledge k on k.persona_id = p.id;
 

@@ -46,6 +46,7 @@ const emptyForm = () => ({
   tts_voice_id: '',
   tts_model: '',
   voice_language: '',
+  stt_language: '',
   voice_first_message: '',
   voice_greeting_delay_ms: 300,
   voice_endpoint_ms: 600,
@@ -84,10 +85,24 @@ const DEFAULT_MODELS = {
     groq: 'whisper-large-v3',
   },
   tts: {
-    elevenlabs: 'eleven_flash_v2_5',
+    elevenlabs: 'eleven_multilingual_v2',
     openai: 'tts-1',
   },
 };
+
+// Só estes aceitam idioma forçado. O multilingual_v2 deduz do texto — e é por
+// isso que ele atende em vários idiomas com a mesma voz.
+const MODELS_ACCEPTING_LANGUAGE = ['eleven_flash_v2_5', 'eleven_turbo_v2_5'];
+
+const VOICE_MODELS = {
+  elevenlabs: [
+    'eleven_multilingual_v2',
+    'eleven_flash_v2_5',
+    'eleven_turbo_v2_5',
+  ],
+};
+
+const LANGUAGES = ['es', 'pt-BR', 'en'];
 
 watch(
   () => form.value?.stt_provider,
@@ -107,9 +122,42 @@ watch(
   }
 );
 
-// O que ainda falta para a persona conseguir atender. Idioma entra na lista
-// porque vazio não dá erro: o fornecedor assume inglês e a chamada sai errada
-// sem nada reclamar.
+const voiceModelOptions = computed(() =>
+  (VOICE_MODELS[form.value?.tts_provider] || []).map(id => ({
+    value: id,
+    label: t(`INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_MODELS.${id}`),
+  }))
+);
+
+// O que o transcritor escuta. 'multi' deixa o Deepgram trocar de idioma no meio
+// da chamada, que é o que uma linha atendendo três países precisa.
+const sttLanguageOptions = computed(() => [
+  {
+    value: 'multi',
+    label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.LANG_MULTI'),
+  },
+  ...LANGUAGES.map(code => ({ value: code, label: code })),
+]);
+
+// O que a voz fala. Em branco significa "siga o texto", que é o único modo do
+// multilingual_v2 e quase sempre o certo: o modelo já responde no idioma de
+// quem ligou.
+const ttsLanguageOptions = computed(() => [
+  {
+    value: '',
+    label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.LANG_FOLLOW'),
+  },
+  ...LANGUAGES.map(code => ({ value: code, label: code })),
+]);
+
+// Idioma travado num modelo que não aceita idioma é ajuste que não acontece.
+const languageIgnored = computed(
+  () =>
+    Boolean(form.value?.voice_language) &&
+    form.value?.tts_provider === 'elevenlabs' &&
+    !MODELS_ACCEPTING_LANGUAGE.includes(form.value?.tts_model)
+);
+
 const voiceGaps = computed(() => {
   const data = form.value;
   if (!data) return [];
@@ -119,7 +167,9 @@ const voiceGaps = computed(() => {
   if (data.tts_provider && !data.tts_voice_id) {
     gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID'));
   }
-  if (!data.voice_language) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_LANGUAGE'));
+  // Só a transcrição precisa saber o idioma de antemão; a voz pode seguir o
+  // texto, então em branco ali não é lacuna.
+  if (!data.stt_language) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_LANGUAGE'));
   return gaps;
 });
 
@@ -202,6 +252,7 @@ const load = async () => {
       tts_voice_id: persona.tts_voice_id || '',
       tts_model: persona.tts_model || '',
       voice_language: persona.voice_language || '',
+      stt_language: persona.stt_language || '',
       voice_first_message: persona.voice_first_message || '',
       keywords: (persona.handoff_rules?.keywords || []).join(', '),
       max_turns: persona.handoff_rules?.max_turns || null,
@@ -243,6 +294,7 @@ const save = async () => {
     tts_voice_id: data.tts_voice_id || null,
     tts_model: data.tts_model || null,
     voice_language: data.voice_language || null,
+    stt_language: data.stt_language || null,
     voice_first_message: data.voice_first_message || null,
     voice_greeting_delay_ms: Number(data.voice_greeting_delay_ms),
     voice_endpoint_ms: Number(data.voice_endpoint_ms),
@@ -507,11 +559,23 @@ onMounted(load);
                 :options="sttProviderOptions"
               />
             </div>
-            <Input
-              v-if="form.stt_provider"
-              v-model="form.stt_model"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_MODEL')"
-            />
+            <template v-if="form.stt_provider">
+              <Input
+                v-model="form.stt_model"
+                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_MODEL')"
+              />
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-n-slate-12">
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_LANGUAGE')
+                  }}
+                </span>
+                <Select
+                  v-model="form.stt_language"
+                  :options="sttLanguageOptions"
+                />
+              </div>
+            </template>
 
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
@@ -532,29 +596,46 @@ onMounted(load);
                   $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID_HELP')
                 "
               />
-              <Input
-                v-model="form.tts_model"
-                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_MODEL')"
-              />
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-n-slate-12">
+                  {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_MODEL') }}
+                </span>
+                <Select
+                  v-if="voiceModelOptions.length"
+                  v-model="form.tts_model"
+                  :options="voiceModelOptions"
+                />
+                <Input v-else v-model="form.tts_model" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-n-slate-12">
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_LANGUAGE')
+                  }}
+                </span>
+                <Select
+                  v-model="form.voice_language"
+                  :options="ttsLanguageOptions"
+                />
+                <span
+                  v-if="languageIgnored"
+                  class="text-xs text-n-amber-11"
+                >
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.LANG_IGNORED', {
+                      model: form.tts_model,
+                    })
+                  }}
+                </span>
+              </div>
             </template>
 
-            <div class="grid grid-cols-2 gap-3">
-              <Input
-                v-model="form.voice_language"
-                :label="
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_LANGUAGE')
-                "
-                placeholder="es"
-              />
-              <Input
-                v-model="form.voice_endpoint_ms"
-                type="number"
-                step="50"
-                :label="
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.ENDPOINT_MS')
-                "
-              />
-            </div>
+            <Input
+              v-model="form.voice_endpoint_ms"
+              type="number"
+              step="50"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.ENDPOINT_MS')"
+            />
             <Input
               v-model="form.voice_greeting_delay_ms"
               type="number"

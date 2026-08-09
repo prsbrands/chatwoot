@@ -22,7 +22,7 @@ class Api::V1::Accounts::Integrations::Botlayer::PersonasController < Api::V1::A
     permitted = params.permit(:slug, :display_name, :description, :system_prompt, :provider, :model,
                               :fallback_provider, :fallback_model, :temperature, :max_tokens, :is_active,
                               :stt_provider, :stt_model, :tts_provider, :tts_voice_id, :tts_model,
-                              :voice_language, :voice_first_message, :voice_greeting_delay_ms,
+                              :voice_language, :stt_language, :voice_first_message, :voice_greeting_delay_ms,
                               :voice_endpoint_ms, :voice_interruptible,
                               handoff_rules: {}).to_h
     # handoff_rules.keywords chega como array; permit com hash aberto não cobre
