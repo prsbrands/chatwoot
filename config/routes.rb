@@ -722,6 +722,7 @@ Rails.application.routes.draw do
   # segredo compartilhado, não pela assinatura do Twilio.
   namespace :voice_agent do
     resource :config, only: [:show], controller: 'configs'
+    resources :calls, only: [:create]
   end
 
   get 'microsoft/callback', to: 'microsoft/callbacks#show'
