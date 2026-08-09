@@ -119,8 +119,8 @@ botlayer:
   icon: 'icon-robot-line'
   config_key: 'botlayer'
 ai_assistant:
-  name: 'AI Assistant'
-  description: 'OpenAI-compatible endpoint used by the writing assistant (rewrite, summarise, reply suggestions).'
+  name: 'CortexGen AI'
+  description: 'Instance-wide OpenAI key and endpoint for the writing assistant (rewrite, summarise, reply suggestions). Accounts can override it with their own key.'
   enabled: true
   icon: 'icon-captain'
   config_key: 'captain'

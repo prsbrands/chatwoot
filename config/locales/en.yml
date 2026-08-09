@@ -431,8 +431,8 @@ en:
       description: "Integrate Google Translate to help agents easily translate customer messages. This integration automatically detects the language and converts it to the agent's or admin's preferred language."
     openai:
       name: 'OpenAI'
-      short_description: 'AI-powered reply suggestions, summarization, and message enhancement.'
-      description: 'Leverage the power of large language models from OpenAI with the features such as reply suggestions, summarization, message rephrasing, spell-checking, and label classification.'
+      short_description: 'Your own OpenAI key for the CortexGen AI writing assistant.'
+      description: 'Powers the CortexGen AI writing assistant for this account: reply suggestions, conversation summaries, rephrasing, spell-checking and label suggestions. Paste your own OpenAI key to bill these calls to your account — without it, the instance key configured by the administrator is used.'
     linear:
       name: 'Linear'
       short_description: 'Create and link Linear issues directly from conversations.'
@@ -440,8 +440,8 @@ en:
       attachment_link_title: 'Conversation (#%{conversation_id}) with %{name}'
     notion:
       name: 'Notion'
-      short_description: 'Integrate databases, documents and pages directly with Captain.'
-      description: 'Connect your Notion workspace to enable Captain to access and generate intelligent responses using content from your databases, documents, and pages to provide more contextual customer support.'
+      short_description: 'Integrate databases, documents and pages directly with CortexGen AI.'
+      description: 'Connect your Notion workspace to enable CortexGen AI to access and generate intelligent responses using content from your databases, documents, and pages to provide more contextual customer support.'
     shopify:
       name: 'Shopify'
       short_description: 'Access order details and customer data from your Shopify store.'
@@ -454,9 +454,9 @@ en:
     copilot_message_required: Message is required
     copilot_error: 'Please connect an assistant to this inbox to use Copilot'
     copilot_limit: 'You are out of Copilot credits. You can buy more credits from the billing section.'
-    upgrade: 'Upgrade your plan to enable Captain AI'
-    disabled: 'Captain AI is disabled for this account.'
-    api_key_missing: 'Captain AI API key is not configured.'
+    upgrade: 'Upgrade your plan to enable CortexGen AI'
+    disabled: 'CortexGen AI is disabled for this account.'
+    api_key_missing: 'No AI provider key configured. Add one in Settings → Integrations → OpenAI, or ask your administrator to set the instance key.'
     copilot:
       using_tool: 'Using tool %{function_name}'
       completed_tool_call: 'Completed %{function_name} tool call'
@@ -617,7 +617,7 @@ en:
     analytics:
       invalid_configuration: 'Invalid analytics configuration'
     articles:
-      captain_not_available: 'Translation requires Captain to be enabled for this account'
+      captain_not_available: 'Translation requires CortexGen AI to be enabled for this account'
       locale_not_available: 'Locale not available in this portal'
       category_not_found: 'Category not found in this portal'
       no_articles_found: 'No articles found to process'
