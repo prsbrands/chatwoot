@@ -56,6 +56,24 @@ Em qualquer um dos dois o Silero roda local para os turnos, e o Pipecat carrega 
 - **Concorrência**: quantas chamadas simultâneas a VPS aguenta é medição, não estimativa.
 - Chamada **saindo** do softphone segue sem funcionar (`voice_url` do domínio SIP é nil) — lacuna da Fase 2.
 
+### Primeira chamada real (09/08, 22:25) — o que ela ensinou
+
+O bot atendeu, se apresentou, perguntou o nome, respondeu "Gracias, Pablo" — e depois **emudeceu**. Diagnóstico pelos logs do `cortexgen-voice`:
+
+O Pipecat fecha o turno de quem fala com o **Smart Turn**, um modelo semântico que julga se a frase acabou. Em espanhol ao telefone ele devolvia `INCOMPLETE` sempre, então o turno só fechava no **timeout de 5 s**. Cinco segundos de nada parecem queda de ligação, o cliente fala de novo, e essa fala **interrompe** a resposta que estava chegando. O log pega no flagrante: `broadcasting interruption` às 46.049 e `OpenAILLMService TTFB: 0.103s` às 46.052 — a resposta perdeu por 3 ms.
+
+Corrigido em `7f7b9ecc0`: fim de turno por **silêncio** (`SpeechTimeoutUserTurnStopStrategy`), que é o que o campo "End of turn (ms)" da persona sempre prometeu controlar e não controlava. Rede de segurança de 5 s → 2 s.
+
+**Latência medida na chamada real** (do fim da fala ao primeiro áudio, ≈ 1,1 s — dentro do alvo de 1,5 s):
+
+| Etapa | Medido |
+|---|---|
+| Deepgram (inclui os 600 ms de endpointing configurados) | 0,67–0,72 s |
+| LLM (gpt-4.1, prompt de 21 KB) | **0,103 s** |
+| ElevenLabs até o primeiro áudio | 0,33 s |
+
+**Correção de uma coisa que eu disse antes:** avisei que o prompt de 21 KB seria latência audível. **Não foi** — o modelo respondeu em 100 ms. O maior componente é o endpointing de 600 ms, que é ajustável na persona. Encurtar o prompt continua valendo por qualidade de conversa (respostas curtas e faladas), não por latência.
+
 ### Armadilha: a API do Pipecat muda entre versões menores
 
 Na 1.7 o `allow_interruptions` do `PipelineParams` **não existe mais** (virou `user_mute_strategies` no agregador), o VAD saiu do transport e virou `VADProcessor` no pipeline, e `model=`/`voice_id=` viraram `settings=Settings(...)`. Nada disso quebra no build — só na chamada. Por isso o `smoke.py` vai dentro da imagem e **roda antes de subir**: instancia cada peça com config falsa, sem gastar crédito. Foi ele que pegou os três.
