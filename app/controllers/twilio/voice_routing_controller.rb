@@ -5,7 +5,6 @@
 # Nada aqui toca `enterprise/`: o canal de voz da Chatwoot é da licença
 # comercial e as rotas dele nem existem nesta edição.
 class Twilio::VoiceRoutingController < ApplicationController
-  skip_before_action :verify_authenticity_token
   before_action :set_route
   before_action :verify_twilio_signature
 
