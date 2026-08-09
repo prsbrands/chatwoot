@@ -6,14 +6,14 @@
 
 ## ▶️ RETOMAR AQUI — Fase 3c + primeira chamada do bot
 
-Produção está em **`6ff9e88ce`** (o commit `b44254315` está no GitHub mas **ainda não foi para a imagem** — sobe no próximo deploy; é só uma mensagem de erro de diagnóstico).
+Produção está em **`c3cb18037`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
 **Fases 0, 1, 2 entregues e validadas com tráfego real. A Fase 3 está no ar, faltando só a chave da ElevenLabs para a primeira chamada atendida por bot.**
 
 ### O que falta para ouvir o bot atender (tudo pelo painel, sem deploy)
 
-1. **Settings → Integrations → AI Providers → ElevenLabs** → colar a chave. O preset já preenche URL e formato.
-2. **Bot Personas → uma persona → seção Voz**: transcritor = OpenRouter, modelo `deepgram/nova-3`; voz = ElevenLabs, `voice_id` da biblioteca; idioma `es`; primeira mensagem.
+1. **Settings → Integrations → AI Providers** → clicar em **ElevenLabs** e em **Deepgram** e colar só a chave de cada um. Presets ficam no topo da tela; URL, protocolo e capacidades já vêm preenchidos e só aparecem se clicar em "avançado".
+2. **Bot Personas → uma persona → seção Voz**: transcritor = Deepgram, modelo `nova-3`; voz = ElevenLabs, `voice_id` da biblioteca; idioma `es`; primeira mensagem.
 3. **Twilio → Voz → rota do +16893539100**: "Atendida por" = Voice bot (ou manter humano e pôr "se ninguém atender" = passar para o bot, que é o transbordo).
 
 **Não usar um Nathan de texto como está**: o prompt tem 11,7 KB e registro escrito. Voz precisa de prompt curto e falado — clonar e encurtar. Prompt longo em chamada é latência direta.
@@ -32,9 +32,22 @@ Produção está em **`6ff9e88ce`** (o commit `b44254315` está no GitHub mas **
 
 **Verificado em 09/08:** health 200; handshake WebSocket real através do nginx OK; endpoint de config responde 401 sem token, 404 em número desconhecido, 422 em rota sem bot. Backup do vhost em `/root/prs.vhost.bak-*`.
 
-### Correção de premissa que economizou uma conta
+### Dois caminhos de transcrição, e por que o direto ganha
 
-**O OpenRouter serve Deepgram** — `deepgram/nova-3`, US$0,0043/min, o mesmo preço do Deepgram direto, na mesma chave que já responde as mensagens. Não aparece em `/api/v1/models` porque não é modelo de chat; está em `/api/v1/providers`. Mas é **REST em lote** (`/api/v1/audio/transcriptions`), não streaming: `/api/v1/realtime` dá 404. Por isso o VAD (Silero) roda local, recorta o turno e manda o trecho. O Pipecat ainda carrega sozinho o Smart Turn v3 local, que julga se a frase acabou em vez de só medir silêncio. TTS é ElevenLabs direto, que faz streaming de verdade.
+| | Deepgram direto | via OpenRouter |
+|---|---|---|
+| Protocolo | WebSocket, texto chega **enquanto** a pessoa fala | POST de arquivo, só depois do turno fechado |
+| Latência | ~200 ms | ~500 ms |
+| `api_style` | `deepgram`, modelo `nova-3` | `openai`, modelo `deepgram/nova-3` |
+| Conta | própria (o Paulo tem, com saldo) | a mesma chave que já responde mensagens |
+
+Preço igual nos dois (US$0,0043/min). **Usar o direto** — 300 ms é muito quando o alvo é 1,5 s. O OpenRouter fica como caminho de quem não quer criar conta.
+
+O OpenRouter serve Deepgram mesmo, mas **só em lote**: `/api/v1/audio/transcriptions` existe, `/api/v1/realtime` dá 404. Não aparece em `/api/v1/models` porque não é modelo de chat — está em `/api/v1/providers`. (Verificar em `/models` foi um erro meu que o Paulo corrigiu.)
+
+Em qualquer um dos dois o Silero roda local para os turnos, e o Pipecat carrega sozinho o Smart Turn v3 local, que julga se a frase acabou em vez de só medir silêncio. TTS é ElevenLabs direto, que faz streaming.
+
+**Cartesia (TTS) e Gemini (LLM) não estão ligados** — o Paulo tem as chaves, mas nenhuma persona aponta para elas e cada uma exige uma ramificação no `_stt`/`_tts` do serviço. São ~10 minutos cada quando houver motivo (comparar voz, ou tirar o hop do OpenRouter no LLM).
 
 ### Ainda aberto na Fase 3/4
 
