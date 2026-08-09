@@ -271,3 +271,7 @@
   display_name: AI Providers
   enabled: false
   column: feature_flags_ext_1
+- name: twilio_integration
+  display_name: Twilio
+  enabled: false
+  column: feature_flags_ext_1

@@ -565,6 +565,44 @@
         "CONFIRM": "Yes, delete",
         "CANCEL": "Cancel"
       }
+    },
+    "TWILIO": {
+      "HEADER": "Twilio",
+      "DESCRIPTION": "Connect your Twilio account to run SMS and voice on your own numbers. Credentials belong to this account and are never shared with other accounts on this installation.",
+      "LOADING": "Loading your Twilio account",
+      "CONNECT": {
+        "HELP": "Find both values on the Twilio Console home page, under Account Info.",
+        "ACCOUNT_SID": "Account SID",
+        "AUTH_TOKEN": "Auth Token",
+        "AUTH_TOKEN_HELP": "Stored encrypted. It is never sent back to the browser.",
+        "SUBMIT": "Connect Twilio"
+      },
+      "DISCONNECT": {
+        "BUTTON": "Disconnect",
+        "TITLE": "Disconnect Twilio",
+        "MESSAGE": "Remove these credentials? Inboxes already created keep their own copy and go on working.",
+        "CONFIRM": "Disconnect"
+      },
+      "WEBHOOK": {
+        "TITLE": "Incoming SMS webhook",
+        "HELP": "Paste this into A MESSAGE COMES IN on each Twilio number you want answered here. One URL serves every number — the conversation is matched by the destination number.",
+        "COPY": "Copy",
+        "COPIED": "Webhook URL copied"
+      },
+      "NUMBERS": {
+        "TITLE": "Your Twilio numbers",
+        "EMPTY": "This Twilio account has no phone numbers yet. Buy one in the Twilio Console and it shows up here.",
+        "NUMBER": "Number",
+        "CAPABILITIES": "Can do",
+        "INBOX": "Inbox",
+        "UNLINKED": "Not connected yet",
+        "NONE": "No capabilities"
+      },
+      "API": {
+        "CONNECTED": "Twilio connected",
+        "DISCONNECTED": "Twilio disconnected",
+        "ERROR": "Could not reach Twilio"
+      }
     }
   },
   "CAPTAIN": {

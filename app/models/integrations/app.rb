@@ -68,6 +68,8 @@ class Integrations::App
       openwa_enabled?(account)
     when 'botlayer', 'ai_providers'
       botlayer_enabled?(account)
+    when 'twilio'
+      account.feature_enabled?('twilio_integration')
     else
       true
     end
@@ -96,6 +98,8 @@ class Integrations::App
       openwa_enabled?(account)
     when 'botlayer', 'ai_providers'
       botlayer_enabled?(account)
+    when 'twilio'
+      account.twilio_credential.present?
     else
       account.hooks.exists?(app_id: id)
     end

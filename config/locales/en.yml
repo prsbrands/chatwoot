@@ -140,6 +140,8 @@ en:
     botlayer:
       not_configured: 'Bot layer is not configured. Set the Supabase REST URL and service role key in Super Admin → Settings → Bot Layer.'
       no_models: 'The provider returned no models.'
+    twilio:
+      not_connected: 'Connect a Twilio account first in Settings → Integrations → Twilio.'
     openwa:
       not_configured: 'OpenWA gateway is not configured. Set the gateway URL and API key in Super Admin → Settings → WhatsApp Gateway.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
@@ -405,6 +407,10 @@ en:
       name: 'Bot Personas'
       short_description: 'Edit your AI agent personas, models and knowledge base.'
       description: 'Manage the brain behind your agent bots: personas with prompts and model settings, the knowledge base that feeds them, and which inbox each persona answers.'
+    twilio:
+      name: 'Twilio'
+      short_description: 'Connect your Twilio account to run SMS and voice on your own numbers.'
+      description: 'Connect this account to your Twilio account to see your phone numbers and what each one can do, and to run SMS and voice on them. Credentials are stored encrypted and belong to this account only.'
     openwa:
       name: 'WhatsApp Sessions'
       short_description: 'Pair and manage WhatsApp numbers connected through the OpenWA gateway.'

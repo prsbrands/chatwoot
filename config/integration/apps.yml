@@ -35,6 +35,12 @@ ai_providers:
   i18n_key: ai_providers
   hook_type: account
   allow_multiple_hooks: false
+twilio:
+  id: twilio
+  logo: twilio.png
+  i18n_key: twilio
+  hook_type: account
+  allow_multiple_hooks: false
 botlayer:
   id: botlayer
   logo: botlayer.png

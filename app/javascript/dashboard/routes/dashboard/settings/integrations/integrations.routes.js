@@ -10,6 +10,7 @@ import Linear from './Linear.vue';
 import Notion from './Notion.vue';
 import Shopify from './Shopify.vue';
 import Openwa from './Openwa/Index.vue';
+import Twilio from './Twilio/Index.vue';
 import Botlayer from './Botlayer/Index.vue';
 import AiProviders from './AiProviders/Index.vue';
 import BotlayerPersonaEditor from './Botlayer/PersonaEditor.vue';
@@ -53,6 +54,15 @@ export default {
           path: 'openwa',
           component: Openwa,
           name: 'settings_integrations_openwa',
+          meta: {
+            featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+            permissions: ['administrator'],
+          },
+        },
+        {
+          path: 'twilio',
+          component: Twilio,
+          name: 'settings_integrations_twilio',
           meta: {
             featureFlag: FEATURE_FLAGS.INTEGRATIONS,
             permissions: ['administrator'],
