@@ -49,6 +49,6 @@ class Api::V1::Accounts::Integrations::Botlayer::ProvidersController < Api::V1::
   end
 
   def provider_params
-    params.permit(:slug, :label, :base_url, :api_style, :api_key, :is_active)
+    params.permit(:slug, :label, :base_url, :api_style, :api_key, :is_active, kinds: [])
   end
 end

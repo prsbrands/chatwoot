@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import TwilioAPI from 'dashboard/api/integrations/twilio';
+import BotlayerAPI from 'dashboard/api/integrations/botlayer';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
@@ -26,11 +27,16 @@ const newUsername = ref('');
 const issuedCredential = ref(null);
 const credentialDialogRef = ref(null);
 
+const personas = ref([]);
+
 const routeForm = ref({
   phone_number: '',
   destination_type: 'sip',
   destination: '',
   ring_timeout: 20,
+  answer_mode: 'human',
+  no_answer_action: 'hangup',
+  bot_persona_slug: '',
 });
 
 const managedDomain = computed(() => domains.value.find(d => d.managed));
@@ -46,6 +52,41 @@ const destinationTypes = computed(() => [
   { value: 'sip', label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.TYPE_SIP') },
   { value: 'pstn', label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.TYPE_PSTN') },
 ]);
+
+const answerModes = computed(() => [
+  { value: 'human', label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.MODE_HUMAN') },
+  { value: 'bot', label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.MODE_BOT') },
+]);
+
+const noAnswerActions = computed(() => [
+  {
+    value: 'hangup',
+    label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.NO_ANSWER_HANGUP'),
+  },
+  { value: 'bot', label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.NO_ANSWER_BOT') },
+]);
+
+// Só entram personas que têm as três pontas de voz configuradas: escolher uma
+// persona de texto aqui daria uma chamada muda.
+const voicePersonas = computed(() =>
+  personas.value
+    .filter(
+      persona =>
+        persona.is_active &&
+        persona.stt_provider &&
+        persona.tts_provider &&
+        persona.tts_voice_id
+    )
+    .map(persona => ({ value: persona.slug, label: persona.display_name }))
+);
+
+const humanAnswers = computed(() => routeForm.value.answer_mode === 'human');
+
+const needsPersona = computed(
+  () =>
+    routeForm.value.answer_mode === 'bot' ||
+    routeForm.value.no_answer_action === 'bot'
+);
 
 const alertError = error =>
   useAlert(
@@ -64,6 +105,17 @@ const fetchAll = async () => {
     if (managedDomain.value) await fetchCredentials();
   } catch (error) {
     alertError(error);
+  }
+};
+
+// A camada de bots pode estar desligada nesta conta (feature flag). Sem ela a
+// aba segue funcionando para atendimento humano, só não oferece o bot.
+const fetchPersonas = async () => {
+  try {
+    const { data } = await BotlayerAPI.personas();
+    personas.value = data.personas;
+  } catch {
+    personas.value = [];
   }
 };
 
@@ -127,12 +179,13 @@ const removeCredential = async credential => {
   }
 };
 
-const canSaveRoute = computed(
-  () =>
-    routeForm.value.phone_number &&
-    routeForm.value.destination.trim() &&
-    routeForm.value.ring_timeout > 4
-);
+const canSaveRoute = computed(() => {
+  const form = routeForm.value;
+  if (!form.phone_number) return false;
+  if (needsPersona.value && !form.bot_persona_slug) return false;
+  if (!humanAnswers.value) return true;
+  return Boolean(form.destination.trim()) && form.ring_timeout > 4;
+});
 
 const saveRoute = async () => {
   if (!canSaveRoute.value) return;
@@ -164,7 +217,10 @@ const copyCredential = async () => {
   useAlert(t('INTEGRATION_SETTINGS.TWILIO.VOICE.CREDENTIAL_COPIED'));
 };
 
-onMounted(fetchAll);
+onMounted(() => {
+  fetchAll();
+  fetchPersonas();
+});
 </script>
 
 <template>
@@ -285,29 +341,56 @@ onMounted(fetchAll);
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm text-n-slate-12">
-            {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.DESTINATION_TYPE') }}
+            {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.ANSWER_MODE') }}
+          </label>
+          <Select v-model="routeForm.answer_mode" :options="answerModes" />
+        </div>
+        <template v-if="humanAnswers">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.DESTINATION_TYPE') }}
+            </label>
+            <Select
+              v-model="routeForm.destination_type"
+              :options="destinationTypes"
+            />
+          </div>
+          <Input
+            v-model="routeForm.destination"
+            class="flex-1 min-w-48"
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.DESTINATION')"
+            :placeholder="
+              routeForm.destination_type === 'sip'
+                ? `paulo@${managedDomain.domain_name}`
+                : '+15551234567'
+            "
+          />
+          <Input
+            v-model="routeForm.ring_timeout"
+            type="number"
+            class="w-28"
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.TIMEOUT')"
+          />
+          <div class="flex flex-col gap-1">
+            <label class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.NO_ANSWER') }}
+            </label>
+            <Select
+              v-model="routeForm.no_answer_action"
+              :options="noAnswerActions"
+            />
+          </div>
+        </template>
+        <div v-if="needsPersona" class="flex flex-col gap-1">
+          <label class="text-sm text-n-slate-12">
+            {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.PERSONA') }}
           </label>
           <Select
-            v-model="routeForm.destination_type"
-            :options="destinationTypes"
+            v-model="routeForm.bot_persona_slug"
+            :options="voicePersonas"
+            :placeholder="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.PICK_PERSONA')"
           />
         </div>
-        <Input
-          v-model="routeForm.destination"
-          class="flex-1 min-w-48"
-          :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.DESTINATION')"
-          :placeholder="
-            routeForm.destination_type === 'sip'
-              ? `paulo@${managedDomain.domain_name}`
-              : '+15551234567'
-          "
-        />
-        <Input
-          v-model="routeForm.ring_timeout"
-          type="number"
-          class="w-28"
-          :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.TIMEOUT')"
-        />
         <Button
           blue
           :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.SAVE_ROUTE')"
@@ -324,11 +407,24 @@ onMounted(fetchAll);
       >
         <span class="text-n-slate-12">
           {{ route.phone_number }} →
-          <span class="font-mono">{{ route.destination }}</span>
-          <span class="text-n-slate-10">
-            ({{ route.destination_type.toUpperCase() }},
-            {{ route.ring_timeout }}s)
-          </span>
+          <template v-if="route.answer_mode === 'bot'">
+            <span class="font-mono">{{ route.bot_persona_slug }}</span>
+            <span class="text-n-slate-10">
+              ({{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.MODE_BOT') }})
+            </span>
+          </template>
+          <template v-else>
+            <span class="font-mono">{{ route.destination }}</span>
+            <span class="text-n-slate-10">
+              ({{ route.destination_type.toUpperCase() }},
+              {{ route.ring_timeout }}s →
+              {{
+                route.no_answer_action === 'bot'
+                  ? route.bot_persona_slug
+                  : $t('INTEGRATION_SETTINGS.TWILIO.VOICE.NO_ANSWER_HANGUP')
+              }})
+            </span>
+          </template>
         </span>
         <Button
           sm

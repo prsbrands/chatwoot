@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import BotlayerAPI from 'dashboard/api/integrations/botlayer';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
@@ -16,17 +17,25 @@ const { t } = useI18n();
 const API_STYLES = [
   { value: 'openai', label: 'OpenAI-compatible' },
   { value: 'anthropic', label: 'Anthropic Messages' },
+  { value: 'elevenlabs', label: 'ElevenLabs' },
 ];
 
-// Atalhos para os fornecedores mais comuns: preenchem URL e formato, restando
-// só a chave. Base URLs conforme a documentação de cada API.
+// O que cada chave serve. Um mesmo fornecedor pode servir mais de uma coisa — a
+// conta de OpenRouter faz o LLM e a transcrição (Deepgram nova-3), a de OpenAI
+// faz as três — e é por isso que é lista, não escolha única: a chave é o que não
+// se quer duplicar.
+const KINDS = ['llm', 'stt', 'tts'];
+
+// Atalhos para os fornecedores mais comuns: preenchem URL, formato e para que
+// servem, restando só a chave. Base URLs conforme a documentação de cada API.
 const PRESETS = [
-  { slug: 'openrouter', label: 'OpenRouter', base_url: 'https://openrouter.ai/api/v1', api_style: 'openai' },
-  { slug: 'anthropic', label: 'Anthropic', base_url: 'https://api.anthropic.com/v1', api_style: 'anthropic' },
-  { slug: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1', api_style: 'openai' },
-  { slug: 'groq', label: 'Groq', base_url: 'https://api.groq.com/openai/v1', api_style: 'openai' },
-  { slug: 'deepseek', label: 'DeepSeek', base_url: 'https://api.deepseek.com/v1', api_style: 'openai' },
-  { slug: 'mistral', label: 'Mistral', base_url: 'https://api.mistral.ai/v1', api_style: 'openai' },
+  { slug: 'openrouter', label: 'OpenRouter', base_url: 'https://openrouter.ai/api/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
+  { slug: 'elevenlabs', label: 'ElevenLabs', base_url: 'https://api.elevenlabs.io/v1', api_style: 'elevenlabs', kinds: ['tts'] },
+  { slug: 'anthropic', label: 'Anthropic', base_url: 'https://api.anthropic.com/v1', api_style: 'anthropic', kinds: ['llm'] },
+  { slug: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1', api_style: 'openai', kinds: ['llm', 'stt', 'tts'] },
+  { slug: 'groq', label: 'Groq', base_url: 'https://api.groq.com/openai/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
+  { slug: 'deepseek', label: 'DeepSeek', base_url: 'https://api.deepseek.com/v1', api_style: 'openai', kinds: ['llm'] },
+  { slug: 'mistral', label: 'Mistral', base_url: 'https://api.mistral.ai/v1', api_style: 'openai', kinds: ['llm'] },
 ];
 
 const providers = ref([]);
@@ -70,6 +79,7 @@ const openDialog = (provider, preset) => {
         label: provider.label,
         base_url: provider.base_url,
         api_style: provider.api_style,
+        kinds: [...(provider.kinds || ['llm'])],
         api_key: '',
         has_key: Boolean(provider.api_key),
         is_active: provider.is_active,
@@ -79,12 +89,24 @@ const openDialog = (provider, preset) => {
         label: preset?.label || '',
         base_url: preset?.base_url || '',
         api_style: preset?.api_style || 'openai',
+        kinds: [...(preset?.kinds || ['llm'])],
         api_key: '',
         has_key: false,
         is_active: true,
       };
   dialogRef.value.open();
 };
+
+const toggleKind = kind => {
+  const { kinds } = form.value;
+  const at = kinds.indexOf(kind);
+  if (at === -1) kinds.push(kind);
+  else kinds.splice(at, 1);
+};
+
+// Sincronizar catálogo é conversa de LLM: um fornecedor de voz não tem /models
+// para listar.
+const servesModels = provider => (provider.kinds || ['llm']).includes('llm');
 
 const save = async () => {
   isSaving.value = true;
@@ -94,6 +116,7 @@ const save = async () => {
     label: data.label,
     base_url: data.base_url,
     api_style: data.api_style,
+    kinds: data.kinds,
     api_key: data.api_key,
     is_active: data.is_active,
   };
@@ -194,17 +217,30 @@ onMounted(fetchProviders);
                 }}
               </span>
             </div>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="kind in provider.kinds || ['llm']"
+                :key="kind"
+                class="rounded bg-n-alpha-2 px-1.5 py-0.5 text-xs font-medium uppercase text-n-slate-11"
+              >
+                {{ $t(`INTEGRATION_SETTINGS.AI_PROVIDERS.KIND.${kind}`) }}
+              </span>
+            </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-xs text-n-slate-10">
-                {{
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.MODEL_COUNT', {
-                    count: (provider.models || []).length,
-                  })
-                }}
-                · {{ provider.api_style }}
+                <template v-if="servesModels(provider)">
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.MODEL_COUNT', {
+                      count: (provider.models || []).length,
+                    })
+                  }}
+                  ·
+                </template>
+                {{ provider.api_style }}
               </span>
               <div class="flex gap-1">
                 <Button
+                  v-if="servesModels(provider)"
                   sm
                   slate
                   ghost
@@ -268,7 +304,11 @@ onMounted(fetchProviders);
         :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.SAVE')"
         :is-loading="isSaving"
         :disable-confirm-button="
-          isSaving || !form.label || !form.slug || !form.base_url
+          isSaving ||
+          !form.label ||
+          !form.slug ||
+          !form.base_url ||
+          !form.kinds?.length
         "
         @confirm="save"
       >
@@ -299,6 +339,29 @@ onMounted(fetchProviders);
               {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_STYLE') }}
             </span>
             <Select v-model="form.api_style" :options="API_STYLES" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <span class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS') }}
+            </span>
+            <div class="flex gap-4">
+              <label
+                v-for="kind in KINDS"
+                :key="kind"
+                class="flex cursor-pointer items-center gap-2"
+              >
+                <Checkbox
+                  :model-value="form.kinds?.includes(kind)"
+                  @change="toggleKind(kind)"
+                />
+                <span class="text-sm text-n-slate-12">
+                  {{ $t(`INTEGRATION_SETTINGS.AI_PROVIDERS.KIND.${kind}`) }}
+                </span>
+              </label>
+            </div>
+            <span class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.KINDS_HELP') }}
+            </span>
           </div>
           <Input
             v-model="form.api_key"

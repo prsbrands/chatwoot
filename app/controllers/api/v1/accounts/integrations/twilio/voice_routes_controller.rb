@@ -30,6 +30,7 @@ class Api::V1::Accounts::Integrations::Twilio::VoiceRoutesController < Api::V1::
   end
 
   def route_params
-    params.permit(:phone_number, :destination_type, :destination, :ring_timeout, :enabled)
+    params.permit(:phone_number, :destination_type, :destination, :ring_timeout, :enabled,
+                  :answer_mode, :no_answer_action, :bot_persona_slug)
   end
 end

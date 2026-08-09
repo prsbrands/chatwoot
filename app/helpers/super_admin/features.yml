@@ -124,3 +124,9 @@ ai_assistant:
   enabled: true
   icon: 'icon-captain'
   config_key: 'captain'
+voice:
+  name: 'Voice Agent'
+  description: 'Media service that answers phone calls: WebSocket the calls stream to, and the token it uses to read persona and provider settings back.'
+  enabled: true
+  icon: 'icon-phone-line'
+  config_key: 'voice'

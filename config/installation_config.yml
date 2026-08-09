@@ -612,3 +612,15 @@
   locked: false
   type: secret
 ## ------ End of Configs added for the Bot Layer (Supabase) ------ ##
+
+## ------ Configs added for the Voice Agent ------ ##
+- name: VOICE_STREAM_URL
+  display_title: 'Voice Stream URL'
+  description: 'WebSocket the phone calls are streamed to, e.g. wss://prs.cortexgen.cloud/voice-stream. Must be wss:// — Twilio Media Streams refuses plain ws'
+  locked: false
+- name: VOICE_SERVICE_TOKEN
+  display_title: 'Voice Service Token'
+  description: 'Shared secret the media service presents to read persona and provider settings. Same value goes in the service env'
+  locked: false
+  type: secret
+## ------ End of Configs added for the Voice Agent ------ ##

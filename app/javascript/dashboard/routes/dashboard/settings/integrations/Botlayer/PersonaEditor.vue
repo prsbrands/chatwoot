@@ -40,12 +40,46 @@ const emptyForm = () => ({
   keywords: '',
   max_turns: null,
   handoff_rules: {},
+  stt_provider: '',
+  stt_model: '',
+  tts_provider: '',
+  tts_voice_id: '',
+  tts_model: '',
+  voice_language: '',
+  voice_first_message: '',
+  voice_greeting_delay_ms: 300,
+  voice_endpoint_ms: 600,
+  voice_interruptible: true,
 });
 
-const providerOptions = computed(() =>
+// Um fornecedor só aparece onde a chave dele foi autorizada a servir.
+const providersServing = kind =>
   providers.value
-    .filter(provider => provider.is_active)
-    .map(provider => ({ value: provider.slug, label: provider.label }))
+    .filter(
+      provider =>
+        provider.is_active && (provider.kinds || ['llm']).includes(kind)
+    )
+    .map(provider => ({ value: provider.slug, label: provider.label }));
+
+const providerOptions = computed(() => providersServing('llm'));
+
+const sttProviderOptions = computed(() => [
+  { value: '', label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_NONE') },
+  ...providersServing('stt'),
+]);
+
+const ttsProviderOptions = computed(() => [
+  { value: '', label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_NONE') },
+  ...providersServing('tts'),
+]);
+
+// Uma chamada precisa das três pontas. Sem isso a persona segue válida para
+// texto, mas não pode ser escolhida numa rota de voz.
+const voiceReady = computed(
+  () =>
+    Boolean(form.value?.stt_provider) &&
+    Boolean(form.value?.tts_provider) &&
+    Boolean(form.value?.tts_voice_id)
 );
 
 const fallbackProviderOptions = computed(() => [
@@ -114,6 +148,13 @@ const load = async () => {
       description: persona.description || '',
       fallback_provider: persona.fallback_provider || '',
       fallback_model: persona.fallback_model || '',
+      stt_provider: persona.stt_provider || '',
+      stt_model: persona.stt_model || '',
+      tts_provider: persona.tts_provider || '',
+      tts_voice_id: persona.tts_voice_id || '',
+      tts_model: persona.tts_model || '',
+      voice_language: persona.voice_language || '',
+      voice_first_message: persona.voice_first_message || '',
       keywords: (persona.handoff_rules?.keywords || []).join(', '),
       max_turns: persona.handoff_rules?.max_turns || null,
       handoff_rules: persona.handoff_rules || {},
@@ -148,6 +189,16 @@ const save = async () => {
     temperature: Number(data.temperature),
     max_tokens: Number(data.max_tokens),
     is_active: data.is_active,
+    stt_provider: data.stt_provider || null,
+    stt_model: data.stt_model || null,
+    tts_provider: data.tts_provider || null,
+    tts_voice_id: data.tts_voice_id || null,
+    tts_model: data.tts_model || null,
+    voice_language: data.voice_language || null,
+    voice_first_message: data.voice_first_message || null,
+    voice_greeting_delay_ms: Number(data.voice_greeting_delay_ms),
+    voice_endpoint_ms: Number(data.voice_endpoint_ms),
+    voice_interruptible: data.voice_interruptible,
     handoff_rules: {
       ...data.handoff_rules,
       keywords: data.keywords
@@ -350,6 +401,119 @@ onMounted(load);
               type="number"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_TURNS')"
             />
+          </section>
+
+          <section class="flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <h2
+                class="text-xs font-semibold uppercase tracking-wide text-n-slate-10"
+              >
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_VOICE') }}
+              </h2>
+              <span
+                class="rounded px-1.5 py-0.5 text-xs font-medium"
+                :class="
+                  voiceReady
+                    ? 'bg-n-teal-3 text-n-teal-11'
+                    : 'bg-n-slate-3 text-n-slate-11'
+                "
+              >
+                {{
+                  voiceReady
+                    ? $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_READY')
+                    : $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_OFF')
+                }}
+              </span>
+            </div>
+            <p class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_HELP') }}
+            </p>
+
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER')
+                }}
+              </span>
+              <Select
+                v-model="form.stt_provider"
+                :options="sttProviderOptions"
+              />
+            </div>
+            <Input
+              v-if="form.stt_provider"
+              v-model="form.stt_model"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_MODEL')"
+              placeholder="deepgram/nova-3"
+            />
+
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-n-slate-12">
+                {{
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER')
+                }}
+              </span>
+              <Select
+                v-model="form.tts_provider"
+                :options="ttsProviderOptions"
+              />
+            </div>
+            <template v-if="form.tts_provider">
+              <Input
+                v-model="form.tts_voice_id"
+                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID')"
+                :message="
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID_HELP')
+                "
+              />
+              <Input
+                v-model="form.tts_model"
+                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_MODEL')"
+                placeholder="eleven_flash_v2_5"
+              />
+            </template>
+
+            <div class="grid grid-cols-2 gap-3">
+              <Input
+                v-model="form.voice_language"
+                :label="
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_LANGUAGE')
+                "
+                placeholder="es"
+              />
+              <Input
+                v-model="form.voice_endpoint_ms"
+                type="number"
+                step="50"
+                :label="
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.ENDPOINT_MS')
+                "
+              />
+            </div>
+            <Input
+              v-model="form.voice_greeting_delay_ms"
+              type="number"
+              step="50"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.GREETING_MS')"
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TIMING_HELP')
+              "
+            />
+            <Input
+              v-model="form.voice_first_message"
+              :label="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FIRST_MESSAGE')
+              "
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FIRST_MESSAGE_HELP')
+              "
+            />
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.INTERRUPTIBLE') }}
+              </span>
+              <Switch v-model="form.voice_interruptible" />
+            </div>
           </section>
 
           <section v-if="linkedDocs.length" class="flex flex-col gap-2">
