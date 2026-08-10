@@ -53,6 +53,7 @@ const emptyForm = () => ({
   voice_interruptible: true,
   voice_wait_for_complete_turn: true,
   voice_interrupt_min_words: 0,
+  voice_eot_threshold: 0.8,
 });
 
 // Um fornecedor só aparece onde a chave dele foi autorizada a servir.
@@ -152,6 +153,15 @@ const ttsLanguageOptions = computed(() => [
   ...LANGUAGES.map(code => ({ value: code, label: code })),
 ]);
 
+// O Flux traz a máquina de turnos dentro do transcritor, e os campos que
+// controlam a nossa não chegam nele: `End of turn`, `Wait until the caller
+// finishes` e `Words needed to interrupt` alimentam o VAD do Silero e as
+// estratégias de turno, que a rota Flux contorna inteira. Ficavam na tela
+// parecendo configurados. Quem manda ali é o limiar de confiança.
+const usesFlux = computed(() =>
+  String(form.value?.stt_model || '').startsWith('flux')
+);
+
 // Idioma travado num modelo que não aceita idioma é ajuste que não acontece.
 const languageIgnored = computed(
   () =>
@@ -183,7 +193,10 @@ const voiceGaps = computed(() => {
 
 const voiceReady = computed(() => voiceGaps.value.length === 0);
 
-// Prompt longo é latência direta numa chamada: o modelo relê tudo a cada turno.
+// Prompt longo pesa na conversa, não no relógio: medimos 23,9 KB contra 11 KB
+// no mesmo modelo e o tempo até o primeiro byte não mudou (a OpenAI cacheia o
+// prefixo). O que ele custa é adesão — num prompt grande só a lista final é
+// obedecida de verdade — e risco de retry.
 const promptIsHeavyForVoice = computed(
   () => voiceReady.value && totalChars.value > 8000
 );
@@ -309,6 +322,7 @@ const save = async () => {
     voice_interruptible: data.voice_interruptible,
     voice_wait_for_complete_turn: data.voice_wait_for_complete_turn,
     voice_interrupt_min_words: Number(data.voice_interrupt_min_words) || 0,
+    voice_eot_threshold: Number(data.voice_eot_threshold) || 0.8,
     handoff_rules: {
       ...data.handoff_rules,
       keywords: data.keywords
@@ -641,6 +655,19 @@ onMounted(load);
             </template>
 
             <Input
+              v-if="usesFlux"
+              v-model="form.voice_eot_threshold"
+              type="number"
+              step="0.05"
+              min="0.5"
+              max="0.95"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EOT_THRESHOLD')"
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EOT_THRESHOLD_HELP')
+              "
+            />
+            <Input
+              v-else
               v-model="form.voice_endpoint_ms"
               type="number"
               step="50"
@@ -670,7 +697,7 @@ onMounted(load);
               </span>
               <Switch v-model="form.voice_interruptible" />
             </div>
-            <div class="flex flex-col gap-1">
+            <div v-if="!usesFlux" class="flex flex-col gap-1">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm text-n-slate-12">
                   {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN') }}
@@ -682,7 +709,7 @@ onMounted(load);
               </span>
             </div>
             <Input
-              v-if="form.voice_interruptible"
+              v-if="!usesFlux && form.voice_interruptible"
               v-model="form.voice_interrupt_min_words"
               type="number"
               min="0"

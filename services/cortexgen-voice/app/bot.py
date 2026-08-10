@@ -177,7 +177,7 @@ def _language(code: str | None):
         return code
 
 
-def _stt(config: dict, language: Language | None, endpoint_ms: int):
+def _stt(config: dict, language: Language | None, endpoint_ms: int, eot_threshold: float = 0.8):
     """Transcrição, em streaming quando o fornecedor permite.
 
     O Deepgram direto fala WebSocket e devolve texto enquanto a pessoa ainda
@@ -208,16 +208,18 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
             settings=DeepgramFluxSTTService.Settings(
                 model=config["model"],
                 language_hints=[Language.ES, Language.PT],
-                # 0.7 fechava o turno na pausa natural de quem fala em blocos.
-                # "Doutor Juan" virou 'Doutor,' + 'one.' e custou três idas e
-                # voltas para capturar um nome; "Clínica Luis / Soy médico /
-                # tenemos atención" virou três turnos numa frase. E blips de
-                # 115 ms viravam fala, cortando o bot na primeira sílaba.
+                # Campo da persona desde que o coletor de métricas voltou a
+                # medir: a espera do EndOfTurn é ~0,8 s de silêncio com quem
+                # ligou já calado, e era o único knob gordo que estava chumbado
+                # aqui — cada tentativa custava um deploy.
                 #
-                # O orçamento para subir veio do TTS: o eleven_flash_v2_5 tirou
-                # ~360 ms do primeiro áudio (0,55 s → 0,19 s). Esperar mais pelo
-                # fim do turno gasta parte disso e devolve a frase inteira.
-                eot_threshold=0.8,
+                # 0.7, o padrão da Deepgram, fechava o turno na pausa natural de
+                # quem fala em blocos: "Doutor Juan" virou 'Doutor,' + 'one.' e
+                # custou três idas e voltas para capturar um nome; "Clínica Luis
+                # / Soy médico / tenemos atención" virou três turnos numa frase.
+                # E blips de 115 ms viravam fala, cortando o bot na primeira
+                # sílaba. Por isso o padrão daqui é 0.8, não o da Deepgram.
+                eot_threshold=eot_threshold,
                 eager_eot_threshold=0.5,
                 eot_timeout_ms=5000,
             ),
@@ -534,7 +536,12 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
             transport.input(),
             echo_gate,
             *([] if flux else [VADProcessor(vad_analyzer=vad_analyzer)]),
-            _stt(config["stt"], stt_language, persona["endpoint_ms"]),
+            _stt(
+                config["stt"],
+                stt_language,
+                persona["endpoint_ms"],
+                persona.get("eot_threshold") or 0.8,
+            ),
             aggregators.user(),
             _llm(config["llm"], config.get("llm_fallback")),
             _tts(config["tts"], tts_language),

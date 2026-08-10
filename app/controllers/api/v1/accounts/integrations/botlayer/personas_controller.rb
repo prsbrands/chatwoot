@@ -24,7 +24,7 @@ class Api::V1::Accounts::Integrations::Botlayer::PersonasController < Api::V1::A
                               :stt_provider, :stt_model, :tts_provider, :tts_voice_id, :tts_model,
                               :voice_language, :stt_language, :voice_first_message, :voice_greeting_delay_ms,
                               :voice_endpoint_ms, :voice_interruptible, :voice_wait_for_complete_turn,
-                              :voice_interrupt_min_words,
+                              :voice_interrupt_min_words, :voice_eot_threshold,
                               handoff_rules: {}).to_h
     # handoff_rules.keywords chega como array; permit com hash aberto não cobre
     # arrays aninhados, então normalizamos aqui a partir do raw.

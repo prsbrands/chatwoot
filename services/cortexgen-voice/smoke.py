@@ -51,6 +51,13 @@ assert "language_hint=pt" in flux_query, flux_query
 assert "eot_threshold=0.8" in flux_query, flux_query
 print("flux query:", flux_query)
 
+# Agora que o limiar é campo de persona, o que precisa de guarda é o caminho
+# entre o campo e a query: um valor que fique no objeto de settings sem chegar
+# à Deepgram é exatamente o bug que o `stt_language` já custou.
+tuned = _stt(FAKE["stt_flux"], language, 600, 0.65)._build_query_string()
+assert "eot_threshold=0.65" in tuned, tuned
+print("eot_threshold da persona chega na query:", "eot_threshold=0.65")
+
 # Com Flux a máquina de turnos sai daqui: quem decide é quem ouve o áudio, e as
 # estratégias External só repassam os quadros que ele emite.
 fx = _flux_turn_strategies()

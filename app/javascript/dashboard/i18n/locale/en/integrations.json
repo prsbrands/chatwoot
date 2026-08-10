@@ -283,6 +283,8 @@
         "MIN_WORDS_HELP": "0 means any sound stops the bot, which is how a polite “uh-huh” cuts it off mid-sentence. 2 ignores those — but also ignores a one-word “stop”. Worth trying both on a real call.",
         "WAIT_TURN": "Wait until the caller finishes",
         "WAIT_TURN_HELP": "The model judges whether the caller has actually finished before the bot answers, so it holds on through the pauses in a spelled-out email instead of talking over them. It costs nothing extra — the same reply decides it. Turn this off if you switch to a small model that stops answering: the model has to follow a response format for this to work.",
+        "EOT_THRESHOLD": "End of turn confidence",
+        "EOT_THRESHOLD_HELP": "How sure Flux must be that the caller finished before the bot answers. This is confidence, not milliseconds of silence. Lower answers sooner but cuts people who pause or spell things out — at 0.7 a caller saying “Doctor Juan” came through as two separate turns. Higher waits longer in silence: most of the caller's wait is spent here, so this is the one setting that moves it. Try one call per step.",
         "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model"
       },
       "KNOWLEDGE": {

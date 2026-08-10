@@ -59,7 +59,9 @@ class Voice::CallConfigService
       endpoint_ms: persona['voice_endpoint_ms'],
       interruptible: persona['voice_interruptible'],
       wait_for_complete_turn: persona['voice_wait_for_complete_turn'],
-      interrupt_min_words: persona['voice_interrupt_min_words']
+      interrupt_min_words: persona['voice_interrupt_min_words'],
+      # Confiança, não milissegundos — só o caminho Flux a lê.
+      eot_threshold: persona['voice_eot_threshold'].to_f
     }
   end
 
