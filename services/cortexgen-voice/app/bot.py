@@ -23,7 +23,14 @@ import httpx
 from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
-from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame
+from pipecat.frames.frames import (
+    BotStartedSpeakingFrame,
+    BotStoppedSpeakingFrame,
+    InputAudioRawFrame,
+    LLMRunFrame,
+    TTSSpeakFrame,
+)
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.observers.user_bot_latency_observer import UserBotLatencyObserver
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -306,6 +313,64 @@ def _tts(config: dict, language: Language | None) -> ElevenLabsTTSService:
     )
 
 
+class SilenceWhileBotSpeaks(FrameProcessor):
+    """Enquanto o bot fala, o transcritor ouve silêncio.
+
+    A linha devolve a voz do bot. Quatro chamadas provaram: com o microfone
+    de quem ligou mudo, a saudação voltou transcrita — 'suragavada para fins
+    de Quality ID', 'su router va de para fin de Quality ID' — sempre o mesmo
+    "Gracias por llamar a Pe-erre-ese Brands" mastigado. O Flux chamava isso
+    de turno de quem ligou, interrompia a saudação **em 3 s cravados**, e a
+    pergunta "¿Cuál es su nombre?" nunca chegava ao telefone. O bot então
+    respondia ao próprio eco com "No entendí bien".
+
+    Não é a nossa pista voltando: o Twilio manda só `inbound` (contado no
+    log). É eco de linha, e o Twilio não cancela eco em Media Streams. Sem
+    filtro licenciado (krisp/aic/koala) a saída é meio-duplex, que é o que
+    todo IVR faz.
+
+    Fica **antes** do STT de propósito: o que não chega ao Deepgram não vira
+    turno, e nada a jusante precisa saber disso. É a diferença para o mute
+    que matou uma chamada em 62 s — aquele agia depois do STT e deixava um
+    turno pela metade na máquina de estados; este troca bytes por silêncio e
+    não guarda estado nenhum.
+
+    Sem margem depois que o bot cala: o rabo de eco que ainda volta dura uns
+    poucos décimos, e o Flux precisou de ~3 s de eco contínuo para declarar
+    turno nas quatro chamadas. Margem só encolheria a janela em que quem
+    ligou consegue falar.
+
+    O preço é o barge-in: enquanto o bot fala, não dá para cortá-lo. É o que
+    um cancelador de eco compraria de volta.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._bot_speaking = False
+        self.frames_silenced = 0
+
+    async def process_frame(self, frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+
+        # O transporte de saída empurra estes dois para os dois lados, então
+        # eles chegam aqui mesmo estando no fim do pipeline.
+        if isinstance(frame, BotStartedSpeakingFrame):
+            self._bot_speaking = True
+        elif isinstance(frame, BotStoppedSpeakingFrame):
+            self._bot_speaking = False
+        elif self._bot_speaking and isinstance(frame, InputAudioRawFrame):
+            # Silêncio, não descarte: o Flux conta com áudio contínuo para
+            # cronometrar os próprios turnos.
+            self.frames_silenced += 1
+            frame = InputAudioRawFrame(
+                audio=bytes(len(frame.audio)),
+                num_channels=frame.num_channels,
+                sample_rate=frame.sample_rate,
+            )
+
+        await self.push_frame(frame, direction)
+
+
 class CallerAudioOnlySerializer(TwilioFrameSerializer):
     """Só o áudio de quem ligou entra no pipeline.
 
@@ -419,9 +484,12 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         ),
     )
 
+    echo_gate = SilenceWhileBotSpeaks()
+
     pipeline = Pipeline(
         [
             transport.input(),
+            echo_gate,
             *([] if flux else [VADProcessor(vad_analyzer=vad_analyzer)]),
             _stt(config["stt"], stt_language, persona["endpoint_ms"]),
             aggregators.user(),
@@ -469,7 +537,10 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     started_at = time.monotonic()
     await PipelineRunner(handle_sigint=False).run(task)
     duration = int(time.monotonic() - started_at)
-    logger.info(f"call {call_id} finished after {duration}s, audio tracks {serializer.tracks_seen}")
+    logger.info(
+        f"call {call_id} finished after {duration}s, audio tracks {serializer.tracks_seen}, "
+        f"echo frames silenced {echo_gate.frames_silenced}"
+    )
 
     await report_call(
         {

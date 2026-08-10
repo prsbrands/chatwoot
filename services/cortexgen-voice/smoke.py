@@ -247,4 +247,42 @@ assert _asyncio.run(_ser.deserialize(_json.dumps({"event": "media", "media": {"p
 assert _ser.tracks_seen == {"outbound": 1, "inbound": 2}, _ser.tracks_seen
 print("audio tracks:", _ser.tracks_seen, "(outbound descartada)")
 
+
+# O eco da linha não pode chegar ao transcritor.
+#
+# A voz do bot volta pela linha e o Flux a chamava de turno de quem ligou:
+# saudação cortada em 3 s, sempre antes de "¿Cuál es su nombre?". Enquanto o
+# bot fala, a entrada tem de ser silêncio — e voltar ao normal assim que ele
+# cala, senão a chamada trava esperando um turno que não vem.
+from pipecat.frames.frames import (
+    BotStartedSpeakingFrame,
+    BotStoppedSpeakingFrame,
+    InputAudioRawFrame,
+)
+from pipecat.tests.utils import run_test as _run_test
+
+from app.bot import SilenceWhileBotSpeaks
+
+_gate = SilenceWhileBotSpeaks()
+_loud = lambda: InputAudioRawFrame(  # noqa: E731
+    audio=b"\x7f" * 320, sample_rate=8000, num_channels=1
+)
+_down, _ = _asyncio.run(
+    _run_test(
+        _gate,
+        frames_to_send=[BotStartedSpeakingFrame(), _loud(), BotStoppedSpeakingFrame(), _loud()],
+        expected_down_frames=[
+            BotStartedSpeakingFrame,
+            InputAudioRawFrame,
+            BotStoppedSpeakingFrame,
+            InputAudioRawFrame,
+        ],
+    )
+)
+_during, _after = _down[1], _down[3]
+assert _during.audio == bytes(320), "áudio durante a fala do bot tinha de sair silenciado"
+assert _after.audio == b"\x7f" * 320, "áudio depois da fala do bot não pode ser tocado"
+assert _gate.frames_silenced == 1, _gate.frames_silenced
+print("echo gate: 1 quadro silenciado durante a fala, 0 depois")
+
 print("\nSMOKE OK")
