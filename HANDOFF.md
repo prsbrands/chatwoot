@@ -872,7 +872,17 @@ O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugest�
   **Fica de fora** o default da coluna `widget_color` no banco (`#1f93ff`), que exigiria migration para um caso que a UI já cobre mandando a cor. E a paleta legada `woot.*`, derivada do azul do Radix, que sobrevive em telas marginais (billing enterprise, playground do Super Admin).
 
   **Atenção ao dado:** o `widget_color` das inboxes existentes foi atualizado para `#388550`. A inbox 10 estava em `#0E0E0E` — se aquilo era escolha deliberada, é um campo em Settings → Inboxes.
-- **Locales não-EN** ainda dizem "Chatwoot" (`app/javascript/dashboard/i18n/locale/pt_BR/` etc.).
+- ~~**Locales não-EN** ainda dizem "Chatwoot"~~ — **resolvido** em 10/08 (`fe1ff5bac`), **sem editar arquivo de locale**.
+
+  Eram 2.565 ocorrências em **57 idiomas** (46 só no pt_BR). Editar os arquivos seria errado duas vezes: o `AGENTS.md` manda mexer só em `en.json` porque os demais vêm do Crowdin, e qualquer edição ali volta atrás no próximo merge com o upstream.
+
+  A troca vai como **`postTranslation` do vue-i18n** (opção de `ComposerOptions`, roda depois do `t()`), em `shared/helpers/installationBranding.js`, ligada no `dashboard.js` e no `v3app.js` — os dois entrypoints que carregam o layout com `window.globalConfig`. Um lugar cobre todos os idiomas e sobrevive ao merge.
+
+  **O regex não é troca cega.** `(?<![\w/@.])chatwoot(?!\.[a-z])` preserva domínio (`app.chatwoot.com`, `chatwoot.help`), caminho de repositório (`github.com/chatwoot/...`) e **nome de variável de interpolação** (`{latestChatwootVersion}`), onde trocar quebraria a mensagem. Medido contra os próprios arquivos de locale: **2.062 trocas e 503 preservados**, todos eles URL, chave ou variável. Sem `INSTALLATION_NAME`, ou com o nome de fábrica, não mexe em nada.
+
+  Widget e portal não precisaram: o `shared/components/Branding.vue` já lê `BRAND_NAME` do config e aplica `replaceInstallationName`, e a conta tem `disable_branding` ativo.
+
+  **Verificado até onde dá sem sessão:** o regex está no bundle servido em produção (`new RegExp("(?<![\\w/@.])chatwoot(?!\\.[a-z])","gi")`). A tela de login está fixada em `en` (`locale: 'en'` no `v3app.js`), então **a confirmação visual em pt_BR exige estar logado** com o idioma trocado no perfil.
 - **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
 - ~~**Segurança do webhook**~~ — **fechado** em 10/08, ver "O webhook do bot passou a exigir assinatura" abaixo. Não eram ~10 linhas.
 
