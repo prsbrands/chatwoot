@@ -10,14 +10,36 @@
 
 Config ativa:
 
+**A latência bateu o alvo em 10/08**: mediana **1.146 ms** contra 1.500 do protocolo, com 5 turnos limpos e zero fragmentação.
+
 ```
 stt : deepgram flux-general-multi  ·  language_hints=[es, pt]
-llm : openai/gpt-4.1-mini  ·  reserva deepseek/deepseek-v4-flash-0731
-tts : eleven_multilingual_v2  ·  voz ny3E2DZImeZm00WLGZi9
-persona: greeting_delay_ms=2500 · endpoint_ms=300 · interruptible=on
+llm : OpenAI DIRETO, gpt-4.1-mini  (sem o prefixo `openai/`, que é do OpenRouter)
+tts : eleven_flash_v2_5  ·  voz ny3E2DZImeZm00WLGZi9
+persona: temperature 0.3 · max_tokens 300 · greeting_delay_ms 2500 · interruptible on
 ```
 
-Limiares do Flux, fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.7`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+Limiares do Flux, fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.8`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+
+### Como a latência caiu de 2.256 para 1.146 ms
+
+Quatro ajustes, um por chamada, cada um medido antes do seguinte:
+
+| | mediana | o que mudou |
+|---|---|---|
+| Flux inicial | 2.256 ms | — |
+| debounce 0.2 | 2.166 ms | `ExternalUserTurnStopStrategy(timeout=0.2)`. O padrão de 0,5 s espera transcrição atrasada; o Flux entrega o texto **junto** com o `EndOfTurn`, então era espera por algo que já chegou |
+| TTS flash | 1.683 ms | `eleven_flash_v2_5` no lugar do `multilingual_v2`: primeiro áudio de 0,55 s → 0,19 s |
+| `eot_threshold` 0.8 | 1.775 ms | **subiu** 92 ms de propósito — ver abaixo |
+| OpenAI direto | **1.146 ms** | tirar o hop do OpenRouter valeu ~700 ms. TTFB do LLM: 1,2–1,6 s → 0,4–0,7 s |
+
+**A ordem importa.** O `eot_threshold` só pôde subir porque o flash tinha comprado 480 ms antes. Com 0.7 o Flux fechava o turno na pausa natural: *"Doutor Juan"* chegou como `'Doutor,'` + `'one.'` e custou **três idas e voltas** para capturar um nome; *"Clínica Luis / Soy médico / tenemos atención"* virou três turnos de uma frase. Blips de 115 ms também contavam como fala.
+
+**O flash não criou os estalos que apareceram junto — tornou-os audíveis.** Com o `multilingual` o primeiro áudio levava 550 ms, e uma micro-interrupção de 115 ms chegava antes de existir som: cancelada em silêncio. Com 190 ms, o mesmo corte acontece depois da sílaba começar. O defeito era antigo; mudou a faixa audível.
+
+**Pendência da troca de provider:** a reserva continua apontando para o OpenRouter e agora é recusada (`fallback ... ignored: a call cannot switch providers mid-stream`). A chamada roda **sem rede** — só o `retry_on_timeout` de 3 s. Conserto no painel: Fallback provider → "Same as primary", modelo `gpt-4.1`.
+
+**Cuidado com o ID do modelo:** `openai/gpt-4.1-mini` é formato OpenRouter. Apontando para `api.openai.com` ele devolve `400 invalid model ID` e a chamada morre logo depois da saudação.
 
 ### Os três defeitos da abertura, na ordem em que foram achados
 
@@ -44,11 +66,12 @@ O `Teste 4` do protocolo abaixo está, portanto, **reprovado por desenho**. Não
 
 ### Fila, na ordem que eu seguiria
 
-1. **Ruído de fundo — medição, não conserto.** Toda chamada real terá ambiência de escritório, rua, natureza. Não sabemos se o Flux abre turno em cima disso porque nunca tivemos chamada boa até agora. Ligar **de propósito de um lugar barulhento** e contar os `start_of_turn` sem fala. Só depois decidir sobre `RNNoiseFilter` (grátis, `pipecat-ai[rnnoise]`, entra como `audio_in_filter` no transport) ou filtro pago. `min_confidence` do Flux é meia solução: descarta a **transcrição** de baixa confiança no fim do turno, mas **não impede** o turno de abrir e cortar o bot.
-2. **Latência.** Mediana de **1,83 s** do fim da fala à primeira sílaba do bot (2198 / 1826 / 1699 / 1906 ms), acima do alvo de 1,5 s. Há **500 ms fixos** entre `EndOfTurn` e `User turn inference triggered` em todos os turnos — é o `ExternalUserTurnStopStrategy`, e é a maior alavanca que sobrou.
-3. **`temperature` e `max_tokens` são herdados do chat.** As quatro personas têm `0.60/1200` porque a de voz nasceu de clone da do site (defaults da tabela são `0.7/1024`). Respostas reais medem **14–21 tokens**, então 1200 é inerte — mas é limite de estrago: se o modelo ignorar o "8 a 20 palabras", são ~90 s de TTS cobrados por caractere. Proposta: **0.3 e 300**, os dois de uma vez, porque nenhum é validável numa chamada só.
-4. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
-5. **O coletor de métricas quebrou no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então o que falta são quadros que a rota Flux não emite. Enquanto não voltar, "melhorou" é impressão: os números acima saíram do log, na mão.
+1. **Reserva do LLM** — um minuto no painel, e hoje a chamada roda sem rede. Ver a pendência da troca de provider acima.
+2. **Teste 3 do protocolo, soletrar.** Nunca foi feito com o Flux. É o caso que mais provavelmente ainda quebra: ditar um e-mail letra por letra tem pausas mais longas que "Doutor Juan", e o `eot_threshold=0.8` pode não segurar. Se cortar, 0.9 — o teto duro de 5 s continua atrás.
+3. **Teste 5, português no meio do espanhol.** Os `language_hints` estão no ar e uma frase mista (*"Mi negócio és uma panadería"*) passou. Falta a frase difícil: "consertos de automóveis" não pode virar "conciertos".
+4. **Fala de fundo.** Ambiência (rua, música, ventilador) foi testada e **passou** — 5 turnos, 5 falas, zero turno fantasma, e 10 s de silêncio no fim sem disparo. O que continua sem teste é **voz humana de fundo**: colega falando, TV com diálogo. Esse nenhum filtro grátis resolve (`rnnoise` é supressão de ruído, não separação de locutor).
+5. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
+6. **O coletor de métricas quebrou no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então faltam quadros que a rota Flux não emite. Enquanto não voltar, **todo número desta seção saiu do log na mão**, e "melhorou" é impressão.
 
 ### Campos do painel que NÃO fazem nada sob Flux
 
