@@ -4,9 +4,9 @@
 
 ---
 
-## ▶️ RETOMAR AQUI — fallback de LLM na chamada
+## ▶️ RETOMAR AQUI — custo e latência por chamada (Fase 4)
 
-Produção está em **`ba368f2a7`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
+Produção está em **`64fda3a37`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
 **Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
 
@@ -78,7 +78,8 @@ Medi 0,103 s numa chamada e registrei como típico. Nas seguintes: **0,575 s, 1,
 
 ### Ainda aberto na Fase 3/4
 
-- **Fallback de LLM na chamada**: a persona já tem `fallback_provider`/`fallback_model` gravados e o serviço de voz **não os lê** — o bot de texto lê. Hoje um erro do OpenRouter derruba a chamada. É a lacuna nº 1.
+- ~~Fallback de LLM na chamada~~ — **entregue** em `64fda3a37`. Principal e reserva vão no mesmo request (`extra.models`), o roteador do OpenRouter desce para o segundo sem nova ida à rede; `retry_on_timeout=True` com 6 s cobre modelo que emudece. Reserva em **fornecedor diferente** é recusada com aviso no log, não fingida — trocar de endpoint no meio do stream é outro problema, e a persona já oferece "same as primary" como padrão. Hoje: `openai/gpt-4.1-mini` → `deepseek/deepseek-v4-flash-0731`.
+- ~~Termos que não interrompem~~ — **entregue** como `voice_interrupt_min_words` (padrão **0 = desligado**). Com 2, um "ajá" de cortesia não cala o bot — mas um "para!" de uma palavra também não. Trade-off escrito no campo; vale testar os dois numa chamada real.
 - **Aviso de alterações não salvas no editor de persona**: medi que os saves funcionam (três PATCH, tamanhos crescentes, 200 OK), mas sair pela seta ← descarta tudo em silêncio.
 - **Custo e latência por chamada**: `PipelineTask` já sobe com `enable_metrics`/`enable_usage_metrics`; falta coletar e gravar.
 - **Pronúncia**: a ElevenLabs lê "PRS" como "PE, r, essi". Contornado escrevendo foneticamente na frase de abertura; dicionário de pronúncia resolveria de verdade.
