@@ -296,9 +296,14 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         user_params=LLMUserAggregatorParams(
             vad_analyzer=vad_analyzer,
             user_turn_strategies=_turn_strategies(persona),
-            # Rede de segurança para quando a transcrição não volta (ruído de
-            # linha). O padrão de 5 s é uma eternidade numa chamada.
-            user_turn_stop_timeout=2.0,
+            # Rede de segurança para quando a transcrição não volta, e só isso.
+            #
+            # Baixei para 2 s achando que era controle de latência. Não é: o
+            # Deepgram leva de 2 a 5 s para entregar o trecho final, então o
+            # tempo curto disparava ANTES do texto chegar, fechava o turno vazio
+            # e perdia a resposta de quem ligou — que ficava esperando. Este
+            # número tem de ser maior que o pior caso do STT, nunca menor.
+            user_turn_stop_timeout=5.0,
             # Quem liga nunca é silenciado durante a saudação.
             #
             # Já foi: para a abertura não ser cortada por um "alô?". Mas a
