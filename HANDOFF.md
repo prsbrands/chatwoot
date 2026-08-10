@@ -8,7 +8,9 @@
 
 **O critério de "usável" do protocolo foi batido em 10/08.** Testes 1, 2, 3, 5 e 6 passando, ruído de ambiente passando, e duas chamadas seguidas dentro do alvo de latência. O teste 4 (interromper) está reprovado **por desenho** — ver "o preço aceito" abaixo.
 
-Última validação, `CAf0439b6d218ee96f69fe25e7b086ba6f`: alguém ligou para **vender** algo. O bot roteou sem tentar diagnosticar, capturou empresa e contato, e o CRM registrou `company_name = ERC Two BLX`, `lead_fit = LOW`, com resumo e próximo passo escritos. Mediana de 1.268 ms em 9 turnos.
+Última validação, `CAf0439b6d218ee96f69fe25e7b086ba6f`: alguém ligou para **vender** algo. O bot roteou sem tentar diagnosticar, capturou empresa e contato, e o CRM registrou `company_name = ERC Two BLX`, `lead_fit = LOW`, com resumo e próximo passo escritos.
+
+**Mas o alvo de latência não está batido.** Com o coletor consertado em 10/08, a espera real de quem liga é **~2,2 s**, não os 1.268 ms que se acreditava — a régua antiga media do `EndOfTurn` em diante e ignorava ~0,8 s. Detalhe e decomposição em "O alvo de 1,5 s nunca foi batido", abaixo.
 
 Chegar aqui exigiu **oito correções, uma por chamada**: três na abertura, quatro na latência e uma na qualificação. Duas hipóteses minhas foram derrubadas por instrumentação. A ordem está registrada abaixo porque ela importa — várias só puderam existir depois da anterior.
 
@@ -108,14 +110,26 @@ O `CallMetrics` passou a cronometrar sozinho, e o `UserBotLatencyObserver` saiu.
 
 **O `smoke.py` reprova a versão anterior**: alimenta o `UserBotLatencyObserver` com a sequência real de um turno Flux (`TranscriptionFrame` com o payload de EOT → `UserStoppedSpeakingFrame` → `BotStartedSpeakingFrame`) e exige zero medições. Cobre também a saudação não virando turno e o irmão upstream do `broadcast_frame` não contando duas vezes.
 
-**Falta a confirmação em chamada real** — uma ligação e depois:
+**Confirmado na chamada `CAe22d9e1a51dd2ab74b0707e9a27b2b56`** (10/08, 104 s): `turns: 7`, mediana **2.211 ms**, pior **3.131 ms**. Os 7 turnos batem com os 7 `EndOfTurn` do log; só 5 viraram latência porque em dois deles quem ligou voltou a falar antes de o bot começar — turno superado não tem espera para medir, e é assim que deve ser.
 
-```bash
-cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner \
-  "c=TwilioVoiceCall.order(id: :desc).first; puts c.duration_seconds; puts c.metrics"
-```
+### O alvo de 1,5 s nunca foi batido — a régua media o pedaço errado
 
-`turns` tem de bater com o número de vezes que você falou, e `latency_median_ms` ficar perto dos 1.268 ms lidos no log na mão. Se vier bem **acima**, não é regressão de latência: é a espera do EOT, que a leitura manual não contava.
+Conferência manual da mesma chamada, do `EndOfTurn` ao primeiro áudio: 2,40 · 1,18 · 1,33 · 1,76 · 1,26 s (mediana 1,33 s). O gravado deu 2,21 s. **A diferença de ~0,7–0,9 s é a espera do EOT**, que a leitura manual nunca contou porque começava no evento que só existe depois dela. É silêncio com quem ligou já calado, esperando.
+
+Isso corrige duas coisas escritas aqui antes:
+
+- **A mediana de 1.268 ms não era a espera de quem liga**, era o trecho a partir do EOT. A espera real está em ~2,2 s, acima do alvo de 1,5 s. O critério de "usável" continua batido — a conversa acontece, qualifica e registra —, mas o alvo de latência não.
+- **Subir `eot_threshold` de 0.7 para 0.8 não custou 92 ms.** A medição da época era cega à janela inteira. O custo real está na casa dos 800 ms.
+
+Os três componentes da espera, medidos nesta chamada:
+
+| | típico | knob |
+|---|---|---|
+| espera do EOT | ~0,8 s | `eot_threshold`, chumbado no código |
+| LLM TTFB | 0,29–1,87 s | tamanho do prompt e modelo |
+| TTS TTFB | ~0,135 s | já no fundo do poço |
+
+O LLM é o mais errático e o EOT o mais gordo — que são os itens 2 e 4 da fila.
 
 ### Campos do painel que NÃO fazem nada sob Flux
 
@@ -151,7 +165,7 @@ cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner 
 
 **Teste 1 — a conversa acontece?** ✅ Ligue, responda o nome, diga a empresa, responda uma pergunta. Procure `StartOfTurn` / `EndOfTurn` do Flux.
 
-**Teste 2 — latência.** ✅ Alvo: mediana abaixo de **1.500 ms**. Última medição: 1.268 ms em 9 turnos. Régua antiga (Nova): 2.018 ms.
+**Teste 2 — latência.** ❌ Alvo: mediana abaixo de **1.500 ms**. Medição honesta (coletor consertado, inclui a espera do EOT): **2.211 ms** em 7 turnos. As médias de 1.268 ms registradas antes mediam do `EndOfTurn` em diante e não contavam ~0,8 s de espera — ver a seção do coletor no topo.
 - Acima do alvo: confira primeiro se há `Retrying chat completion` no log — o retry dobra a espera. Depois, `eot_threshold` para 0.7.
 
 **Teste 3 — soletrar.** ✅ Dite um e-mail letra por letra. Validado: turno de 18,8 s com pausa entre cada letra, sem corte, e o e-mail montado certo. Foi o `eot_threshold=0.8` que segurou.
