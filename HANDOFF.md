@@ -4,15 +4,86 @@
 
 ---
 
-## ▶️ RETOMAR AQUI — tarifas por fornecedor (custo em dólar)
+## ▶️ RETOMAR AQUI — validar o Flux até a chamada ficar usável
 
-Produção está em **`92b66a28f`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
+Produção em **`8d59ba0c0`**. `/api`, `/app/login`, `/super_admin/sign_in` em 200; `cortexgen-voice` respondendo.
 
-**Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
+**A migração para o Deepgram Flux está no ar e NUNCA foi validada com uma chamada real.** Essa é a única prioridade desta sessão. Não construa mais nada até a chamada estar boa.
 
-Modelo já em `openai/gpt-4.1-mini`, com `deepseek/deepseek-v4-flash-0731` de reserva na mesma cascata.
+### O que mudou e por que
 
-**Falta ajustar na persona antes de mostrar para cliente:** o prompt tem 14,5 KB de registro escrito e manda o bot se apresentar — o que o faz repetir a apresentação logo depois da frase de abertura já ter feito isso. Voz quer prompt curto e falado.
+O Deepgram tem duas famílias e estávamos na errada. **Nova** transcreve; **Flux** é feito para conversa e traz a máquina de turnos dentro do serviço — ela enxerga a forma de onda, não só os intervalos.
+
+Tudo o que este serviço tinha acumulado para suprir o Nova saiu do caminho quando o modelo é `flux-*`: VAD local do Silero, cronômetro de silêncio, portão por LLM, mínimo de palavras. **Cada uma dessas peças já derrubou uma chamada real** — silêncio de 5 s, saudação engolida, bot falando por cima, resposta descartada por chegar tarde.
+
+Config ativa, confirmada no endpoint:
+
+```
+stt : deepgram flux-general-multi   (idioma ouvido: multi)
+llm : openai/gpt-4.1-mini  ·  reserva deepseek/deepseek-v4-flash-0731
+tts : eleven_multilingual_v2  ·  voz ny3E2DZImeZm00WLGZi9
+```
+
+Limiares do Flux, hoje fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.7`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+
+### Protocolo de teste — siga na ordem, uma chamada por vez
+
+Depois de **cada** ligação:
+
+```bash
+docker logs --tail 800 cortexgen-voice 2>&1 | grep -v 'Generating chat from context' \
+  | cut -c1-190 | grep -iE 'call .* (started|finished)|Generating TTS|ERROR|StartOfTurn|EndOfTurn|EagerEndOfTurn|TurnResumed|TTFB'
+```
+
+E as métricas gravadas:
+
+```bash
+cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner \
+  "c=TwilioVoiceCall.order(id: :desc).first; puts c.duration_seconds; puts c.metrics"
+```
+
+**Teste 1 — a conversa acontece?** Ligue, responda o nome, diga a empresa, responda uma pergunta. Procure no log `StartOfTurn` / `EndOfTurn` do Flux.
+- Passou: siga para o 2.
+- Bot mudo ou intervalo longo: veja "Se o Flux falhar" abaixo.
+
+**Teste 2 — latência.** Alvo: **mediana abaixo de 1.500 ms**. Régua atual (Nova, última chamada boa): mediana 2.018 ms, pior 2.695 ms.
+- Acima do alvo: baixe `eot_threshold` para 0.6 (fecha o turno com menos confiança, responde antes). **Uma chamada por ajuste.**
+
+**Teste 3 — soletrar.** Dite um e-mail letra por letra. O bot não pode responder no meio.
+- Cortou: suba `eot_threshold` para 0.8. Esse é o trade-off direto com o teste 2 — ache o meio.
+
+**Teste 4 — interromper.** Fale por cima do bot. Ele deve parar.
+- Não parou: `should_interrupt` do `DeepgramFluxSTTService` (padrão `True`).
+
+**Teste 5 — português no meio do espanhol.** Diga "consertos de automóveis". Não pode virar "conciertos".
+- Errou: o `flux-general-multi` já está ativo; considere `language_hints=[Language.ES, Language.PT_BR]` em `_stt`.
+
+**Critério de "usável":** os cinco testes passando, mediana abaixo de 1.500 ms, e **duas chamadas seguidas sem intervalo perceptível**.
+
+### Se o Flux falhar
+
+Volta em **um campo, sem deploy**: persona → Voz → `Transcription model` de `flux-general-multi` para `nova-3`. Todo o caminho Nova continua no código, com `interim_results` + `utterance_end_ms`, e `_turn_strategies` volta a valer.
+
+Antes de voltar, confirme no log se o Flux chegou a conectar — se não houver `StartOfTurn` nenhum, o problema é conexão/credencial, não comportamento.
+
+### Aberto e sem explicação: 502 no webhook
+
+Uma chamada não atendeu. Alerta do próprio Twilio:
+
+```
+02:29:07  code=11200  Got HTTP 502 response to /twilio/voice/incoming
+```
+
+Rails de pé desde 00:22 **sem reinícios**, 394 MB, e **o nginx não tem registro dessa requisição** — nem acesso, nem erro. O 502 veio antes do nginx e não deixou rastro nosso.
+
+Um webhook que devolve 502 é uma ligação de cliente perdida em silêncio; só descobrimos porque fomos perguntar ao Twilio. **Precisa de monitor.** Sugestão: checagem periódica de `/api` com alerta, e ler `client.monitor.v1.alerts` do Twilio no painel de chamadas.
+
+### Skills — leia antes de mexer
+
+- **`pipecat`** (`~/.claude/skills/pipecat/`): modelo de turno, a armadilha do mute, tabela sintoma → assinatura no log → causa.
+- **`deepgram`** (`~/.claude/skills/deepgram/`): decisão Nova vs Flux, semântica de streaming, telefonia, idioma.
+
+A regra que custou seis ligações está nas duas: **uma mudança por chamada.** As três últimas regressões foram mecanismos adicionados sem validação individual.
 
 ### Fase 3 — o que já está em produção
 
