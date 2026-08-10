@@ -47,6 +47,9 @@ from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy im
 from pipecat.turns.user_start.min_words_user_turn_start_strategy import (
     MinWordsUserTurnStartStrategy,
 )
+from pipecat.turns.user_start.vad_user_turn_start_strategy import (
+    VADUserTurnStartStrategy,
+)
 from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
     SpeechTimeoutUserTurnStopStrategy,
 )
@@ -87,14 +90,21 @@ def _turn_strategies(persona: dict) -> UserTurnStrategies:
         SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=persona["endpoint_ms"] / 1000)
     ]
 
-    # Com um mínimo de palavras, o turno só começa depois delas — é o que impede
-    # um "ajá" de cortesia de calar o bot no meio da frase. O padrão do Pipecat
-    # é começar no primeiro som.
+    # Quem abre o turno é o áudio, não o texto.
+    #
+    # O padrão do Pipecat também deixa uma transcrição abrir turno, e isso vira
+    # uma armadilha com os parciais do Deepgram ligados: cada fragmento de frase
+    # abria um turno, que fechava sozinho e ganhava resposta. Numa chamada real
+    # o bot perguntou quatro vezes a mesma coisa em quinze segundos, sem deixar
+    # quem ligou terminar uma frase.
+    #
+    # Com um mínimo de palavras é o texto que manda, de propósito: aí a questão
+    # é justamente quantas palavras foram ditas antes de valer como interrupção.
     min_words = persona.get("interrupt_min_words") or 0
     start = (
         [MinWordsUserTurnStartStrategy(min_words=min_words, use_interim=True)]
         if min_words > 0
-        else None
+        else [VADUserTurnStartStrategy()]
     )
 
     if not persona.get("wait_for_complete_turn", True):

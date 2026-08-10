@@ -85,6 +85,12 @@ analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.6))
 plain = _turn_strategies({"endpoint_ms": 600, "wait_for_complete_turn": False})
 assert [type(s).__name__ for s in plain.stop] == ["SpeechTimeoutUserTurnStopStrategy"], plain.stop
 
+# Quem abre o turno tem de ser o VAD. Deixar o padrão do Pipecat traz junto o
+# TranscriptionUserTurnStartStrategy, e com os parciais do Deepgram ligados cada
+# fragmento de frase virava um turno respondido — o bot falava sem parar.
+assert [type(s).__name__ for s in plain.start] == ["VADUserTurnStartStrategy"], plain.start
+print("turn start:", [type(s).__name__ for s in plain.start])
+
 # Mínimo de palavras troca quem decide que o turno começou: sem ele, qualquer
 # som corta o bot.
 guarded = _turn_strategies(
