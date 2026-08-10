@@ -265,7 +265,30 @@ Volta em **um campo, sem deploy**: persona → Voz → `Transcription model` de 
 
 Antes de voltar, confirme no log se o Flux chegou a conectar — se não houver `StartOfTurn` nenhum, o problema é conexão/credencial, não comportamento.
 
-### Aberto e sem explicação: 502 no webhook
+### Explicado: o "502 no webhook" era DNS, não 502 (10/08)
+
+O alerta do Twilio resume tudo como *"Got HTTP 502 response"*, e foi por isso que este item passou uma sessão inteira como mistério. **O corpo da resposta diz outra coisa**, e são duas ocorrências, não uma:
+
+```
+10/08 02:29:07   Error: Total timeout is triggered. Configured tt is 15000ms
+                 and we attempted 2 time(s). responseState=INITIAL
+                 (URL http://prs.cortexgen.cloud/twilio/voice/incoming)
+
+10/08 03:38:04   Error: Unknown host prs.cortexgen.cloud
+                 (URL https://prs.cortexgen.cloud/twilio/voice/incoming)
+```
+
+**O Twilio não resolveu o nome.** `responseState=INITIAL` é "nunca recebi resposta"; `Unknown host` é falha de DNS explícita. A requisição nunca chegou — daí o nginx não ter registro, que estava certo e foi lido como sintoma quando era prova. Rails de pé e sem reinícios também estava certo e era irrelevante.
+
+**A sugestão que estava escrita aqui — checagem periódica de `/api` com alerta — não teria pegado nenhuma das duas.** O serviço estava no ar; quem falhou foi a resolução do nome, fora da nossa máquina.
+
+Estado do DNS hoje: `prs.cortexgen.cloud` → `187.77.20.155`, TTL 14400, respondido pelos **dois** nameservers. Ou seja, falha transitória. O ponto frágil é que `ns1`/`ns2.dns-parking.com` são ambos da Hostinger — dois nomes, um provedor, nenhuma redundância real. Com TTL de 4 h, um resolver do Twilio só consulta de tempos em tempos, e foi numa dessas janelas que caiu.
+
+**Conserto de verdade é fora do código**: DNS secundário em outro provedor (Cloudflare é grátis e aceita ser secundário), ou mover a zona. É mudança de nameserver no registrador — decisão do Paulo, não deploy.
+
+**Conserto dentro do código** é tornar a perda visível: hoje só descobrimos porque alguém foi perguntar ao Twilio. Ver a seção seguinte.
+
+### Aberto e sem explicação: 502 no webhook (superado pela seção acima)
 
 Uma chamada não atendeu. Alerta do próprio Twilio:
 
