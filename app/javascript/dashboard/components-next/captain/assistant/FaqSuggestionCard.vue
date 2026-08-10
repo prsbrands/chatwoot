@@ -44,7 +44,7 @@ const language = computed(() =>
       <div class="min-w-0">
         <div class="mb-2 flex flex-wrap items-center gap-2">
           <span
-            class="inline-flex items-center gap-1.5 rounded-full bg-n-brand/10 px-2.5 py-1 text-xs font-medium text-n-blue-11"
+            class="inline-flex items-center gap-1.5 rounded-full bg-n-brand/10 px-2.5 py-1 text-xs font-medium text-n-brand"
           >
             <Icon icon="i-lucide-messages-square" class="size-3.5" />
             {{ sourceLabel }}

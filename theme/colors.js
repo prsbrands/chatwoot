@@ -226,7 +226,13 @@ export const colors = {
     },
 
     black: '#000000',
-    brand: '#2781F6',
+    // Verde da marca escurecido de propósito. O verde do logo é #63BE80, e ele
+    // aparece 49 vezes como fundo de botão com `text-white` fixo: branco sobre
+    // #63BE80 dá 2,28:1, menos da metade do mínimo de 4,5:1 e pior que o azul
+    // que estava aqui. Este tom mantém o matiz (h=0,386) e chega a 4,53:1 com
+    // branco, que passa AA — e num botão esse contraste não depende do tema,
+    // porque é texto contra o próprio fundo do botão.
+    brand: '#388550',
     portal: 'var(--dynamic-portal-color)',
     'portal-soft': 'var(--dynamic-portal-color-soft)',
     'portal-faint': 'var(--dynamic-portal-color-faint)',
