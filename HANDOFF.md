@@ -93,7 +93,7 @@ Nada aqui bloqueia atender uma chamada real.
 1. ~~O coletor de métricas está quebrado no Flux~~ — **consertado** em `441049df6`, **falta uma chamada para confirmar** (ver abaixo).
 2. **O prompt voltou a crescer e passou do ponto de partida**: 22,2 KB no início da sessão, 19,6 KB depois do corte, **23,4 KB hoje** (5.751 tokens medidos) — reenviados por turno. Se voltar a aparecer `Retrying`, os cortes naturais são os blocos de **objeções** e os **exemplos por rubro**: os mais longos e os que menos entram numa chamada típica. **Mas não corte esperando latência** — ver abaixo.
 3. **A reserva do LLM não existe.** Com o primário na OpenAI direto, o cascade é recusado (o array `models` só existe no OpenRouter). Só o `retry_on_timeout` de 5 s protege. As três opções — voltar ao OpenRouter e perder ~700 ms, ficar sem rede, ou construir um segundo request pós-erro — estão avaliadas em "pendência da troca de provider" acima. Ficar sem rede foi a escolha consciente.
-4. **Campos mortos no painel** — `End of turn (ms)`, `Wait until the caller finishes` e `Words needed to interrupt` não fazem nada sob Flux. Ou passam a escrever os limiares do Flux, ou somem quando o modelo é `flux-*`. Campo morto que parece configurado já custou uma migração inteira.
+4. ~~Campos mortos no painel~~ — **resolvido** em `711737a91`: somem quando o modelo é `flux-*`, e no lugar entra **End of turn confidence** (`bot_personas.voice_eot_threshold`, CHECK 0.50–0.95, padrão 0.80). **Falta procurar o ponto** — ver abaixo.
 5. **`keyterm` do Flux, ainda não usado.** Enviesa o reconhecimento para termos do domínio (*venta, cita, taller, agendar, seguimiento*). Uma linha no `_stt`. Vale depois que um sintoma de transcrição justifique.
 6. **Voz humana de fundo** segue sem teste. Ambiência (rua, música) passou — 5 turnos, 5 falas, zero turno fantasma, e 10 s de silêncio no fim sem disparo. Colega falando ou TV com diálogo é outra história, e nenhum filtro grátis resolve (`rnnoise` é supressão de ruído, não separação de locutor).
 7. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
@@ -144,17 +144,23 @@ Encurtar o prompt continua valendo por **qualidade de conversa e risco de retry*
 
 Sobra o EOT como o único componente gordo que é nosso: ~0,8 s controlados pelo `eot_threshold`, hoje chumbado no código (item 4 da fila).
 
-### Campos do painel que NÃO fazem nada sob Flux
+### O limiar de fim de turno virou campo — e é o único knob de latência que sobrou
 
-Mesma classe de bug do item 1, e a tela não avisa:
+`bot_personas.voice_eot_threshold` (SQL em `db/botlayer/bot_voice_eot.sql`, aplicado), CHECK 0.50–0.95, padrão **0.80**. Aparece no editor de persona como **End of turn confidence**, só quando o modelo de transcrição é `flux-*`.
 
-| Campo | Onde morre |
+É confiança, não milissegundos de silêncio — e é onde mora ~0,8 s da espera de quem liga. **Cada tentativa agora custa uma chamada, não um deploy.** Procure o ponto em passos de 0.05, uma ligação por passo, olhando `latency_median_ms` no banco e o Teste 3 (soletrar) logo depois: 0.70 é o padrão da Deepgram e aqui fragmentava a fala, então descer é justamente o que precisa de prova.
+
+Os três campos que não faziam nada sob Flux **somem** quando o modelo é `flux-*`, em vez de ficar na tela parecendo configurados:
+
+| Campo | Onde morria |
 |---|---|
 | **End of turn (ms)** | alimenta o VAD do Silero (`None` no Flux) e o ramo Nova do `_stt` |
 | **Wait until the caller finishes** | vive em `_turn_strategies`, que a rota Flux contorna |
 | **Words needed to interrupt** | mesma função, mesmo desvio |
 
-Vivos: `Wait before speaking (ms)`, `Customer can interrupt`, `First message`, voz e idioma do TTS. Os limiares que de fato mandam no turno (`eot_threshold` e companhia) estão chumbados no código — ajustá-los exige deploy. Ou os campos passam a escrevê-los, ou somem quando o modelo é `flux-*`.
+Vivos: `Wait before speaking (ms)`, `Customer can interrupt`, `First message`, voz e idioma do TTS. `eager_eot_threshold` (0.5) e `eot_timeout_ms` (5000) seguem chumbados de propósito — o eager só vale a pena junto com processamento especulativo, que não existe (ver EagerEndOfTurn nas pendências).
+
+**Armadilha ao testar o `/voice-stream` com curl:** por HTTP/2 ele responde **404**, e parece que a voz caiu. Não caiu — o HTTP/2 não tem cabeçalho `Upgrade`, então o nginx repassa vazio e o FastAPI não vê um handshake. Use `curl --http1.1`, que é como o Twilio conecta, e a resposta é **101**.
 
 ### A regra que se pagou nesta sessão
 
