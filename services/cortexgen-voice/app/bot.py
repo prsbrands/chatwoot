@@ -41,9 +41,6 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketTransport,
 )
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
-from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy import (
-    MuteUntilFirstBotCompleteUserMuteStrategy,
-)
 from pipecat.turns.user_start.min_words_user_turn_start_strategy import (
     MinWordsUserTurnStartStrategy,
 )
@@ -302,13 +299,16 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
             # Rede de segurança para quando a transcrição não volta (ruído de
             # linha). O padrão de 5 s é uma eternidade numa chamada.
             user_turn_stop_timeout=2.0,
-            # A saudação nunca é interrompível, mesmo em persona interrompível:
-            # quem atende costuma dizer "alô?" assim que a linha abre, e isso
-            # cortava a abertura no meio. Depois da primeira fala do bot, vale a
-            # escolha da persona.
-            user_mute_strategies=[MuteUntilFirstBotCompleteUserMuteStrategy()]
-            if persona["interruptible"]
-            else [AlwaysUserMuteStrategy()],
+            # Quem liga nunca é silenciado durante a saudação.
+            #
+            # Já foi: para a abertura não ser cortada por um "alô?". Mas a
+            # abertura pergunta o nome, e leva seis segundos fazendo isso —
+            # quem responde no meio, que é o normal, tinha a resposta jogada
+            # fora, e a máquina de turnos ficava esperando um turno que nunca
+            # começou. Uma chamada real morreu em 62 segundos de silêncio com a
+            # resposta já transcrita e parada. Abertura cortada é um arranhão;
+            # chamada morta é a chamada.
+            user_mute_strategies=[] if persona["interruptible"] else [AlwaysUserMuteStrategy()],
         ),
     )
 
