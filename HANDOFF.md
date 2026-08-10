@@ -88,13 +88,34 @@ O prompt da persona de voz foi reescrito nesta sessão, e três lições valem m
 
 Nada aqui bloqueia atender uma chamada real.
 
-1. **O coletor de métricas está quebrado no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então faltam quadros que a rota Flux não emite. **É o primeiro da fila porque todo número desta seção saiu do log na mão.** Enquanto não voltar, a aba Voz mostra zero e "melhorou" é impressão.
+1. ~~O coletor de métricas está quebrado no Flux~~ — **consertado** em `441049df6`, **falta uma chamada para confirmar** (ver abaixo).
 2. **O prompt voltou a crescer e passou do ponto de partida**: 22,2 KB no início da sessão, 19,6 KB depois do corte, **23,4 KB hoje** — ~6.000 tokens reenviados por turno, ~54 mil por chamada de nove turnos. A latência ainda segura, mas foi nesse patamar que o retry disparou. Se voltar a aparecer `Retrying`, os cortes naturais são os blocos de **objeções** e os **exemplos por rubro**: os mais longos e os que menos entram numa chamada típica.
 3. **A reserva do LLM não existe.** Com o primário na OpenAI direto, o cascade é recusado (o array `models` só existe no OpenRouter). Só o `retry_on_timeout` de 5 s protege. As três opções — voltar ao OpenRouter e perder ~700 ms, ficar sem rede, ou construir um segundo request pós-erro — estão avaliadas em "pendência da troca de provider" acima. Ficar sem rede foi a escolha consciente.
 4. **Campos mortos no painel** — `End of turn (ms)`, `Wait until the caller finishes` e `Words needed to interrupt` não fazem nada sob Flux. Ou passam a escrever os limiares do Flux, ou somem quando o modelo é `flux-*`. Campo morto que parece configurado já custou uma migração inteira.
 5. **`keyterm` do Flux, ainda não usado.** Enviesa o reconhecimento para termos do domínio (*venta, cita, taller, agendar, seguimiento*). Uma linha no `_stt`. Vale depois que um sintoma de transcrição justifique.
 6. **Voz humana de fundo** segue sem teste. Ambiência (rua, música) passou — 5 turnos, 5 falas, zero turno fantasma, e 10 s de silêncio no fim sem disparo. Colega falando ou TV com diálogo é outra história, e nenhum filtro grátis resolve (`rnnoise` é supressão de ruído, não separação de locutor).
 7. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
+
+### A latência era medida por um quadro que o Flux nunca emite (10/08, `441049df6`)
+
+O `UserBotLatencyObserver` do Pipecat só começa a cronometrar quando vê um **`VADUserStoppedSpeakingFrame`** — o quadro do VAD, não o genérico. Sob Flux a máquina de turnos vive dentro do serviço de STT e o VAD sai do pipeline ([bot.py:485](services/cortexgen-voice/app/bot.py:485) e [:537](services/cortexgen-voice/app/bot.py:537)): esse quadro nunca nasce, o relógio nunca parte e `on_latency_measured` nunca dispara. O Flux emite `UserStoppedSpeakingFrame`, que o observador usa só para outra conta.
+
+O sintoma enganava porque **o resto do coletor funcionava**: as cinco últimas chamadas gravaram tokens, caracteres e segundos de áudio corretos, e só a latência ficou nula. E `turns` saía do tamanho da lista de latências, então zerou junto — uma chamada de 104 s com 53 mil tokens de prompt aparecia com zero turnos.
+
+O `CallMetrics` passou a cronometrar sozinho, e o `UserBotLatencyObserver` saiu. Turnos agora são contados no evento.
+
+**A medição inclui a espera do EndOfTurn, de propósito.** O `EndOfTurn` não chega quando a pessoa cala: o Flux precisa de silêncio para a confiança passar do `eot_threshold`. Contar só dali para frente esconderia o preço de subir 0.7 → 0.8 justamente na métrica que existe para medi-lo. O payload da Deepgram traz `audio_window_end` e `words[].end` — ambos em segundos do **mesmo** stream, então a diferença é uma duração e não exige casar o relógio deles com o nosso, que é onde esse tipo de medida derrapa. Na rota Nova os campos não existem, a função devolve 0 e a contagem começa na liberação do turno.
+
+**O `smoke.py` reprova a versão anterior**: alimenta o `UserBotLatencyObserver` com a sequência real de um turno Flux (`TranscriptionFrame` com o payload de EOT → `UserStoppedSpeakingFrame` → `BotStartedSpeakingFrame`) e exige zero medições. Cobre também a saudação não virando turno e o irmão upstream do `broadcast_frame` não contando duas vezes.
+
+**Falta a confirmação em chamada real** — uma ligação e depois:
+
+```bash
+cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner \
+  "c=TwilioVoiceCall.order(id: :desc).first; puts c.duration_seconds; puts c.metrics"
+```
+
+`turns` tem de bater com o número de vezes que você falou, e `latency_median_ms` ficar perto dos 1.268 ms lidos no log na mão. Se vier bem **acima**, não é regressão de latência: é a espera do EOT, que a leitura manual não contava.
 
 ### Campos do painel que NÃO fazem nada sob Flux
 
