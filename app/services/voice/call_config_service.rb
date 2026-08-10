@@ -27,7 +27,10 @@ class Voice::CallConfigService
       slug = @route.bot_persona_slug.presence ||
              raise(MisconfiguredError, "#{@route.phone_number} is not routed to a bot")
 
-      client.resolved_persona(slug) || raise(MisconfiguredError, "persona '#{slug}' not found in the bot layer")
+      # Pela conta da rota: o slug só é único dentro dela, então pedir sem a
+      # conta passaria a devolver a persona de outro cliente.
+      client.resolved_persona(@route.account_id, slug) ||
+        raise(MisconfiguredError, "persona '#{slug}' not found in the bot layer")
     end
   end
 

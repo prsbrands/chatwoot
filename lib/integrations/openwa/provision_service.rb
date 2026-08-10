@@ -89,9 +89,15 @@ class Integrations::Openwa::ProvisionService
     response.success? ? 'created' : 'failed'
   end
 
+  # Dentro da conta: o slug é único por conta desde `bot_layer_per_account.sql`,
+  # e o slug padrão vem de uma config global — sem o recorte, provisionar um
+  # WhatsApp apontaria para a persona homônima de quem tiver criado primeiro.
   def fetch_persona_id
     slug = GlobalConfigService.load('OPENWA_BOT_PERSONA_SLUG', 'nathan-whatsapp')
-    response = HTTParty.get("#{supabase_rest_url}/bot_personas?slug=eq.#{slug}&select=id", headers: supabase_headers)
+    response = HTTParty.get(
+      "#{supabase_rest_url}/bot_personas?slug=eq.#{slug}&chatwoot_account_id=eq.#{@inbox.account_id}&select=id",
+      headers: supabase_headers
+    )
     response.success? ? response.parsed_response.dig(0, 'id') : nil
   end
 

@@ -13,51 +13,67 @@ class Integrations::Botlayer::Client
     GlobalConfigService.load('SUPABASE_REST_URL', nil).present? && GlobalConfigService.load('SUPABASE_SERVICE_ROLE_KEY', nil).present?
   end
 
-  def personas
-    get('bot_personas?select=*,bot_persona_knowledge(doc_id)&order=created_at.asc')
+  # Persona e base de conhecimento são da conta, como as chaves de LLM: é o
+  # `system_prompt` do cliente, a lógica de negócio dele. O filtro por conta vai
+  # em toda leitura e escrita — inclusive nas de id conhecido, senão saber o
+  # UUID de uma persona alheia bastaria para editá-la.
+  def personas(account_id)
+    get("bot_personas?chatwoot_account_id=eq.#{account_id.to_i}&select=*,bot_persona_knowledge(doc_id)&order=created_at.asc")
   end
 
-  def create_persona(attributes)
-    post('bot_personas', attributes).first
+  def create_persona(account_id, attributes)
+    post('bot_personas', attributes.merge(chatwoot_account_id: account_id.to_i)).first
   end
 
-  def update_persona(id, attributes)
-    patch("bot_personas?id=eq.#{uuid!(id)}", attributes).first
+  def update_persona(account_id, id, attributes)
+    patch("bot_personas?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}", attributes).first
   end
 
-  def delete_persona(id)
-    delete("bot_personas?id=eq.#{uuid!(id)}")
+  def delete_persona(account_id, id)
+    delete("bot_personas?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}")
   end
 
   # Persona com a base de conhecimento já concatenada. É o que a chamada de voz
   # consome: uma leitura, sem montar prompt do lado do Rails.
-  def resolved_persona(slug)
-    get("bot_persona_resolved?persona_slug=eq.#{slug!(slug)}&select=*").first
+  #
+  # O slug só é único dentro da conta desde `bot_layer_per_account.sql`, então
+  # pedir por slug sem a conta passaria a devolver a persona de quem chegou
+  # primeiro.
+  def resolved_persona(account_id, slug)
+    get("bot_persona_resolved?persona_slug=eq.#{slug!(slug)}&chatwoot_account_id=eq.#{account_id.to_i}&select=*").first
   end
 
-  def knowledge_docs
-    get('bot_knowledge_docs?select=*,bot_persona_knowledge(persona_id)&order=priority.asc,created_at.asc')
+  def knowledge_docs(account_id)
+    get("bot_knowledge_docs?chatwoot_account_id=eq.#{account_id.to_i}&select=*,bot_persona_knowledge(persona_id)&order=priority.asc,created_at.asc")
   end
 
-  def create_knowledge_doc(attributes)
-    post('bot_knowledge_docs', attributes).first
+  def create_knowledge_doc(account_id, attributes)
+    post('bot_knowledge_docs', attributes.merge(chatwoot_account_id: account_id.to_i)).first
   end
 
-  def update_knowledge_doc(id, attributes)
-    patch("bot_knowledge_docs?id=eq.#{uuid!(id)}", attributes).first
+  def update_knowledge_doc(account_id, id, attributes)
+    patch("bot_knowledge_docs?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}", attributes).first
   end
 
-  def delete_knowledge_doc(id)
-    delete("bot_knowledge_docs?id=eq.#{uuid!(id)}")
+  def delete_knowledge_doc(account_id, id)
+    delete("bot_knowledge_docs?id=eq.#{uuid!(id)}&chatwoot_account_id=eq.#{account_id.to_i}")
   end
 
   # Substitui os vínculos persona↔doc de um documento (doc não-global entra no
   # prompt apenas das personas vinculadas).
-  def set_doc_personas(doc_id, persona_ids)
+  #
+  # As personas são conferidas contra a conta antes de gravar: `bot_persona_knowledge`
+  # é só um par de UUIDs e não tem conta própria, então é aqui que se impede
+  # pendurar o documento de uma conta na persona de outra.
+  def set_doc_personas(account_id, doc_id, persona_ids)
     delete("bot_persona_knowledge?doc_id=eq.#{uuid!(doc_id)}")
     return if persona_ids.blank?
 
-    post('bot_persona_knowledge', persona_ids.map { |persona_id| { doc_id: doc_id, persona_id: uuid!(persona_id) } })
+    owned = personas(account_id).map { |persona| persona['id'] }
+    links = persona_ids.map { |id| uuid!(id) }.select { |id| owned.include?(id) }
+    return if links.blank?
+
+    post('bot_persona_knowledge', links.map { |persona_id| { doc_id: doc_id, persona_id: persona_id } })
   end
 
   # Credenciais de LLM são por conta: cada cliente do painel só enxerga e edita

@@ -6,6 +6,7 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
   # Upsert por (conta, inbox): cria a rota se não existe, atualiza se existe.
   def create
     inbox = Current.account.inboxes.find(route_params[:chatwoot_inbox_id])
+    ensure_persona_belongs_to_account!
     route = client.upsert_route(
       route_params.to_h.merge(
         chatwoot_account_id: Current.account.id,
@@ -25,6 +26,17 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
   end
 
   private
+
+  # O `persona_id` vem do navegador, e a inbox ser da conta não diz nada sobre a
+  # persona. Sem esta conferência, apontar a própria inbox para o UUID de uma
+  # persona alheia faria o bot responder com o prompt de outro cliente.
+  def ensure_persona_belongs_to_account!
+    persona_id = route_params[:persona_id]
+    return if persona_id.blank?
+    return if client.personas(Current.account.id).any? { |persona| persona['id'] == persona_id }
+
+    raise Pundit::NotAuthorizedError
+  end
 
   # A rota no Supabase só dá persona ao bot; quem faz o Chatwoot disparar o
   # webhook é o AgentBotInbox. Ligar as duas pontas na mesma ação evita o canal

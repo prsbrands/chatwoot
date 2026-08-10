@@ -1,18 +1,18 @@
 class Api::V1::Accounts::Integrations::Botlayer::PersonasController < Api::V1::Accounts::Integrations::Botlayer::BaseController
   def index
-    render json: { personas: client.personas }
+    render json: { personas: client.personas(Current.account.id) }
   end
 
   def create
-    render json: client.create_persona(persona_params)
+    render json: client.create_persona(Current.account.id, persona_params)
   end
 
   def update
-    render json: client.update_persona(params[:id], persona_params.except(:slug))
+    render json: client.update_persona(Current.account.id, params[:id], persona_params.except(:slug))
   end
 
   def destroy
-    client.delete_persona(params[:id])
+    client.delete_persona(Current.account.id, params[:id])
     head :ok
   end
 
