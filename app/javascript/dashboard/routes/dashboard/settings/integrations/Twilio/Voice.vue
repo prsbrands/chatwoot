@@ -481,7 +481,9 @@ onMounted(() => {
         </div>
         <!-- A causa vem do corpo da resposta, não do resumo do alerta: o resumo
              chama tudo de "Got HTTP 502" mesmo quando foi falha de DNS. -->
-        <span class="text-xs text-n-slate-11">{{ alert.cause }}</span>
+        <span v-if="alert.cause" class="text-xs text-n-slate-11">
+          {{ alert.cause }}
+        </span>
         <span class="text-xs text-n-slate-10">
           {{ new Date(alert.created_at).toLocaleString() }}
         </span>

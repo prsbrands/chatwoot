@@ -64,9 +64,18 @@ class Integrations::Twilio::AccountClient
       created_at: alert.date_created,
       request_url: alert.request_url,
       request_method: alert.request_method,
-      cause: detail.response_body.to_s.lines.map(&:strip).reject(&:empty?).first(2).join(' '),
+      cause: cause_of(detail.response_body),
       docs_url: alert.more_info
     }
+  end
+
+  # A linha que interessa é a do `Error:`. As outras são moldura — a primeira
+  # repete a URL, que já está na tela, e as últimas trazem SIDs que não ajudam
+  # quem está lendo. Alerta sem corpo (os de SMS, por exemplo) fica sem causa, e
+  # a tela esconde o campo em vez de mostrar uma linha vazia.
+  def cause_of(response_body)
+    lines = response_body.to_s.lines.map(&:strip).reject(&:empty?)
+    lines.find { |line| line.start_with?('Error:') } || lines.first
   end
 
   def first_page(search)
