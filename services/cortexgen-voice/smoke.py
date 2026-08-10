@@ -366,22 +366,53 @@ for _mid_call in (
 ):
     assert not FAREWELL.search(_mid_call), _mid_call
 
+# PALAVRA POR PALAVRA, que é como a chamada real entrega.
+#
+# A ElevenLabs sobe com `push_text_frames=False` porque tem marcação de tempo por
+# palavra: o `TTSTextFrame` sai conforme cada palavra é falada, nunca a frase
+# inteira. A primeira versão desta guarda alimentava a frase completa, passava
+# verde, e o casamento nunca disparou numa chamada de verdade.
+def _speak(observer, sentence):
+    _push(observer, BotStartedSpeakingFrame())
+    for word in sentence.split():
+        _push(observer, _TTSText(word, "word"))
+    _push(observer, BotStoppedSpeakingFrame())
+
+
 _hang = HangUpAfterFarewell()
 _hang.task = _FakeTask()
 
-# Falar no meio da chamada e terminar de falar não encerra nada.
-_push(_hang, _TTSText("¿Hay algo más en lo que pueda ayudarte?", "sentence"))
-_push(_hang, BotStoppedSpeakingFrame())
+_speak(_hang, "¿Hay algo más en lo que pueda ayudarte?")
 assert _hang.task.stopped == 0, "desligou no meio da conversa"
 
-# A despedida sozinha também não: o áudio ainda está saindo.
-_push(_hang, _TTSText("Que tengas buen día.", "sentence"))
+# A despedida sozinha não basta: o áudio ainda está saindo.
+_push(_hang, BotStartedSpeakingFrame())
+for _word in "Que tengas buen día.".split():
+    _push(_hang, _TTSText(_word, "word"))
 assert _hang.task.stopped == 0, "cortou a propria despedida"
 
 # Só quando ela termina de ser falada.
 _push(_hang, BotStoppedSpeakingFrame())
 assert _hang.task.stopped == 1, "nao desligou depois da despedida"
-print("desliga depois da despedida, e so depois dela")
+
+# As variações que o prompt manda adaptar, todas partidas em palavras.
+for _goodbye in (
+    "Perfecto. Nuestro equipo continúa contigo. Gracias por hablar con Pe-erre-ese Brands. Que tenga buen día.",
+    "Entiendo. Gracias por comunicarte con Pe-erre-ese Brands. Que tengas buenas tardes.",
+    "Que tengan un buen día.",
+):
+    _one = HangUpAfterFarewell()
+    _one.task = _FakeTask()
+    _speak(_one, _goodbye)
+    assert _one.task.stopped == 1, f"nao desligou apos: {_goodbye}"
+
+# Uma fala não herda a despedida da anterior.
+_later = HangUpAfterFarewell()
+_later.task = _FakeTask()
+_speak(_later, "Que tengas buen día.")
+_speak(_later, "¿Cuál es el nombre de su empresa?")
+assert _later.task.stopped == 1, "desligou de novo numa fala que nao era despedida"
+print("desliga depois da despedida falada palavra a palavra, e so depois dela")
 
 
 # A voz do bot não pode voltar como fala de quem ligou.

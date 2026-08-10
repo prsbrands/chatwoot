@@ -442,12 +442,20 @@ class HangUpAfterFarewell(BaseObserver):
     cliente no meio da frase. O preço é o inverso — se o modelo parafrasear a
     despedida, a chamada não cai sozinha. Por isso o acerto é registrado no log:
     chamada que termina sem esta linha é despedida que escapou do casamento.
+
+    **O texto chega palavra por palavra**, e não em frases. A ElevenLabs sobe com
+    `push_text_frames=False` porque tem marcação de tempo por palavra, então o
+    `TTSTextFrame` é emitido conforme cada palavra é falada. A primeira versão
+    disto casava o regex contra o texto de um quadro só e nunca disparou numa
+    chamada real: o bot disse "Que tenga buen día." e a linha ficou aberta do
+    mesmo jeito. Daí o acumulador — e o teste que agora alimenta palavra a
+    palavra, como a chamada faz.
     """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.task = None
-        self._saying_goodbye = False
+        self._spoken = ""
         self._seen: set[int] = set()
 
     async def on_push_frame(self, data: FramePushed) -> None:
@@ -455,17 +463,23 @@ class HangUpAfterFarewell(BaseObserver):
             return
 
         frame = data.frame
-        if isinstance(frame, TTSTextFrame):
+        if isinstance(frame, BotStartedSpeakingFrame):
+            # Cada fala é julgada sozinha: assim o acumulador não cresce pela
+            # chamada inteira nem junta o fim de uma frase com o início de outra.
+            self._spoken = ""
+            self._seen.clear()
+        elif isinstance(frame, TTSTextFrame):
+            # O mesmo quadro é visto a cada salto do pipeline, e uma palavra
+            # contada duas vezes vira "buen buen día" — que o regex não casa.
             if frame.id in self._seen:
                 return
             self._seen.add(frame.id)
-            if FAREWELL.search(frame.text or ""):
-                logger.info(f"farewell detected: {frame.text!r} — hanging up when it finishes")
-                self._saying_goodbye = True
+            self._spoken = f"{self._spoken} {frame.text or ''}"
         # Só depois que o áudio da despedida saiu inteiro. Encerrar ao detectar
         # o texto cortaria a própria frase de tchau.
-        elif isinstance(frame, BotStoppedSpeakingFrame) and self._saying_goodbye:
-            self._saying_goodbye = False
+        elif isinstance(frame, BotStoppedSpeakingFrame) and FAREWELL.search(self._spoken):
+            logger.info(f"farewell detected: {self._spoken.strip()!r} — hanging up")
+            self._spoken = ""
             if self.task:
                 await self.task.stop_when_done()
 
