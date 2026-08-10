@@ -162,6 +162,39 @@ Vivos: `Wait before speaking (ms)`, `Customer can interrupt`, `First message`, v
 
 **Armadilha ao testar o `/voice-stream` com curl:** por HTTP/2 ele responde **404**, e parece que a voz caiu. Não caiu — o HTTP/2 não tem cabeçalho `Upgrade`, então o nginx repassa vazio e o FastAPI não vê um handshake. Use `curl --http1.1`, que é como o Twilio conecta, e a resposta é **101**.
 
+### Calibração do limiar — três chamadas, e uma lição sobre a que parece pior
+
+| limiar | chamada | turnos | mediana | pior |
+|---|---|---|---|---|
+| 0.80 | 46 | 7 | 2.211 ms | 3.131 ms |
+| 0.75 | 47 | 13 | 2.030 ms | 3.114 ms |
+| 0.70 | 48 | 8 | **1.756 ms** | 2.694 ms |
+
+**A chamada em 0.70 pareceu ruim e não era o limiar.** O transcrito veio limpo e quem ligou soletrou um e-mail que chegou inteiro e certo (`j o s e m a r i a arroba g m a i l punto com`) — o Teste 3 passando em 0.70, que era exatamente o risco que se temia. O que estragou a chamada foram dois defeitos de prompt, os dois já descritos aqui, e os dois acontecem igual em 0.80:
+
+- pediu contato **já dado**: quem ligou ditou o e-mail cedo, fora da sequência, e o bot pediu de novo mais tarde → *"Já hablei meu email para ustedes"*;
+- repetiu a pergunta de triagem **inteira e entre aspas** (`"¿Es para ofrecer un producto o servicio, o por otro tema?"`) ao trocar de rota → *"Ya hablé."*
+
+Corrigidos no prompt em 10/08 (Supabase, sem deploy): a pergunta de esclarecimento ganhou condição explícita (*"si todavía no sabes a qué vino"*) com par incorreto/correto, o bloco de dados já fornecidos ganhou o exemplo do dado adiantado, e a lista de máxima prioridade ganhou a regra 4 — *"nunca repitas una pregunta que ya fue respondida, aunque este guion la traiga escrita"*. A lista também tinha **dois itens numerados 10**; agora vai de 1 a 15. Prompt: 19,3 → 20,6 KB.
+
+**Não julgue um limiar pela qualidade da conversa** — julgue pela mediana e pelo Teste 3. O que o bot fala é do prompt.
+
+### O bot se despedia e ficava na linha (`273205aa8`)
+
+Faltava a peça inteira. Numa chamada de teste a despedida saiu às `17:18:13.256` e a ligação só caiu 17 s depois, **quando quem ligou desligou**. O serializer sobe com `auto_hang_up=False` e nada empurrava frame de fim — o prompt escrevia o "buen día" e nenhum código agia sobre ele.
+
+Pior que o incômodo: sem quem ligou desligar, a rede é o `idle_timeout_secs` do Pipecat, **300 s de fábrica**. Cinco minutos de linha aberta pagando Twilio e Deepgram para transmitir silêncio.
+
+`HangUpAfterFarewell` (observador, em `app/bot.py`) casa a despedida no texto que vai ao TTS e chama `stop_when_done()` no `BotStoppedSpeakingFrame` seguinte — depois do áudio, para não cortar o próprio tchau. **Fechar o WebSocket derruba o `<Connect>`**, então não é preciso credencial da Twilio dentro do serviço.
+
+O gatilho é a frase, não uma decisão do modelo, pelo mesmo motivo do handoff de texto: desligar é irreversível e um `end_call` alucinado corta o cliente no meio da frase. O preço é o inverso — **despedida parafraseada não cai sozinha** —, e por isso o acerto vai para o log:
+
+```
+farewell detected: 'Que tengas buen día.' — hanging up when it finishes
+```
+
+Chamada que termina sem essa linha é despedida que escapou do casamento (`que teng\w*\s+(un\s+)?buen`). Se acontecer, o caminho é acrescentar a variação ao regex, não trocar por decisão do modelo.
+
 ### A regra que se pagou nesta sessão
 
 **Uma mudança por chamada** — e, quando duas hipóteses explicam o mesmo sintoma, **instrumentar em vez de escolher**. O contador de pistas de áudio derrubou uma hipótese minha em uma ligação; o relógio da abertura derrubou a segunda. Cada uma teria custado dias de conserto na direção errada.
