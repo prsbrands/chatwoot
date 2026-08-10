@@ -6,7 +6,7 @@
 
 ## ▶️ RETOMAR AQUI — tarifas por fornecedor (custo em dólar)
 
-Produção está em **`008ad8836`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
+Produção está em **`9b2f59f20`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
 **Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
 
@@ -103,6 +103,14 @@ Corrigido em `7f7b9ecc0`: fim de turno por **silêncio** (`SpeechTimeoutUserTurn
 | ElevenLabs até o primeiro áudio | 0,33 s |
 
 **Correção de uma coisa que eu disse antes:** avisei que o prompt de 21 KB seria latência audível. **Não foi** — o modelo respondeu em 100 ms. O maior componente é o endpointing de 600 ms, que é ajustável na persona. Encurtar o prompt continua valendo por qualidade de conversa (respostas curtas e faladas), não por latência.
+
+### Armadilha: `extra` do Pipecat vira kwargs do SDK, não corpo do request
+
+O fallback de LLM foi entregue mandando `models` em `OpenAILLMSettings.extra`. O Pipecat faz `params.update(settings.extra)` e passa tudo para `AsyncCompletions.create(**params)` — o SDK da OpenAI **não conhece `models`** e recusou toda chamada com `unexpected keyword argument`. O bot falava a saudação (que não passa pelo modelo) e emudecia. O lugar certo é **`extra_body`**, a porta do SDK para campos que só o fornecedor entende.
+
+Na mesma leva, `STTUsageMetricsData.value` é um **objeto** `STTUsage(audio_seconds=…)`, enquanto o do TTS é um `int` puro — somar o objeto como número estourava em toda chamada.
+
+Nenhum dos dois falhava antes de uma chamada real. O `smoke.py` agora confere os kwargs **contra a assinatura real do `AsyncCompletions.create`** e alimenta o coletor com objetos de métrica de verdade; ambos foram verificados rejeitando as versões que subiram.
 
 ### Armadilha: a API do Pipecat muda entre versões menores
 
