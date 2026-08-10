@@ -1,30 +1,70 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-08-09 · Instância: https://prs.cortexgen.cloud
+Última sessão: 2026-08-10 · Instância: https://prs.cortexgen.cloud
 
 ---
 
-## ▶️ RETOMAR AQUI — validar o Flux até a chamada ficar usável
+## ▶️ RETOMAR AQUI — a abertura funciona; falta latência, ruído e formato
 
-Produção em **`8d59ba0c0`**. `/api`, `/app/login`, `/super_admin/sign_in` em 200; `cortexgen-voice` respondendo.
+**A chamada finalmente abre certo** (validado 10/08, `CA893ea29ffbd940c4eee581cb90ccb890`): saudação de 6,08 s inteira, sem interrupção, e o bot pegou o nome na primeira resposta. Foram necessárias **três correções independentes**, cada uma validada numa ligação própria.
 
-**A migração para o Deepgram Flux está no ar e NUNCA foi validada com uma chamada real.** Essa é a única prioridade desta sessão. Não construa mais nada até a chamada estar boa.
-
-### O que mudou e por que
-
-O Deepgram tem duas famílias e estávamos na errada. **Nova** transcreve; **Flux** é feito para conversa e traz a máquina de turnos dentro do serviço — ela enxerga a forma de onda, não só os intervalos.
-
-Tudo o que este serviço tinha acumulado para suprir o Nova saiu do caminho quando o modelo é `flux-*`: VAD local do Silero, cronômetro de silêncio, portão por LLM, mínimo de palavras. **Cada uma dessas peças já derrubou uma chamada real** — silêncio de 5 s, saudação engolida, bot falando por cima, resposta descartada por chegar tarde.
-
-Config ativa, confirmada no endpoint:
+Config ativa:
 
 ```
-stt : deepgram flux-general-multi   (idioma ouvido: multi)
+stt : deepgram flux-general-multi  ·  language_hints=[es, pt]
 llm : openai/gpt-4.1-mini  ·  reserva deepseek/deepseek-v4-flash-0731
 tts : eleven_multilingual_v2  ·  voz ny3E2DZImeZm00WLGZi9
+persona: greeting_delay_ms=2500 · endpoint_ms=300 · interruptible=on
 ```
 
-Limiares do Flux, hoje fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.7`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+Limiares do Flux, fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.7`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+
+### Os três defeitos da abertura, na ordem em que foram achados
+
+**1. O idioma que mandávamos ao Flux nunca saiu do processo.** O `_build_query_string` do Flux monta `model`, `sample_rate`, `encoding`, os thresholds, `keyterm`, `tag` e `language_hint` — e nada mais. O campo `stt_language` da persona (`multi`) jamais chegou à Deepgram; quem segurava o multilíngue era só o sufixo do modelo, sem viés. Numa linha de 8 kHz ele passeava: quatro segundos de espanhol voltaram como *"Es traurige Saussurer gravata paraffins de quali ditti"*. Corrigido com `language_hints=[Language.ES, Language.PT]`.
+
+**2. O Flux alucina uma frase de estoque sobre o quase-silêncio da linha, e ela matava a saudação.** Cinco chamadas, sempre o mesmo esqueleto — `estado de casa … de Quality ID` — **inclusive uma com o microfone de quem ligou mudo**. O Flux declarava turno em cima disso, a interrupção cortava a saudação antes de *"¿Cuál es su nombre?"*, e o bot ainda respondia à alucinação com "No entendí bien". O gatilho entrava no **primeiro segundo, antes de o bot emitir um byte**. Corrigido com `SilenceUntilBotHasSpoken`, um processador **antes do STT** que nasce fechado e abre no primeiro `BotStoppedSpeakingFrame`.
+
+**3. O Twilio descartava os ~3 primeiros segundos de áudio.** Falávamos os 5,9 s inteiros e quem ligou só ouvia a partir de *"…ese Brands"*. Só a **primeira** fala perdia o começo; as seguintes chegavam inteiras — assinatura de caminho de voz ainda não cortado na operadora. Corrigido subindo `Wait before speaking (ms)` de 300 para **2500** na persona.
+
+### Duas hipóteses descartadas com instrumentação, não com opinião
+
+Custaram um deploy cada e valem o registro, porque as duas eram plausíveis:
+
+- **"O Twilio nos devolve a nossa própria pista."** O `deserialize` do `TwilioFrameSerializer` de fato não filtra por `track` — todo evento `media` vira áudio de entrada. Mas o contador no `CallerAudioOnlySerializer` mostrou `{'inbound': 2651}`, **zero outbound**. O filtro ficou (é higiene correta), provado inócuo.
+- **"É eco da nossa voz voltando pela linha."** Derrubada pelo relógio: numa chamada o turno fantasma abriu a partir de áudio capturado quando o bot ainda estava mudo. O que parecia eco era a alucinação do item 2 — o esqueleto repetido entre chamadas vinha do modelo, não do áudio.
+
+O log de fim de chamada carrega as duas provas em toda ligação: `audio tracks {...}, echo frames silenced N`.
+
+### O preço aceito: não há mais barge-in
+
+Com a porteira fechada durante a fala do bot, **quem ligou não consegue cortá-lo**. Um "aló" durante a abertura também se perde. É o que um cancelador de eco compraria de volta — e nenhum está instalado: dos quatro filtros do Pipecat (`rnnoise`, `koala`, `krisp_viva`, `aic`), só o RNNoise é livre, e ele é supressão de ruído, não cancelamento de eco.
+
+O `Teste 4` do protocolo abaixo está, portanto, **reprovado por desenho**. Não é regressão a investigar.
+
+### Fila, na ordem que eu seguiria
+
+1. **Ruído de fundo — medição, não conserto.** Toda chamada real terá ambiência de escritório, rua, natureza. Não sabemos se o Flux abre turno em cima disso porque nunca tivemos chamada boa até agora. Ligar **de propósito de um lugar barulhento** e contar os `start_of_turn` sem fala. Só depois decidir sobre `RNNoiseFilter` (grátis, `pipecat-ai[rnnoise]`, entra como `audio_in_filter` no transport) ou filtro pago. `min_confidence` do Flux é meia solução: descarta a **transcrição** de baixa confiança no fim do turno, mas **não impede** o turno de abrir e cortar o bot.
+2. **Latência.** Mediana de **1,83 s** do fim da fala à primeira sílaba do bot (2198 / 1826 / 1699 / 1906 ms), acima do alvo de 1,5 s. Há **500 ms fixos** entre `EndOfTurn` e `User turn inference triggered` em todos os turnos — é o `ExternalUserTurnStopStrategy`, e é a maior alavanca que sobrou.
+3. **`temperature` e `max_tokens` são herdados do chat.** As quatro personas têm `0.60/1200` porque a de voz nasceu de clone da do site (defaults da tabela são `0.7/1024`). Respostas reais medem **14–21 tokens**, então 1200 é inerte — mas é limite de estrago: se o modelo ignorar o "8 a 20 palabras", são ~90 s de TTS cobrados por caractere. Proposta: **0.3 e 300**, os dois de uma vez, porque nenhum é validável numa chamada só.
+4. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
+5. **O coletor de métricas quebrou no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então o que falta são quadros que a rota Flux não emite. Enquanto não voltar, "melhorou" é impressão: os números acima saíram do log, na mão.
+
+### Campos do painel que NÃO fazem nada sob Flux
+
+Mesma classe de bug do item 1, e a tela não avisa:
+
+| Campo | Onde morre |
+|---|---|
+| **End of turn (ms)** | alimenta o VAD do Silero (`None` no Flux) e o ramo Nova do `_stt` |
+| **Wait until the caller finishes** | vive em `_turn_strategies`, que a rota Flux contorna |
+| **Words needed to interrupt** | mesma função, mesmo desvio |
+
+Vivos: `Wait before speaking (ms)`, `Customer can interrupt`, `First message`, voz e idioma do TTS. Os limiares que de fato mandam no turno (`eot_threshold` e companhia) estão chumbados no código — ajustá-los exige deploy. Ou os campos passam a escrevê-los, ou somem quando o modelo é `flux-*`.
+
+### A regra que se pagou nesta sessão
+
+**Uma mudança por chamada** — e, quando duas hipóteses explicam o mesmo sintoma, **instrumentar em vez de escolher**. O contador de pistas de áudio derrubou uma hipótese minha em uma ligação; o relógio da abertura derrubou a segunda. Cada uma teria custado dias de conserto na direção errada.
 
 ### Protocolo de teste — siga na ordem, uma chamada por vez
 
@@ -52,13 +92,16 @@ cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner 
 **Teste 3 — soletrar.** Dite um e-mail letra por letra. O bot não pode responder no meio.
 - Cortou: suba `eot_threshold` para 0.8. Esse é o trade-off direto com o teste 2 — ache o meio.
 
-**Teste 4 — interromper.** Fale por cima do bot. Ele deve parar.
-- Não parou: `should_interrupt` do `DeepgramFluxSTTService` (padrão `True`).
+**Teste 4 — interromper.** ~~Fale por cima do bot. Ele deve parar.~~ **Reprovado por desenho** — a porteira contra a alucinação silencia a entrada enquanto o bot fala. Só volta com cancelador de eco licenciado.
 
 **Teste 5 — português no meio do espanhol.** Diga "consertos de automóveis". Não pode virar "conciertos".
-- Errou: o `flux-general-multi` já está ativo; considere `language_hints=[Language.ES, Language.PT_BR]` em `_stt`.
+- Os `language_hints` já estão no ar e mataram o alemão/francês/italiano. Falta o teste com a frase de verdade.
 
-**Critério de "usável":** os cinco testes passando, mediana abaixo de 1.500 ms, e **duas chamadas seguidas sem intervalo perceptível**.
+**Teste 6 — abertura.** A saudação tem de chegar **inteira**, terminando em "¿Cuál es su nombre, por favor?".
+- Cortada no fim: alucinação abrindo turno — confira `start_of_turn` durante a fala do bot.
+- Faltando o começo: o Twilio ainda descarta áudio; suba o `Wait before speaking (ms)`.
+
+**Critério de "usável":** testes 1, 2, 3, 5 e 6 passando, mediana abaixo de 1.500 ms, e **duas chamadas seguidas sem intervalo perceptível**.
 
 ### Se o Flux falhar
 
@@ -84,6 +127,8 @@ Um webhook que devolve 502 é uma ligação de cliente perdida em silêncio; só
 - **`deepgram`** (`~/.claude/skills/deepgram/`): decisão Nova vs Flux, semântica de streaming, telefonia, idioma.
 
 A regra que custou seis ligações está nas duas: **uma mudança por chamada.** As três últimas regressões foram mecanismos adicionados sem validação individual.
+
+**A skill `deepgram` precisa de um parágrafo novo**, que só se aprendeu nesta sessão: o `language` do `STTSettings` **não existe** no caminho Flux (o `_build_query_string` não o lê), e o Flux **alucina uma frase estável sobre quase-silêncio de telefone** — o que faz um turno nascer sem ninguém ter falado. Os dois custaram várias ligações porque nenhum falha de forma visível: um parâmetro parece configurado, e uma transcrição parece um cliente.
 
 ### Fase 3 — o que já está em produção
 
