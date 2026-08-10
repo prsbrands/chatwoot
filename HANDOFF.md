@@ -195,6 +195,10 @@ farewell detected: 'Que tengas buen día.' — hanging up when it finishes
 
 Chamada que termina sem essa linha é despedida que escapou do casamento (`que teng\w*\s+(un\s+)?buen`). Se acontecer, o caminho é acrescentar a variação ao regex, não trocar por decisão do modelo.
 
+**A primeira versão não disparou, e a culpa era do teste.** Numa chamada real o bot disse *"Que tenga buen día."* e a linha continuou aberta. Motivo: a ElevenLabs sobe com **`push_text_frames=False`** porque tem marcação de tempo por palavra, então o `TTSTextFrame` sai **palavra por palavra** — o regex era testado contra `'Que'`, depois `'tengas'`, depois `'buen'`, e nenhuma palavra sozinha casa uma frase. O smoke alimentava a frase inteira: uma granularidade que a produção nunca gera, verde enquanto a chamada falhava.
+
+Corrigido em `600d4a43c` com um acumulador da fala corrente, zerado a cada `BotStartedSpeakingFrame` para não juntar o fim de uma frase com o começo de outra. **A regra vale além deste caso: quadro de texto do TTS é palavra, não frase.** Qualquer coisa que precise casar uma expressão no que o bot fala tem de acumular.
+
 ### A regra que se pagou nesta sessão
 
 **Uma mudança por chamada** — e, quando duas hipóteses explicam o mesmo sintoma, **instrumentar em vez de escolher**. O contador de pistas de áudio derrubou uma hipótese minha em uma ligação; o relógio da abertura derrubou a segunda. Cada uma teria custado dias de conserto na direção errada.
