@@ -286,19 +286,18 @@ Estado do DNS hoje: `prs.cortexgen.cloud` → `187.77.20.155`, TTL 14400, respon
 
 **Conserto de verdade é fora do código**: DNS secundário em outro provedor (Cloudflare é grátis e aceita ser secundário), ou mover a zona. É mudança de nameserver no registrador — decisão do Paulo, não deploy.
 
-**Conserto dentro do código** é tornar a perda visível: hoje só descobrimos porque alguém foi perguntar ao Twilio. Ver a seção seguinte.
+**Conserto dentro do código, entregue** (`82af5ffe4`): a aba Voz lista os alertas da Monitor API do Twilio — método, URL, código com link para a documentação, e a causa. A causa sai do `response_body` de cada alerta, num fetch individual, **e não do `alert_text` da listagem**, que é justamente o que mentiu. Carregado à parte do resto da aba e falhando em silêncio: são N+1 chamadas a uma API de terceiro, e uma tela de configuração não pode esperar nem quebrar por causa disso.
 
-### Aberto e sem explicação: 502 no webhook (superado pela seção acima)
-
-Uma chamada não atendeu. Alerta do próprio Twilio:
+Validado em produção — os dois alertas aparecem com a causa verdadeira:
 
 ```
-02:29:07  code=11200  Got HTTP 502 response to /twilio/voice/incoming
+10/08 03:38  11200  Error: Unknown host prs.cortexgen.cloud
+10/08 02:29  11200  Error: Total timeout is triggered... responseState=INITIAL
 ```
 
-Rails de pé desde 00:22 **sem reinícios**, 394 MB, e **o nginx não tem registro dessa requisição** — nem acesso, nem erro. O 502 veio antes do nginx e não deixou rastro nosso.
+Alerta sem corpo de resposta (os de SMS, por exemplo) fica sem causa e a tela esconde o campo, em vez de mostrar uma linha vazia.
 
-Um webhook que devolve 502 é uma ligação de cliente perdida em silêncio; só descobrimos porque fomos perguntar ao Twilio. **Precisa de monitor.** Sugestão: checagem periódica de `/api` com alerta, e ler `client.monitor.v1.alerts` do Twilio no painel de chamadas.
+**O que falta é seu, não do código:** DNS secundário em outro provedor. Enquanto `ns1` e `ns2.dns-parking.com` forem os dois da Hostinger, uma janela ruim de resolução volta a derrubar chamada — e agora ela aparece no painel em vez de sumir.
 
 ### Skills — leia antes de mexer
 
