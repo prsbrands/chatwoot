@@ -24,10 +24,21 @@ class CallMetrics(BaseObserver):
         self.tts_characters = 0
         self.stt_seconds = 0.0
         self.latencies_ms: list[int] = []
+        self._counted: set[int] = set()
 
     async def on_push_frame(self, data: FramePushed) -> None:
-        if isinstance(data.frame, MetricsFrame):
-            self.record(data.frame)
+        if not isinstance(data.frame, MetricsFrame):
+            return
+
+        # O observador vê cada quadro uma vez por salto do pipeline, e um quadro
+        # de métrica atravessa vários. Somar em toda passagem multiplicava o
+        # consumo pelo tamanho do pipeline: 96 s de áudio viraram 677 s numa
+        # chamada de 98 s.
+        if data.frame.id in self._counted:
+            return
+        self._counted.add(data.frame.id)
+
+        self.record(data.frame)
 
     # Separado do observador para o teste de fumaça poder alimentá-lo com
     # métricas de verdade: o formato de cada uma difere (o do TTS é um número, o

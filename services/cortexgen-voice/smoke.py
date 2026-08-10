@@ -158,6 +158,25 @@ collected.record(
 for seconds in (0.9, 1.4, 1.1, 3.2, 1.0):
     collected.record_latency(seconds)
 
+# Um quadro de métrica passa por vários processadores e o observador o vê em
+# cada salto. Contar em toda passagem inflou 96 s de áudio para 677 s.
+import asyncio as _asyncio
+
+from pipecat.observers.base_observer import FramePushed
+
+seen_twice = MetricsFrame(
+    data=[STTUsageMetricsData(processor="stt", model="nova-3", value=STTUsage(audio_seconds=10.0))]
+)
+repeated = CallMetrics()
+for _ in range(3):
+    _asyncio.run(
+        repeated.on_push_frame(
+            FramePushed(source=None, destination=None, frame=seen_twice, direction=None, timestamp=0)
+        )
+    )
+assert repeated.stt_seconds == 10.0, f"counted the same frame more than once: {repeated.stt_seconds}"
+print("dedupe de metricas: 3 passagens ->", repeated.stt_seconds, "s")
+
 payload = collected.as_payload()
 assert payload["prompt_tokens"] == 5200 and payload["tts_characters"] == 840, payload
 assert payload["stt_seconds"] == 47.3, payload

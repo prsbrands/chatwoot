@@ -355,14 +355,26 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     )
 
 
-# O prompt do sistema é instrução, não conversa, e a abertura escrita já está no
-# histórico como fala do bot — as duas ficam de fora do transcrito.
+# O prompt do sistema é instrução, não conversa, e fica de fora do transcrito.
+#
+# As marcas de fim de turno (✓ ○ ◐) o Pipecat já tira do que vai para a voz, mas
+# não do histórico — e o transcrito é o que alguém de vendas lê depois. Um turno
+# que era só "○" nem chegou a ser fala.
+TURN_MARKERS = "✓○◐"
+
+
 def _transcript_of(context: LLMContext) -> list[dict]:
-    return [
-        {"role": message["role"], "content": message["content"]}
-        for message in context.get_messages()
-        if message.get("role") in ("user", "assistant") and isinstance(message.get("content"), str)
-    ]
+    turns = []
+    for message in context.get_messages():
+        if message.get("role") not in ("user", "assistant"):
+            continue
+        if not isinstance(message.get("content"), str):
+            continue
+
+        content = message["content"].lstrip(TURN_MARKERS).strip()
+        if content:
+            turns.append({"role": message["role"], "content": content})
+    return turns
 
 
 READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON, sin texto alrededor:
@@ -373,8 +385,13 @@ READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON,
 - name: el nombre de la persona tal como lo dijo. null si no lo dio.
 - email: solo si lo dictó. Une las letras deletreadas. null si no lo dio.
 - company: el nombre de la empresa. Une las letras si lo deletreó. null si no lo dio.
-- city: solo si mencionó dónde está. Nunca la adivines por el país. null si no la dijo.
+- city: solo si dijo en qué ciudad está. Un país, un dominio (.pa, .br) o un
+  prefijo telefónico NO son una ciudad. null si no la dijo.
 - whatsapp: solo si dio un número distinto del que llamó. null en cualquier otro caso.
+
+REGLA ABSOLUTA: copia lo que oíste, nunca lo completes. Si el correo quedó a
+medias, si el nombre de la empresa salió cortado o si no entendiste, devuelve
+null. Un dato inventado entra en el CRM como si fuera cierto y alguien lo usa.
 """
 
 
