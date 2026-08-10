@@ -10,11 +10,12 @@ apareceria com o cliente na linha.
 from pipecat.pipeline.task import PipelineParams
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 
-from app.bot import _language, _llm, _llm_extras, _model_cascade, _stt, _tts
+from app.bot import _flux_turn_strategies, _language, _llm, _llm_extras, _model_cascade, _stt, _tts, uses_flux
 
 FAKE = {
     "stt": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1", "model": "deepgram/nova-3"},
     "stt_direct": {"api_style": "deepgram", "api_key": "k", "base_url": "", "model": "nova-3"},
+    "stt_flux": {"api_style": "deepgram", "api_key": "k", "base_url": "", "model": "flux-general-multi"},
     "llm": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1",
             "model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.6, "max_tokens": 400},
     "tts": {"api_style": "elevenlabs", "api_key": "k", "voice_id": "v", "model": "eleven_flash_v2_5"},
@@ -29,6 +30,19 @@ print("language:", language)
 
 print("stt via openrouter:", type(_stt(FAKE["stt"], language, 600)).__name__)
 print("stt via deepgram:  ", type(_stt(FAKE["stt_direct"], language, 600)).__name__)
+print("stt via flux:      ", type(_stt(FAKE["stt_flux"], language, 600)).__name__)
+
+# Flux é outro produto no mesmo fornecedor: /v2/listen, com turnos próprios.
+# Confundir os dois manda parâmetros que o endpoint não conhece.
+assert uses_flux(FAKE["stt_flux"]) and not uses_flux(FAKE["stt_direct"])
+assert type(_stt(FAKE["stt_flux"], language, 600)).__name__ == "DeepgramFluxSTTService"
+
+# Com Flux a máquina de turnos sai daqui: quem decide é quem ouve o áudio, e as
+# estratégias External só repassam os quadros que ele emite.
+fx = _flux_turn_strategies()
+assert [type(x).__name__ for x in fx.start] == ["ExternalUserTurnStartStrategy"], fx.start
+assert [type(x).__name__ for x in fx.stop] == ["ExternalUserTurnStopStrategy"], fx.stop
+print("flux turns:", [type(x).__name__ for x in fx.start + fx.stop])
 print("llm:", type(_llm(FAKE["llm"], None)).__name__)
 
 # Reserva no mesmo fornecedor vira lista de modelos num request só; em

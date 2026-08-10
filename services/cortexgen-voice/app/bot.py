@@ -1,13 +1,18 @@
 """O laço de áudio de uma chamada.
 
-A ordem do pipeline é a chamada inteira em uma linha: o áudio entra, o VAD
-decide onde termina o turno de quem ligou, o trecho vira texto, o texto entra no
-contexto, o modelo responde, a resposta vira voz e volta pelo mesmo WebSocket.
+A ordem do pipeline é a chamada inteira em uma linha: o áudio entra, vira texto,
+o texto entra no contexto, o modelo responde, a resposta vira voz e volta pelo
+mesmo WebSocket.
 
-O VAD roda aqui dentro, de graça, porque a transcrição que usamos é por trecho e
-não por streaming: o Deepgram nova-3 chega pelo OpenRouter no endpoint compatível
-com OpenAI, que recebe um arquivo e devolve o texto. Quem recorta esse arquivo no
-lugar certo é o Silero, local.
+**Quem decide de quem é a vez muda conforme o transcritor**, e é a diferença
+que mais importa aqui:
+
+- **Deepgram Flux** (`flux-general-*`, `/v2/listen`) traz a máquina de turnos
+  dentro do serviço e emite os quadros de início e fim de fala. O pipeline só
+  repassa. É o caminho recomendado para telefonia.
+- **Qualquer outro** obriga a montar essa máquina deste lado: VAD local do
+  Silero, silêncio cronometrado e, opcionalmente, um portão por LLM. Cada peça
+  dessa pilha já derrubou uma chamada real — ver a skill `pipecat`.
 """
 
 import asyncio
@@ -31,6 +36,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.processors.audio.vad_processor import VADProcessor
 from pipecat.serializers.twilio import TwilioFrameSerializer
+from pipecat.services.deepgram.flux.stt import DeepgramFluxSTTService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 from pipecat.services.openai.llm import OpenAILLMService
@@ -41,11 +47,17 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketTransport,
 )
 from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStrategy
+from pipecat.turns.user_start.external_user_turn_start_strategy import (
+    ExternalUserTurnStartStrategy,
+)
 from pipecat.turns.user_start.min_words_user_turn_start_strategy import (
     MinWordsUserTurnStartStrategy,
 )
 from pipecat.turns.user_start.vad_user_turn_start_strategy import (
     VADUserTurnStartStrategy,
+)
+from pipecat.turns.user_stop.external_user_turn_stop_strategy import (
+    ExternalUserTurnStopStrategy,
 )
 from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
     SpeechTimeoutUserTurnStopStrategy,
@@ -74,6 +86,28 @@ DICTATION — treat this as INCOMPLETE SHORT (○), always:
 Only mark ✓ once the spelled item is whole. Someone reciting an email pauses
 between letters, and answering into that pause is how you make them start over.
 """
+
+
+def uses_flux(stt: dict) -> bool:
+    """O Flux é da Deepgram mas é outro produto: `/v2/listen`, com turnos próprios."""
+    return stt["api_style"] == "deepgram" and str(stt.get("model") or "").startswith("flux")
+
+
+def _flux_turn_strategies() -> UserTurnStrategies:
+    """Com o Flux, quem decide o turno é quem ouve o áudio.
+
+    Ele emite `UserStartedSpeakingFrame` e `UserStoppedSpeakingFrame` a partir
+    da própria máquina de turnos — que enxerga a forma de onda, não só o
+    silêncio. As estratégias `External` apenas repassam essa decisão.
+
+    Some daqui tudo o que existia para suprir o que o Nova não faz: silêncio
+    cronometrado, modelo semântico de turno e o portão por LLM. Cada um desses
+    já derrubou uma chamada real.
+    """
+    return UserTurnStrategies(
+        start=[ExternalUserTurnStartStrategy()],
+        stop=[ExternalUserTurnStopStrategy()],
+    )
 
 
 def _turn_strategies(persona: dict) -> UserTurnStrategies:
@@ -138,6 +172,21 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
     só é transcrito depois de fechado — o que custa uns 300 ms por resposta.
     """
     style = config["api_style"]
+
+    if uses_flux(config):
+        # `/v2/listen`. Não tem `endpointing`, `interim_results` nem
+        # `utterance_end_ms`: os limiares são confiança de fim de turno, não
+        # tempo de silêncio. `eot_timeout_ms` é o teto duro.
+        return DeepgramFluxSTTService(
+            api_key=config["api_key"],
+            settings=DeepgramFluxSTTService.Settings(
+                model=config["model"],
+                language=language,
+                eot_threshold=0.7,
+                eager_eot_threshold=0.5,
+                eot_timeout_ms=5000,
+            ),
+        )
 
     if style == "deepgram":
         return DeepgramSTTService(
@@ -251,6 +300,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     # 'multi' enquanto a voz segue o texto que o modelo escreveu.
     stt_language = _language(persona.get("stt_language"))
     tts_language = _language(persona.get("language"))
+    flux = uses_flux(config["stt"])
 
     # auto_hang_up ficaria dependente de credencial da Twilio aqui dentro. Não
     # precisa: quando este WebSocket fecha, o `<Connect>` acaba e a chamada cai.
@@ -273,8 +323,12 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     # O silêncio que encerra o turno de quem ligou. Curto demais corta quem
     # pensa no meio da frase; longo demais parece surdez. O mesmo analisador
     # serve ao processador de áudio e ao agregador, que decide os turnos.
-    vad_analyzer = SileroVADAnalyzer(
-        params=VADParams(stop_secs=persona["endpoint_ms"] / 1000)
+    # O Flux traz VAD e turnos dentro do próprio serviço; um VAD local aqui
+    # seria uma segunda opinião competindo com quem ouve o áudio de verdade.
+    vad_analyzer = (
+        None
+        if flux
+        else SileroVADAnalyzer(params=VADParams(stop_secs=persona["endpoint_ms"] / 1000))
     )
 
     # A abertura não é semeada no contexto: o agregador já registra o que o bot
@@ -295,7 +349,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=vad_analyzer,
-            user_turn_strategies=_turn_strategies(persona),
+            user_turn_strategies=_flux_turn_strategies() if flux else _turn_strategies(persona),
             # Rede de segurança para quando a transcrição não volta, e só isso.
             #
             # Baixei para 2 s achando que era controle de latência. Não é: o
@@ -320,7 +374,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     pipeline = Pipeline(
         [
             transport.input(),
-            VADProcessor(vad_analyzer=vad_analyzer),
+            *([] if flux else [VADProcessor(vad_analyzer=vad_analyzer)]),
             _stt(config["stt"], stt_language, persona["endpoint_ms"]),
             aggregators.user(),
             _llm(config["llm"], config.get("llm_fallback")),
