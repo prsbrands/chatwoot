@@ -12,7 +12,7 @@ class VoiceAgent::CallsController < VoiceAgent::BaseController
   def report_params
     params.permit(
       :call_sid, :phone_number, :from_number, :duration_seconds, :summary,
-      :name, :email, :company, :city, :whatsapp,
+      :name, :email, :company, :city, :whatsapp, :timeline, :interest, :fit,
       transcript: [:role, :content],
       metrics: [:turns, :prompt_tokens, :completion_tokens, :tts_characters,
                 :stt_seconds, :latency_median_ms, :latency_worst_ms]

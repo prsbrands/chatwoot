@@ -623,7 +623,8 @@ def _transcript_of(context: LLMContext) -> list[dict]:
 
 READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON, sin texto alrededor:
 
-{"summary": "...", "name": "...", "email": "...", "company": "...", "city": "...", "whatsapp": "..."}
+{"summary": "...", "name": "...", "email": "...", "company": "...", "city": "...",
+ "whatsapp": "...", "timeline": "...", "interest": "...", "fit": "..."}
 
 - summary: dos o tres frases en español. Quién llamó, qué necesita, cuál es el siguiente paso.
 - name: el nombre de la persona tal como lo dijo. null si no lo dio.
@@ -632,10 +633,22 @@ READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON,
 - city: solo si dijo en qué ciudad está. Un país, un dominio (.pa, .br) o un
   prefijo telefónico NO son una ciudad. null si no la dijo.
 - whatsapp: solo si dio un número distinto del que llamó. null en cualquier otro caso.
+- timeline: IMMEDIATE si quiere resolverlo ahora o en las próximas semanas;
+  SHORT_TERM si lo hará más adelante y todavía evalúa; EXPLORATORY si solo
+  está investigando.
+- interest: uno de TECNOLOGIA_E_IA, MARKETING_E_BRANDING, AUTOMATIZACION_COMERCIAL,
+  ATENCION_AL_CLIENTE, SISTEMAS_E_INTEGRACIONES, CONSULTORIA_ESTRATEGICA, OTRO.
+- fit: LOW si no apareció un problema claro o quien llamó no es prospecto;
+  MEDIUM si hay un problema real en una operación pequeña; HIGH si el problema
+  tiene volumen o consecuencia declarada; PREMIUM si además hay varios canales
+  o sistemas y urgencia.
 
 REGLA ABSOLUTA: copia lo que oíste, nunca lo completes. Si el correo quedó a
 medias, si el nombre de la empresa salió cortado o si no entendiste, devuelve
 null. Un dato inventado entra en el CRM como si fuera cierto y alguien lo usa.
+Lo mismo vale para las tres clasificaciones: null cuando la llamada no dé
+elementos para decidir. "Sin clasificar" es información; una etiqueta adivinada
+manda a alguien a llamar al prospecto equivocado.
 """
 
 

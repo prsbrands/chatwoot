@@ -108,6 +108,7 @@ class Voice::CallReportService
 
     attributes['company_name'] = @params[:company] if @params[:company].present?
     attributes['city'] = @params[:city] if @params[:city].present?
+    attributes.merge!(qualification)
     attributes['country'] = country_of(caller_number) if country_of(caller_number).present?
     # Quem liga de um celular usa o mesmo número no WhatsApp, salvo quando dita
     # outro durante a conversa.
@@ -116,6 +117,28 @@ class Voice::CallReportService
     contact.additional_attributes = attributes
     Contacts::SyncAttributes.new(contact).perform
     contact.save!
+  end
+
+  # Quanto vale este lead, na leitura da chamada inteira. Sai da mesma passada de
+  # IA que já faz o resumo, no fim — e não do bot ao vivo, que só enxerga o turno
+  # da vez e teria de carregar a lista de categorias no prompt de toda resposta.
+  #
+  # Categoria fora do vocabulário é descartada em silêncio: o campo vazio diz "a
+  # chamada não deu para saber", que é verdade útil. Uma etiqueta inventada manda
+  # alguém ligar para o prospecto errado.
+  QUALIFICATION = {
+    'lead_timeline' => %w[IMMEDIATE SHORT_TERM EXPLORATORY],
+    'lead_interest' => %w[TECNOLOGIA_E_IA MARKETING_E_BRANDING AUTOMATIZACION_COMERCIAL
+                          ATENCION_AL_CLIENTE SISTEMAS_E_INTEGRACIONES CONSULTORIA_ESTRATEGICA OTRO],
+    'lead_fit' => %w[LOW MEDIUM HIGH PREMIUM]
+  }.freeze
+
+  def qualification
+    {
+      'lead_timeline' => @params[:timeline],
+      'lead_interest' => @params[:interest],
+      'lead_fit' => @params[:fit]
+    }.filter_map { |key, value| [key, value.to_s.upcase] if QUALIFICATION[key].include?(value.to_s.upcase) }.to_h
   end
 
   def country_of(number)
