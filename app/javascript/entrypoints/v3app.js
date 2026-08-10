@@ -1,6 +1,8 @@
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 
+import { brandTranslation } from 'shared/helpers/installationBranding';
+
 import i18nMessages from 'dashboard/i18n';
 import * as Sentry from '@sentry/vue';
 import {
@@ -21,6 +23,9 @@ const i18n = createI18n({
   legacy: false, // https://github.com/intlify/vue-i18n/issues/1902
   locale: 'en',
   messages: i18nMessages,
+  // Um lugar só troca "Chatwoot" pelo nome da instalação em todos os
+  // idiomas, sem editar arquivo de locale que o Crowdin sobrescreve.
+  postTranslation: brandTranslation,
 });
 
 const app = createApp(App);
