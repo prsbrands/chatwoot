@@ -4,19 +4,24 @@
 
 ---
 
-## ▶️ RETOMAR AQUI — a abertura funciona; falta latência, ruído e formato
+## ▶️ RETOMAR AQUI — o agente de voz está usável
 
-**A chamada finalmente abre certo** (validado 10/08, `CA893ea29ffbd940c4eee581cb90ccb890`): saudação de 6,08 s inteira, sem interrupção, e o bot pegou o nome na primeira resposta. Foram necessárias **três correções independentes**, cada uma validada numa ligação própria.
+**O critério de "usável" do protocolo foi batido em 10/08.** Testes 1, 2, 3, 5 e 6 passando, ruído de ambiente passando, e duas chamadas seguidas dentro do alvo de latência. O teste 4 (interromper) está reprovado **por desenho** — ver "o preço aceito" abaixo.
+
+Última validação, `CAf0439b6d218ee96f69fe25e7b086ba6f`: alguém ligou para **vender** algo. O bot roteou sem tentar diagnosticar, capturou empresa e contato, e o CRM registrou `company_name = ERC Two BLX`, `lead_fit = LOW`, com resumo e próximo passo escritos. Mediana de 1.268 ms em 9 turnos.
+
+Chegar aqui exigiu **oito correções, uma por chamada**: três na abertura, quatro na latência e uma na qualificação. Duas hipóteses minhas foram derrubadas por instrumentação. A ordem está registrada abaixo porque ela importa — várias só puderam existir depois da anterior.
+
+**A fila do que sobrou está no fim desta seção.** Nenhum item bloqueia uma chamada real.
 
 Config ativa:
-
-**A latência bateu o alvo em 10/08**: mediana **1.146 ms** contra 1.500 do protocolo, com 5 turnos limpos e zero fragmentação.
 
 ```
 stt : deepgram flux-general-multi  ·  language_hints=[es, pt]
 llm : OpenAI DIRETO, gpt-4.1-mini  (sem o prefixo `openai/`, que é do OpenRouter)
 tts : eleven_flash_v2_5  ·  voz ny3E2DZImeZm00WLGZi9
 persona: temperature 0.3 · max_tokens 300 · greeting_delay_ms 2500 · interruptible on
+prompt: persona ~19,3 KB + base de voz 4,1 KB = ~23,4 KB (~6.000 tokens/turno)
 ```
 
 Limiares do Flux, fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.8`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
@@ -32,6 +37,9 @@ Quatro ajustes, um por chamada, cada um medido antes do seguinte:
 | TTS flash | 1.683 ms | `eleven_flash_v2_5` no lugar do `multilingual_v2`: primeiro áudio de 0,55 s → 0,19 s |
 | `eot_threshold` 0.8 | 1.775 ms | **subiu** 92 ms de propósito — ver abaixo |
 | OpenAI direto | **1.146 ms** | tirar o hop do OpenRouter valeu ~700 ms. TTFB do LLM: 1,2–1,6 s → 0,4–0,7 s |
+| retry 3 s → 5 s | estável | **um retry nunca faz quem ligou esperar menos**: descarta o request e refaz o prefill. Com 3 s, três de quatro turnos esperaram 9,8 / 7,9 / 7,6 s; o único sem retry respondeu em 1,3 s |
+
+Medições posteriores com prompt maior: **1.268–1.340 ms** de mediana em amostras de 9 e 18 turnos. O alvo se sustenta.
 
 **A ordem importa.** O `eot_threshold` só pôde subir porque o flash tinha comprado 480 ms antes. Com 0.7 o Flux fechava o turno na pausa natural: *"Doutor Juan"* chegou como `'Doutor,'` + `'one.'` e custou **três idas e voltas** para capturar um nome; *"Clínica Luis / Soy médico / tenemos atención"* virou três turnos de uma frase. Blips de 115 ms também contavam como fala.
 
@@ -64,14 +72,29 @@ Com a porteira fechada durante a fala do bot, **quem ligou não consegue cortá-
 
 O `Teste 4` do protocolo abaixo está, portanto, **reprovado por desenho**. Não é regressão a investigar.
 
+### O prompt: o que se aprendeu escrevendo-o
+
+O prompt da persona de voz foi reescrito nesta sessão, e três lições valem mais que o texto:
+
+**Só a lista final é obedecida de verdade.** Num prompt de 15 KB, o modelo ancora no último bloco. Regra que estava em `REGLAS DE MÁXIMA PRIORIDAD` era cumprida (tamanho de resposta, pergunta única); regra que estava só no corpo era ignorada (começar perguntando por que ligou, separar mostrar de pedir o canal). **O que tiver de valer, põe na lista.**
+
+**Exemplo negativo pega; regra abstrata não.** "Una sola pregunta por turno" só passou a valer quando ganhou um par incorreto/correto. O mesmo formato depois resolveu a pergunta conduzida e a junção de passos.
+
+**Frase entre aspas o modelo copia inteira.** As rotas de triagem tinham a pergunta embutida na fala de cortesia, e ao trocar de rota no meio da chamada o bot repetiu uma pergunta já respondida — quem ligou disse "ya hablé" e desligou. Correção: separar a frase da lista de dados, e dizer *"pide solo lo que falte"*.
+
+**E o extrator não é o bot.** A classificação do lead (timeline/interés/fit) saía do prompt vivo a cada turno e **nada lia o resultado**. Passou para a leitura pós-chamada, que vê a conversa inteira. Junto foi uma guarda que faltava: sem ninguém perguntar a empresa de quem ligava, o extrator achava o único nome de empresa do transcrito — **o nosso** — e o CRM passou a dizer que o lead trabalha na PRS Brands.
+
 ### Fila, na ordem que eu seguiria
 
-1. **Reserva do LLM** — um minuto no painel, e hoje a chamada roda sem rede. Ver a pendência da troca de provider acima.
-2. **Teste 3 do protocolo, soletrar.** Nunca foi feito com o Flux. É o caso que mais provavelmente ainda quebra: ditar um e-mail letra por letra tem pausas mais longas que "Doutor Juan", e o `eot_threshold=0.8` pode não segurar. Se cortar, 0.9 — o teto duro de 5 s continua atrás.
-3. **Teste 5, português no meio do espanhol.** Os `language_hints` estão no ar e uma frase mista (*"Mi negócio és uma panadería"*) passou. Falta a frase difícil: "consertos de automóveis" não pode virar "conciertos".
-4. **Fala de fundo.** Ambiência (rua, música, ventilador) foi testada e **passou** — 5 turnos, 5 falas, zero turno fantasma, e 10 s de silêncio no fim sem disparo. O que continua sem teste é **voz humana de fundo**: colega falando, TV com diálogo. Esse nenhum filtro grátis resolve (`rnnoise` é supressão de ruído, não separação de locutor).
-5. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
-6. **O coletor de métricas quebrou no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então faltam quadros que a rota Flux não emite. Enquanto não voltar, **todo número desta seção saiu do log na mão**, e "melhorou" é impressão.
+Nada aqui bloqueia atender uma chamada real.
+
+1. **O coletor de métricas está quebrado no Flux.** `twilio_voice_calls.metrics` grava `{"turns":0, "latency_median_ms":null}` — o `smoke.py` prova que o coletor funciona isolado, então faltam quadros que a rota Flux não emite. **É o primeiro da fila porque todo número desta seção saiu do log na mão.** Enquanto não voltar, a aba Voz mostra zero e "melhorou" é impressão.
+2. **O prompt voltou a crescer e passou do ponto de partida**: 22,2 KB no início da sessão, 19,6 KB depois do corte, **23,4 KB hoje** — ~6.000 tokens reenviados por turno, ~54 mil por chamada de nove turnos. A latência ainda segura, mas foi nesse patamar que o retry disparou. Se voltar a aparecer `Retrying`, os cortes naturais são os blocos de **objeções** e os **exemplos por rubro**: os mais longos e os que menos entram numa chamada típica.
+3. **A reserva do LLM não existe.** Com o primário na OpenAI direto, o cascade é recusado (o array `models` só existe no OpenRouter). Só o `retry_on_timeout` de 5 s protege. As três opções — voltar ao OpenRouter e perder ~700 ms, ficar sem rede, ou construir um segundo request pós-erro — estão avaliadas em "pendência da troca de provider" acima. Ficar sem rede foi a escolha consciente.
+4. **Campos mortos no painel** — `End of turn (ms)`, `Wait until the caller finishes` e `Words needed to interrupt` não fazem nada sob Flux. Ou passam a escrever os limiares do Flux, ou somem quando o modelo é `flux-*`. Campo morto que parece configurado já custou uma migração inteira.
+5. **`keyterm` do Flux, ainda não usado.** Enviesa o reconhecimento para termos do domínio (*venta, cita, taller, agendar, seguimiento*). Uma linha no `_stt`. Vale depois que um sintoma de transcrição justifique.
+6. **Voz humana de fundo** segue sem teste. Ambiência (rua, música) passou — 5 turnos, 5 falas, zero turno fantasma, e 10 s de silêncio no fim sem disparo. Colega falando ou TV com diálogo é outra história, e nenhum filtro grátis resolve (`rnnoise` é supressão de ruído, não separação de locutor).
+7. **Baixar o `greeting_delay_ms` para 2000** e ver se ainda aguenta. 2,5 s de silêncio ao atender é muito.
 
 ### Campos do painel que NÃO fazem nada sob Flux
 
@@ -105,26 +128,27 @@ cd /opt/cortexgen-chat && docker compose exec -T rails bundle exec rails runner 
   "c=TwilioVoiceCall.order(id: :desc).first; puts c.duration_seconds; puts c.metrics"
 ```
 
-**Teste 1 — a conversa acontece?** Ligue, responda o nome, diga a empresa, responda uma pergunta. Procure no log `StartOfTurn` / `EndOfTurn` do Flux.
-- Passou: siga para o 2.
-- Bot mudo ou intervalo longo: veja "Se o Flux falhar" abaixo.
+**Teste 1 — a conversa acontece?** ✅ Ligue, responda o nome, diga a empresa, responda uma pergunta. Procure `StartOfTurn` / `EndOfTurn` do Flux.
 
-**Teste 2 — latência.** Alvo: **mediana abaixo de 1.500 ms**. Régua atual (Nova, última chamada boa): mediana 2.018 ms, pior 2.695 ms.
-- Acima do alvo: baixe `eot_threshold` para 0.6 (fecha o turno com menos confiança, responde antes). **Uma chamada por ajuste.**
+**Teste 2 — latência.** ✅ Alvo: mediana abaixo de **1.500 ms**. Última medição: 1.268 ms em 9 turnos. Régua antiga (Nova): 2.018 ms.
+- Acima do alvo: confira primeiro se há `Retrying chat completion` no log — o retry dobra a espera. Depois, `eot_threshold` para 0.7.
 
-**Teste 3 — soletrar.** Dite um e-mail letra por letra. O bot não pode responder no meio.
-- Cortou: suba `eot_threshold` para 0.8. Esse é o trade-off direto com o teste 2 — ache o meio.
+**Teste 3 — soletrar.** ✅ Dite um e-mail letra por letra. Validado: turno de 18,8 s com pausa entre cada letra, sem corte, e o e-mail montado certo. Foi o `eot_threshold=0.8` que segurou.
+- Cortou: suba para 0.9. O teto duro de 5 s continua atrás.
 
-**Teste 4 — interromper.** ~~Fale por cima do bot. Ele deve parar.~~ **Reprovado por desenho** — a porteira contra a alucinação silencia a entrada enquanto o bot fala. Só volta com cancelador de eco licenciado.
+**Teste 4 — interromper.** ❌ **Reprovado por desenho** — a porteira contra a alucinação silencia a entrada enquanto o bot fala. Só volta com cancelador de eco licenciado. Não investigue.
 
-**Teste 5 — português no meio do espanhol.** Diga "consertos de automóveis". Não pode virar "conciertos".
-- Os `language_hints` já estão no ar e mataram o alemão/francês/italiano. Falta o teste com a frase de verdade.
+**Teste 5 — português no meio do espanhol.** ✅ "Concertos de automóveis" ficou em português e o bot não repetiu a palavra de volta — conduziu a conversa inteira como oficina.
 
-**Teste 6 — abertura.** A saudação tem de chegar **inteira**, terminando em "¿Cuál es su nombre, por favor?".
+**Teste 6 — abertura.** ✅ A saudação chega **inteira**, terminando em "¿Cuál es su nombre, por favor?".
 - Cortada no fim: alucinação abrindo turno — confira `start_of_turn` durante a fala do bot.
 - Faltando o começo: o Twilio ainda descarta áudio; suba o `Wait before speaking (ms)`.
 
-**Critério de "usável":** testes 1, 2, 3, 5 e 6 passando, mediana abaixo de 1.500 ms, e **duas chamadas seguidas sem intervalo perceptível**.
+**Teste 7 — triagem.** ✅ Ligue **fingindo ser fornecedor** ou pedindo para falar com uma pessoa. O bot não pode fazer nenhuma pergunta de diagnóstico, e o CRM tem de gravar `lead_fit = LOW` com a empresa de quem ligou.
+
+**Ruído de ambiente.** ✅ Rua, música, ventilador: 5 turnos, 5 falas, zero turno fantasma.
+
+**Critério de "usável": batido em 10/08.**
 
 ### Se o Flux falhar
 
