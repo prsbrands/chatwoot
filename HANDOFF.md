@@ -666,6 +666,10 @@ As respostas se distinguem e valem uma tabela:
 
 `store()` junto do `forward()` na Route é rede de segurança: POST que falhar deixa a mensagem guardada no Mailgun em vez de evaporar.
 
+**Teste de entrada tem de vir de endereço externo.** Uma mensagem enviada do próprio `MAILER_SENDER_EMAIL` chega ao ingress, responde `204` e é **descartada de propósito** — `MailPresenter#notification_email_from_chatwoot?` compara o remetente com o sender configurado e a mailbox a ignora, senão uma notificação que voltasse viraria conversa, que viraria notificação, em laço. Perdi um teste com isso: o POST aparece no nginx e nenhuma conversa nasce, o que parece defeito e não é.
+
+Provas da entrada, em ordem: entrega direta no MX → conversa 63; **e-mail real de um Gmail → conversa 64**. A segunda é a que vale, porque nenhum envio feito pelo próprio sistema consegue atravessar a guarda acima.
+
 `cortexgen.cloud` não tem SPF na raiz. Não faz falta para o Resend, porque o envelope sai por `send.cortexgen.cloud`, que tem o seu — só faria falta se algum dia sair e-mail direto da raiz.
 
 ### 1b. Histórico do bloqueio antigo (mantido para contexto)
