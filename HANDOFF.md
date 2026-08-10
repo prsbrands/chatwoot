@@ -567,6 +567,39 @@ Correção: nó **Historico** usa credencial `Chat User Token` (Header Auth `api
 - Prompt final do Nathan ≈ 11,6 KB (~3k tokens).
 - SQL versionável no scratchpad: `bot_layer.sql`, `bot_seed.sql`, `bot_knowledge.sql`, `kb_prsbrands.sql`, `persona_nathan.sql`, `openrouter.sql`. **Vale mover para o repo** se a camada virar permanente.
 
+### O webhook do bot passou a exigir assinatura (10/08)
+
+Era endpoint aberto: quem soubesse a URL injetava mensagem, fazia o bot responder e gastava crédito de LLM escrevendo em conversa de cliente. O Chatwoot **já assinava** todo payload — ninguém conferia. Código versionado em `ops/n8n/guard.js`.
+
+Esquema, de `lib/webhooks/trigger.rb`: `X-Chatwoot-Signature: sha256=HMAC_SHA256(secret, "<X-Chatwoot-Timestamp>.<corpo cru>")`, com o secret vindo de `AgentBot#secret`.
+
+**O corpo cru é o problema, e a implementação óbvia estaria errada.** O n8n entrega o JSON já parseado, e `JSON.stringify` **não** reproduz o que o Rails mandou: o ActiveSupport escapa `<`, `>` e `&` como `<`, `>`, `&`. Medido lado a lado:
+
+```
+ruby: "<script> ... & entidades"      js: "<script> ... & entidades"
+ruby: "numeros":1.0                                  js: "numeros":1
+ruby: 12345678901234567890                           js: 12345678901234567000
+```
+
+Acentos e emoji passam idênticos. Mas com o stringify puro, **toda mensagem contendo `&` ou HTML seria recusada** — "R&D", "Ben & Jerry", e a inbox de e-mail inteira, que entrega HTML. Seria bot mudo só para alguns clientes, sem erro visível. O Guard reaplica o escaping do Rails antes de calcular o HMAC; provado contra assinaturas geradas pelo próprio Rails, inclusive um payload com `R&D <b>ola</b> — Ben & Jerry`.
+
+Floats e inteiros gigantes continuam divergindo e **não** são tratados: nenhum payload real de agent bot tem float, e os ids cabem no range seguro do JS. Se um dia entrar um float no payload, o sintoma será recusa de mensagem legítima.
+
+**O Guard falha alto, de propósito.** `return []` deixaria a execução verde e a mensagem sumindo — o modo de falha que mais custou neste projeto. Assinatura ausente, inválida ou com mais de 5 minutos levanta erro, e a execução aparece vermelha na lista do n8n.
+
+**Duas variáveis de ambiente que o n8n exige, e nenhuma falha de forma óbvia:**
+
+| variável | por quê |
+|---|---|
+| `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` | acesso a `$env` em Code node é bloqueado por padrão — o código lê `process.env.N8N_BLOCK_ENV_ACCESS_IN_NODE !== 'false'`, então só a string `false` libera |
+| `NODE_FUNCTION_ALLOW_BUILTIN=crypto` | sem ela, `require('crypto')` levanta **`Module 'crypto' is disallowed`** dentro do sandbox |
+
+A segunda custou uma janela de bot mudo: importei o Guard, a mensagem legítima falhou, e só o `execution_data` no sqlite dizia o motivo. **Depois de importar, mande uma mensagem real e confira o status da execução** — 200 no webhook não significa nada, porque o `responseMode: onReceived` responde antes de processar.
+
+O segredo vai para o n8n por `CHATWOOT_WEBHOOK_SECRET` no `.env` de `/docker/n8n-y4jd/`, copiado direto do banco do Chatwoot sem passar por tela nem histórico.
+
+Provado em produção: execuções 13455–13457 `success` com mensagens legítimas (o bot respondeu), execução 13458 `error` com POST forjado e **nenhuma resposta gerada**.
+
 ### Workflow n8n ✅ (publicado e testado, 3,9 s de latência)
 `pd5V9pdaldRLUu4C` · webhook `https://n8n.cortexgen.cloud/webhook/cortexgen-bot`
 
@@ -816,7 +849,7 @@ O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugest�
 - **Logos** são placeholders gerados (círculo violeta + "C", #7C3AED) — trocar pela arte oficial mantendo os nomes de arquivo em `public/brand-assets/`, favicons em `public/`, e assets em `app/javascript/{widget,dashboard,design-system}`; depois rebuildar a imagem.
 - **Locales não-EN** ainda dizem "Chatwoot" (`app/javascript/dashboard/i18n/locale/pt_BR/` etc.).
 - **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
-- **Segurança do webhook**: `https://n8n.cortexgen.cloud/webhook/cortexgen-bot` é um endpoint aberto. O Chatwoot assina os payloads (`X-Chatwoot-Signature`, HMAC com o Webhook Secret do bot); validar no Guard são ~10 linhas.
+- ~~**Segurança do webhook**~~ — **fechado** em 10/08, ver "O webhook do bot passou a exigir assinatura" abaixo. Não eram ~10 linhas.
 
 ---
 
