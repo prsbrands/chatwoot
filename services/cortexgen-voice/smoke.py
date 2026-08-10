@@ -327,6 +327,63 @@ assert payload["turns"] == 1 and payload["latency_median_ms"] is not None, paylo
 print("metrics:", payload)
 
 
+# Desligar depois da despedida — e só depois dela.
+#
+# A chamada ficava aberta até quem ligou desligar: o prompt escrevia o "buen
+# día" e nenhuma peça agia sobre ele. O que este bloco protege são os dois lados
+# do casamento, porque errar para qualquer um custa caro: não casar deixa a
+# linha aberta por 300 s pagando por silêncio, e casar demais corta a chamada de
+# um cliente no meio de uma frase.
+from pipecat.frames.frames import BotStoppedSpeakingFrame
+from pipecat.frames.frames import TTSTextFrame as _TTSText
+
+from app.bot import FAREWELL, HangUpAfterFarewell
+
+
+class _FakeTask:
+    def __init__(self):
+        self.stopped = 0
+
+    async def stop_when_done(self):
+        self.stopped += 1
+
+
+for _goodbye in (
+    "Que tengas buen día.",
+    "Que tenga buenas tardes.",
+    "Que tengan un buen día.",
+    "Gracias por hablar con Pe-erre-ese Brands. Que tengas buenas noches.",
+):
+    assert FAREWELL.search(_goodbye), _goodbye
+
+# Estas o bot diz no meio da conversa. Casar aqui derruba a chamada de alguém.
+for _mid_call in (
+    "¿En qué le puedo ayudar?",
+    "Gracias, José.",
+    "Buenos días, ¿cuál es su nombre?",
+    "Entiendo que quiere información para su consultorio dental.",
+    "¿Hay algo más en lo que pueda ayudarte?",
+):
+    assert not FAREWELL.search(_mid_call), _mid_call
+
+_hang = HangUpAfterFarewell()
+_hang.task = _FakeTask()
+
+# Falar no meio da chamada e terminar de falar não encerra nada.
+_push(_hang, _TTSText("¿Hay algo más en lo que pueda ayudarte?"))
+_push(_hang, BotStoppedSpeakingFrame())
+assert _hang.task.stopped == 0, "desligou no meio da conversa"
+
+# A despedida sozinha também não: o áudio ainda está saindo.
+_push(_hang, _TTSText("Que tengas buen día."))
+assert _hang.task.stopped == 0, "cortou a propria despedida"
+
+# Só quando ela termina de ser falada.
+_push(_hang, BotStoppedSpeakingFrame())
+assert _hang.task.stopped == 1, "nao desligou depois da despedida"
+print("desliga depois da despedida, e so depois dela")
+
+
 # A voz do bot não pode voltar como fala de quem ligou.
 #
 # O `deserialize` do Pipecat aceita todo evento `media`, venha da pista de

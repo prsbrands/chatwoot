@@ -17,6 +17,7 @@ que mais importa aqui:
 
 import asyncio
 import json
+import re
 import time
 
 import httpx
@@ -29,7 +30,9 @@ from pipecat.frames.frames import (
     InputAudioRawFrame,
     LLMRunFrame,
     TTSSpeakFrame,
+    TTSTextFrame,
 )
+from pipecat.observers.base_observer import BaseObserver, FramePushed
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -416,6 +419,57 @@ class SilenceUntilBotHasSpoken(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+# A despedida escrita no prompt termina sempre assim, em qualquer das variações
+# que ele manda adaptar — "que tengas buen día", "que tenga buenas tardes",
+# "que tengan un buen día". É o que sobra de invariante quando o texto muda com
+# a hora de Panamá e com o tratamento.
+FAREWELL = re.compile(r"que teng\w*\s+(un\s+)?buen", re.IGNORECASE)
+
+
+class HangUpAfterFarewell(BaseObserver):
+    """Encerra a chamada quando o bot termina de se despedir.
+
+    Faltava a peça inteira: o prompt escrevia a despedida e ninguém agia sobre
+    ela. O serializer sobe com `auto_hang_up=False` e nada empurrava um frame de
+    fim, então a linha ficava aberta até quem ligou desligar — ou até os 300 s
+    de `idle_timeout_secs`, pagando Twilio e Deepgram para transmitir silêncio.
+
+    Fechar o WebSocket basta: sem `<Connect>` a chamada cai, e por isso não é
+    preciso credencial da Twilio aqui dentro.
+
+    O gatilho é a frase e não uma decisão do modelo, pelo mesmo motivo do
+    handoff de texto: desligar é irreversível, e um `end_call` alucinado corta o
+    cliente no meio da frase. O preço é o inverso — se o modelo parafrasear a
+    despedida, a chamada não cai sozinha. Por isso o acerto é registrado no log:
+    chamada que termina sem esta linha é despedida que escapou do casamento.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.task = None
+        self._saying_goodbye = False
+        self._seen: set[int] = set()
+
+    async def on_push_frame(self, data: FramePushed) -> None:
+        if data.direction != FrameDirection.DOWNSTREAM:
+            return
+
+        frame = data.frame
+        if isinstance(frame, TTSTextFrame):
+            if frame.id in self._seen:
+                return
+            self._seen.add(frame.id)
+            if FAREWELL.search(frame.text or ""):
+                logger.info(f"farewell detected: {frame.text!r} — hanging up when it finishes")
+                self._saying_goodbye = True
+        # Só depois que o áudio da despedida saiu inteiro. Encerrar ao detectar
+        # o texto cortaria a própria frase de tchau.
+        elif isinstance(frame, BotStoppedSpeakingFrame) and self._saying_goodbye:
+            self._saying_goodbye = False
+            if self.task:
+                await self.task.stop_when_done()
+
+
 class CallerAudioOnlySerializer(TwilioFrameSerializer):
     """Só o áudio de quem ligou entra no pipeline.
 
@@ -561,13 +615,17 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     # enquanto tokens e segundos de áudio eram contados normalmente. O
     # `CallMetrics` cronometra pelos quadros que o Flux realmente emite.
     metrics = CallMetrics()
+    hang_up = HangUpAfterFarewell()
 
     task = PipelineTask(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
-        observers=[metrics],
+        observers=[metrics, hang_up],
         conversation_id=call_id,
     )
+    # O observador precisa da tarefa que ele vai encerrar, e a tarefa precisa da
+    # lista de observadores para nascer.
+    hang_up.task = task
 
     @transport.event_handler("on_client_connected")
     async def _on_connected(_transport, _client):
