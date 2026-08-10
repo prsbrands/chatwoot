@@ -31,7 +31,6 @@ from pipecat.frames.frames import (
     TTSSpeakFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
-from pipecat.observers.user_bot_latency_observer import UserBotLatencyObserver
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -544,20 +543,22 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         ]
     )
 
-    # O que a chamada consumiu, e o que quem ligou esperou. O observador de
-    # latência mede da última sílaba dela à primeira do bot — que é a espera
-    # sentida, não a soma dos tempos internos.
+    # O que a chamada consumiu, e o que quem ligou esperou — da última sílaba
+    # dela à primeira do bot, que é a espera sentida e não a soma dos tempos
+    # internos.
+    #
+    # O `UserBotLatencyObserver` do Pipecat fazia essa conta e foi removido: ele
+    # começa a cronometrar no `VADUserStoppedSpeakingFrame`, e o Flux traz a
+    # máquina de turnos dentro do próprio serviço — não há VAD no pipeline, esse
+    # quadro nunca nasce, e toda chamada gravou `turns: 0` com latência nula
+    # enquanto tokens e segundos de áudio eram contados normalmente. O
+    # `CallMetrics` cronometra pelos quadros que o Flux realmente emite.
     metrics = CallMetrics()
-    latency = UserBotLatencyObserver()
-
-    @latency.event_handler("on_latency_measured")
-    async def _on_latency(_observer, seconds):
-        metrics.record_latency(seconds)
 
     task = PipelineTask(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
-        observers=[metrics, latency],
+        observers=[metrics],
         conversation_id=call_id,
     )
 

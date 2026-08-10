@@ -186,7 +186,7 @@ from pipecat.metrics.metrics import (
     TTSUsageMetricsData,
 )
 
-from app.metrics import CallMetrics
+from app.metrics import CallMetrics, eot_wait_seconds
 
 collected = CallMetrics()
 collected.record(
@@ -204,32 +204,119 @@ collected.record(
         ]
     )
 )
-for seconds in (0.9, 1.4, 1.1, 3.2, 1.0):
-    collected.record_latency(seconds)
+
+import asyncio as _asyncio
+
+from pipecat.frames.frames import (
+    BotStartedSpeakingFrame,
+    TranscriptionFrame,
+    UserStoppedSpeakingFrame,
+)
+from pipecat.observers.base_observer import FramePushed
+from pipecat.processors.frame_processor import FrameDirection as _Dir
+
+# O payload do EndOfTurn do Flux, como ele chega em `TranscriptionFrame.result`.
+# A última palavra acaba em 1,10 s e o Flux só fechou o turno em 1,45 s: esses
+# 350 ms são espera de quem ligou e entram na latência.
+FLUX_EOT = {
+    "type": "TurnInfo",
+    "event": "EndOfTurn",
+    "audio_window_start": 0,
+    "audio_window_end": 1.45,
+    "transcript": "Hola, buenos dias",
+    "words": [
+        {"word": "Hola,", "confidence": 0.98, "start": 0.2, "end": 0.5},
+        {"word": "buenos", "confidence": 0.97, "start": 0.6, "end": 0.9},
+        {"word": "dias", "confidence": 0.96, "start": 0.95, "end": 1.10},
+    ],
+    "end_of_turn_confidence": 0.88,
+}
+
+assert abs(eot_wait_seconds(FLUX_EOT) - 0.35) < 1e-6, eot_wait_seconds(FLUX_EOT)
+# Nova não manda nenhum dos dois campos, e um payload sem eles não pode explodir.
+assert eot_wait_seconds({"channel": {"alternatives": []}}) == 0.0
+assert eot_wait_seconds(None) == 0.0
+
+
+def _push(observer, frame, direction=_Dir.DOWNSTREAM):
+    _asyncio.run(
+        observer.on_push_frame(
+            FramePushed(
+                source=None, destination=None, frame=frame, direction=direction, timestamp=0
+            )
+        )
+    )
+
+
+def _flux_turn():
+    """Os quadros que a rota Flux emite num turno, na ordem real.
+
+    `_handle_end_of_turn` empurra a transcrição final e só depois anuncia que o
+    usuário parou de falar; a resposta começa no `BotStartedSpeakingFrame`.
+    """
+    return [
+        TranscriptionFrame("Hola, buenos dias", "caller", "", None, result=FLUX_EOT, finalized=True),
+        UserStoppedSpeakingFrame(),
+        BotStartedSpeakingFrame(),
+    ]
+
+
+# A regressão que zerou a aba Voz: o observador do Pipecat cronometra a partir
+# do `VADUserStoppedSpeakingFrame`, e sob Flux não existe VAD no pipeline. Este
+# bloco prova que o caminho antigo não mede nada nesta sequência — sem ele, o
+# teste abaixo passaria também na versão quebrada.
+from pipecat.observers.user_bot_latency_observer import UserBotLatencyObserver
+
+_pipecat_measured = []
+_pipecat_observer = UserBotLatencyObserver()
+
+
+@_pipecat_observer.event_handler("on_latency_measured")
+async def _record(_observer, seconds):
+    _pipecat_measured.append(seconds)
+
+
+for _frame in _flux_turn():
+    _push(_pipecat_observer, _frame)
+assert not _pipecat_measured, f"o observador do Pipecat mediu sob Flux: {_pipecat_measured}"
+print("UserBotLatencyObserver sob Flux: 0 medicoes (por isso ele saiu)")
+
+for _frame in _flux_turn():
+    _push(collected, _frame)
+assert collected.turns == 1, collected.turns
+# A espera do EOT (350 ms) mais o que o pipeline levou entre os dois quadros,
+# que num teste em memória é quase nada.
+assert 350 <= collected.latencies_ms[0] < 450, collected.latencies_ms
+
+# A saudação fala sem turno antes dela e não é espera de ninguém.
+_greeting = CallMetrics()
+_push(_greeting, BotStartedSpeakingFrame())
+assert _greeting.latencies_ms == [], _greeting.latencies_ms
+print("saudacao nao vira turno:", _greeting.as_payload()["latency_median_ms"])
+
+# `broadcast_frame` manda o mesmo evento para os dois lados, como dois quadros
+# de ids diferentes: sem filtrar direção, cada turno contaria duas vezes.
+_both_ways = CallMetrics()
+_push(_both_ways, UserStoppedSpeakingFrame())
+_push(_both_ways, UserStoppedSpeakingFrame(), _Dir.UPSTREAM)
+assert _both_ways.turns == 1, f"o irmao upstream foi contado: {_both_ways.turns}"
+print("turno contado uma vez com os dois sentidos no pipeline")
 
 # Um quadro de métrica passa por vários processadores e o observador o vê em
 # cada salto. Contar em toda passagem inflou 96 s de áudio para 677 s.
-import asyncio as _asyncio
-
-from pipecat.observers.base_observer import FramePushed
-
 seen_twice = MetricsFrame(
     data=[STTUsageMetricsData(processor="stt", model="nova-3", value=STTUsage(audio_seconds=10.0))]
 )
 repeated = CallMetrics()
 for _ in range(3):
-    _asyncio.run(
-        repeated.on_push_frame(
-            FramePushed(source=None, destination=None, frame=seen_twice, direction=None, timestamp=0)
-        )
-    )
+    _push(repeated, seen_twice)
 assert repeated.stt_seconds == 10.0, f"counted the same frame more than once: {repeated.stt_seconds}"
 print("dedupe de metricas: 3 passagens ->", repeated.stt_seconds, "s")
 
 payload = collected.as_payload()
 assert payload["prompt_tokens"] == 5200 and payload["tts_characters"] == 840, payload
 assert payload["stt_seconds"] == 47.3, payload
-assert payload["latency_median_ms"] == 1100 and payload["latency_worst_ms"] == 3200, payload
+assert payload["turns"] == 1 and payload["latency_median_ms"] is not None, payload
 print("metrics:", payload)
 
 
