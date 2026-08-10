@@ -68,7 +68,11 @@ alter table bot_personas
   -- aberto enquanto não terminou. É o que impede o bot de responder no meio de
   -- alguém soletrando um e-mail. Interruptor porque o mecanismo depende de o
   -- modelo obedecer a um formato: se ele não obedecer, o bot para de responder.
-  add column if not exists voice_wait_for_complete_turn boolean not null default true;
+  add column if not exists voice_wait_for_complete_turn boolean not null default true,
+  -- Quantas palavras quem ligou precisa dizer para cortar a fala do bot. Zero
+  -- é qualquer som, que é o padrão do Pipecat. Dois ignora "ajá" e "claro" de
+  -- cortesia — ao custo de ignorar "para!" também, que tem uma palavra só.
+  add column if not exists voice_interrupt_min_words integer not null default 0;
 
 comment on column bot_personas.voice_greeting_delay_ms is
   'Espera antes do bot falar quando a chamada conecta. Curto demais e ele fala por cima do "alô".';
@@ -127,7 +131,8 @@ select
   p.voice_interruptible,
   -- Acrescentadas no fim: CREATE OR REPLACE VIEW só aceita coluna nova no final.
   p.stt_language,
-  p.voice_wait_for_complete_turn
+  p.voice_wait_for_complete_turn,
+  p.voice_interrupt_min_words
 from bot_personas p
 left join knowledge k on k.persona_id = p.id;
 

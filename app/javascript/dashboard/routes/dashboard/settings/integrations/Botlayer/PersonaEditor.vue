@@ -52,6 +52,7 @@ const emptyForm = () => ({
   voice_endpoint_ms: 600,
   voice_interruptible: true,
   voice_wait_for_complete_turn: true,
+  voice_interrupt_min_words: 0,
 });
 
 // Um fornecedor só aparece onde a chave dele foi autorizada a servir.
@@ -307,6 +308,7 @@ const save = async () => {
     voice_endpoint_ms: Number(data.voice_endpoint_ms),
     voice_interruptible: data.voice_interruptible,
     voice_wait_for_complete_turn: data.voice_wait_for_complete_turn,
+    voice_interrupt_min_words: Number(data.voice_interrupt_min_words) || 0,
     handoff_rules: {
       ...data.handoff_rules,
       keywords: data.keywords
@@ -679,6 +681,15 @@ onMounted(load);
                 {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN_HELP') }}
               </span>
             </div>
+            <Input
+              v-if="form.voice_interruptible"
+              v-model="form.voice_interrupt_min_words"
+              type="number"
+              min="0"
+              max="5"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MIN_WORDS')"
+              :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MIN_WORDS_HELP')"
+            />
           </section>
 
           <section v-if="linkedDocs.length" class="flex flex-col gap-2">

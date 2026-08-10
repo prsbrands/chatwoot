@@ -43,6 +43,9 @@ from pipecat.turns.user_mute.always_user_mute_strategy import AlwaysUserMuteStra
 from pipecat.turns.user_mute.mute_until_first_bot_complete_user_mute_strategy import (
     MuteUntilFirstBotCompleteUserMuteStrategy,
 )
+from pipecat.turns.user_start.min_words_user_turn_start_strategy import (
+    MinWordsUserTurnStartStrategy,
+)
 from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
     SpeechTimeoutUserTurnStopStrategy,
 )
@@ -81,10 +84,22 @@ def _turn_strategies(persona: dict) -> UserTurnStrategies:
     detector = [
         SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=persona["endpoint_ms"] / 1000)
     ]
+
+    # Com um mínimo de palavras, o turno só começa depois delas — é o que impede
+    # um "ajá" de cortesia de calar o bot no meio da frase. O padrão do Pipecat
+    # é começar no primeiro som.
+    min_words = persona.get("interrupt_min_words") or 0
+    start = (
+        [MinWordsUserTurnStartStrategy(min_words=min_words, use_interim=True)]
+        if min_words > 0
+        else None
+    )
+
     if not persona.get("wait_for_complete_turn", True):
-        return UserTurnStrategies(stop=detector)
+        return UserTurnStrategies(start=start, stop=detector)
 
     return FilterIncompleteUserTurnStrategies(
+        start=start,
         stop=detector,
         config=UserTurnCompletionConfig(instructions=SPELLING_INSTRUCTIONS),
     )
@@ -137,18 +152,52 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
     raise ConfigError(f"transcription provider speaks '{style}'; wire up Deepgram or an OpenAI-compatible one")
 
 
-def _llm(config: dict) -> OpenAILLMService:
+def _model_cascade(config: dict, fallback: dict | None) -> list[str] | None:
+    """Principal e reserva num pedido só, quando os dois moram no mesmo lugar."""
+    if not fallback:
+        return None
+
+    if fallback["base_url"] != config["base_url"]:
+        logger.warning(
+            f"fallback on {fallback['base_url']} ignored: a call cannot switch providers mid-stream"
+        )
+        return None
+
+    return [config["model"], fallback["model"]]
+
+
+def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
+    """O modelo que responde, com rede embaixo.
+
+    Duas redes, para duas quedas diferentes. Modelo que não responde a tempo cai
+    no retry por timeout — é a chamada parada em silêncio enquanto quem ligou
+    espera. Modelo indisponível ou sobrecarregado cai no de reserva, pedindo a
+    troca ao próprio roteador: um único request lista os dois modelos e o
+    roteador desce para o segundo sem uma segunda ida à rede.
+
+    Reserva em fornecedor diferente não é coberta aqui — trocar de endpoint no
+    meio de um stream é outra história, e a persona oferece "igual ao principal"
+    como padrão justamente porque é esse o caminho de produção.
+    """
     style = config["api_style"]
     if style != "openai":
         raise ConfigError(f"language model provider speaks '{style}'; voice needs an OpenAI-compatible one")
 
+    extra = {}
+    models = _model_cascade(config, fallback)
+    if models:
+        extra["models"] = models
+
     return OpenAILLMService(
         api_key=config["api_key"],
         base_url=config["base_url"],
+        retry_on_timeout=True,
+        retry_timeout_secs=6.0,
         settings=OpenAILLMService.Settings(
             model=config["model"],
             temperature=config["temperature"],
             max_tokens=config["max_tokens"],
+            extra=extra,
         ),
     )
 
@@ -239,7 +288,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
             VADProcessor(vad_analyzer=vad_analyzer),
             _stt(config["stt"], stt_language, persona["endpoint_ms"]),
             aggregators.user(),
-            _llm(config["llm"]),
+            _llm(config["llm"], config.get("llm_fallback")),
             _tts(config["tts"], tts_language),
             transport.output(),
             aggregators.assistant(),

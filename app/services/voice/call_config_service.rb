@@ -14,9 +14,10 @@ class Voice::CallConfigService
       call: { account_id: @route.account_id, phone_number: @route.phone_number },
       persona: persona_payload,
       llm: llm_payload,
+      llm_fallback: llm_fallback_payload,
       stt: stt_payload,
       tts: tts_payload
-    }
+    }.compact
   end
 
   private
@@ -57,7 +58,8 @@ class Voice::CallConfigService
       greeting_delay_ms: persona['voice_greeting_delay_ms'],
       endpoint_ms: persona['voice_endpoint_ms'],
       interruptible: persona['voice_interruptible'],
-      wait_for_complete_turn: persona['voice_wait_for_complete_turn']
+      wait_for_complete_turn: persona['voice_wait_for_complete_turn'],
+      interrupt_min_words: persona['voice_interrupt_min_words']
     }
   end
 
@@ -70,6 +72,22 @@ class Voice::CallConfigService
       model: persona['model'],
       temperature: persona['temperature'].to_f,
       max_tokens: persona['max_tokens']
+    }
+  end
+
+  # O modelo de reserva, quando a persona tem um. Ficava gravado e ninguém lia:
+  # o bot de texto usava, a chamada não.
+  def llm_fallback_payload
+    model = persona['fallback_model']
+    return if model.blank?
+
+    slug = persona['fallback_provider'].presence || persona['provider']
+    provider = provider!(slug, 'fallback language model')
+    {
+      base_url: provider['base_url'],
+      api_key: provider['api_key'],
+      api_style: provider['api_style'],
+      model: model
     }
   end
 

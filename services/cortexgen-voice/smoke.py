@@ -10,7 +10,7 @@ apareceria com o cliente na linha.
 from pipecat.pipeline.task import PipelineParams
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 
-from app.bot import _language, _llm, _stt, _tts
+from app.bot import _language, _llm, _model_cascade, _stt, _tts
 
 FAKE = {
     "stt": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1", "model": "deepgram/nova-3"},
@@ -29,7 +29,18 @@ print("language:", language)
 
 print("stt via openrouter:", type(_stt(FAKE["stt"], language, 600)).__name__)
 print("stt via deepgram:  ", type(_stt(FAKE["stt_direct"], language, 600)).__name__)
-print("llm:", type(_llm(FAKE["llm"])).__name__)
+print("llm:", type(_llm(FAKE["llm"], None)).__name__)
+
+# Reserva no mesmo fornecedor vira lista de modelos num request só; em
+# fornecedor diferente é ignorada com aviso, não silenciosamente.
+same = _model_cascade(FAKE["llm"], {**FAKE["llm"], "model": "openai/gpt-4.1-mini"})
+assert same == ["deepseek/deepseek-v4-flash-0731", "openai/gpt-4.1-mini"], same
+other = _model_cascade(
+    FAKE["llm"], {**FAKE["llm"], "base_url": "https://api.openai.com/v1", "model": "gpt-4.1"}
+)
+assert other is None, other
+assert _model_cascade(FAKE["llm"], None) is None
+print("llm fallback:", same)
 print("tts:", type(_tts(FAKE["tts"], language)).__name__)
 
 # O que mudou entre versões do Pipecat: onde mora o VAD e como se desliga a
@@ -58,6 +69,14 @@ analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.6))
 # na primeira chamada real.
 plain = _turn_strategies({"endpoint_ms": 600, "wait_for_complete_turn": False})
 assert [type(s).__name__ for s in plain.stop] == ["SpeechTimeoutUserTurnStopStrategy"], plain.stop
+
+# Mínimo de palavras troca quem decide que o turno começou: sem ele, qualquer
+# som corta o bot.
+guarded = _turn_strategies(
+    {"endpoint_ms": 600, "wait_for_complete_turn": False, "interrupt_min_words": 2}
+)
+assert [type(s).__name__ for s in guarded.start] == ["MinWordsUserTurnStartStrategy"], guarded.start
+print("interrupt guard:", [type(s).__name__ for s in guarded.start])
 
 # Com espera, o silêncio vira só gatilho e quem fecha o turno é o modelo — é o
 # que segura o bot enquanto alguém soletra um e-mail.
