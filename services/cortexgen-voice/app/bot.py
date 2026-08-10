@@ -113,7 +113,14 @@ def _flux_turn_strategies() -> UserTurnStrategies:
     """
     return UserTurnStrategies(
         start=[ExternalUserTurnStartStrategy()],
-        stop=[ExternalUserTurnStopStrategy()],
+        # O `timeout` padrão de 0,5 s é uma janela de espera por transcrições
+        # atrasadas ou partidas em pedaços — pensada para quem entrega texto
+        # depois do fim da fala. O Flux entrega o transcrito **junto** com o
+        # `EndOfTurn`, então esse meio segundo era espera por algo que já
+        # chegou: ele aparecia cravado em todos os turnos de todas as chamadas,
+        # entre `EndOfTurn` e `User turn inference triggered`, dentro de uma
+        # latência sentida de 2,26 s contra alvo de 1,5 s.
+        stop=[ExternalUserTurnStopStrategy(timeout=0.2)],
     )
 
 

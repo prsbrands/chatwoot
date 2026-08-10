@@ -51,7 +51,13 @@ print("flux query:", flux_query)
 fx = _flux_turn_strategies()
 assert [type(x).__name__ for x in fx.start] == ["ExternalUserTurnStartStrategy"], fx.start
 assert [type(x).__name__ for x in fx.stop] == ["ExternalUserTurnStopStrategy"], fx.stop
-print("flux turns:", [type(x).__name__ for x in fx.start + fx.stop])
+
+# Meio segundo de espera por transcrição atrasada é tempo morto com o Flux, que
+# entrega o texto junto com o fim do turno. Confere o valor, não só o tipo: um
+# default que volta silenciosamente custa 300 ms em toda resposta, e isso não
+# aparece como erro em lugar nenhum.
+assert fx.stop[0]._timeout == 0.2, fx.stop[0]._timeout
+print("flux turns:", [type(x).__name__ for x in fx.start + fx.stop], "· debounce", fx.stop[0]._timeout)
 print("llm:", type(_llm(FAKE["llm"], None)).__name__)
 
 # Reserva no mesmo fornecedor vira lista de modelos num request só; em
