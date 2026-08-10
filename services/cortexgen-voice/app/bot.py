@@ -306,6 +306,41 @@ def _tts(config: dict, language: Language | None) -> ElevenLabsTTSService:
     )
 
 
+class CallerAudioOnlySerializer(TwilioFrameSerializer):
+    """Só o áudio de quem ligou entra no pipeline.
+
+    O `deserialize` do Pipecat converte **todo** evento `media` em áudio de
+    entrada sem olhar a pista. Se o Twilio mandar a `outbound` junto com a
+    `inbound`, a voz do próprio bot volta para o Deepgram — e aí o Flux
+    anuncia que "quem ligou começou a falar" exatamente enquanto o bot fala,
+    interrompe a frase no meio e ainda entrega o texto ao modelo como se
+    fosse pergunta do cliente.
+
+    Foi o que aconteceu, e uma chamada com o microfone mudo provou: a
+    saudação voltou transcrita como 'suragavada para fins de Quality ID' e
+    morreu em "Brands", antes de "¿Cuál es su nombre?". Com o bot calado,
+    26 segundos de silêncio e nenhum turno.
+
+    A contagem por pista fica guardada porque ela é a prova: se sair
+    `outbound` no fim da chamada, a echo era nossa e acabou aqui; se sair só
+    `inbound`, o eco vem da linha e a correção é outra — e cara.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tracks_seen: dict[str, int] = {}
+
+    async def deserialize(self, data):
+        message = json.loads(data)
+        if message.get("event") == "media":
+            # A pista pode não vir; nesse caso é a de quem ligou.
+            track = message["media"].get("track", "inbound")
+            self.tracks_seen[track] = self.tracks_seen.get(track, 0) + 1
+            if track != "inbound":
+                return None
+        return await super().deserialize(data)
+
+
 async def run_call(websocket, stream_id: str, call_id: str, from_number: str, config: dict) -> None:
     """Conduz uma chamada até o WebSocket fechar."""
     persona = config["persona"]
@@ -317,7 +352,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
 
     # auto_hang_up ficaria dependente de credencial da Twilio aqui dentro. Não
     # precisa: quando este WebSocket fecha, o `<Connect>` acaba e a chamada cai.
-    serializer = TwilioFrameSerializer(
+    serializer = CallerAudioOnlySerializer(
         stream_sid=stream_id,
         call_sid=call_id,
         params=TwilioFrameSerializer.InputParams(auto_hang_up=False),
@@ -434,7 +469,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
     started_at = time.monotonic()
     await PipelineRunner(handle_sigint=False).run(task)
     duration = int(time.monotonic() - started_at)
-    logger.info(f"call {call_id} finished after {duration}s")
+    logger.info(f"call {call_id} finished after {duration}s, audio tracks {serializer.tracks_seen}")
 
     await report_call(
         {

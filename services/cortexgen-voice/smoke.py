@@ -212,4 +212,35 @@ assert payload["stt_seconds"] == 47.3, payload
 assert payload["latency_median_ms"] == 1100 and payload["latency_worst_ms"] == 3200, payload
 print("metrics:", payload)
 
+
+# A voz do bot não pode voltar como fala de quem ligou.
+#
+# O `deserialize` do Pipecat aceita todo evento `media`, venha da pista de
+# quem ligou ou da nossa. Com as duas entrando, o Flux anunciava turno do
+# usuário enquanto o bot falava, cortava a saudação em "Brands" e mandava a
+# própria voz do bot ao modelo como pergunta do cliente. Uma chamada com o
+# microfone mudo provou o caminho; este assert impede o retorno dele.
+import base64 as _base64
+import json as _json
+
+from pipecat.serializers.twilio import TwilioFrameSerializer as _TFS
+
+from app.bot import CallerAudioOnlySerializer
+
+_ser = CallerAudioOnlySerializer(
+    stream_sid="MZsmoke", call_sid="CAsmoke", params=_TFS.InputParams(auto_hang_up=False)
+)
+_media = lambda track: _json.dumps(  # noqa: E731
+    {"event": "media", "media": {"track": track, "payload": _base64.b64encode(b"\xff" * 160).decode()}}
+)
+
+assert _asyncio.run(_ser.deserialize(_media("outbound"))) is None
+assert _ser.tracks_seen == {"outbound": 1}, _ser.tracks_seen
+
+# A de quem ligou continua entrando, e sem `track` o padrão é ela.
+assert _asyncio.run(_ser.deserialize(_media("inbound"))) is not None
+assert _asyncio.run(_ser.deserialize(_json.dumps({"event": "media", "media": {"payload": ""}}))) is None
+assert _ser.tracks_seen == {"outbound": 1, "inbound": 2}, _ser.tracks_seen
+print("audio tracks:", _ser.tracks_seen, "(outbound descartada)")
+
 print("\nSMOKE OK")
