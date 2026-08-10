@@ -6,7 +6,7 @@
 
 ## ▶️ RETOMAR AQUI — tarifas por fornecedor (custo em dólar)
 
-Produção está em **`9b2f59f20`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
+Produção está em **`92b66a28f`**, verificada: `/api`, `/app/login`, `/super_admin/sign_in` em 200 e `cortexgen-voice` respondendo.
 
 **Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
 
@@ -69,7 +69,7 @@ Silêncio sozinho não distingue fim de frase de pausa entre duas letras. Agora 
 
 Interruptor visível na persona (`voice_wait_for_complete_turn`, padrão ligado) porque o mecanismo depende de o modelo obedecer a um formato — modelo pequeno que ignorar deixaria o bot mudo, que é exatamente a falha do Smart Turn.
 
-**Saudação cortada** foi outra coisa: quem atende diz "alô?" e isso interrompia a abertura. `MuteUntilFirstBotCompleteUserMuteStrategy` cala quem ligou até o bot terminar a primeira fala.
+**Saudação cortada — a tentativa de conserto foi pior que o defeito.** Pus `MuteUntilFirstBotCompleteUserMuteStrategy` para a abertura não ser cortada por um "alô?", e ela **matou uma chamada em 62 s de silêncio**: a abertura pergunta o nome, quem ligou respondeu no meio, o mute descartou os quadros de VAD e nenhum turno chegou a começar — com a transcrição já parada no contexto. Removido em `92b66a28f`. Detalhe do mecanismo na skill `pipecat`, seção 2.
 
 ### Correção: a latência do LLM varia muito mais do que a primeira medição sugeria
 
