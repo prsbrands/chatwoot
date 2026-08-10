@@ -444,12 +444,52 @@ onMounted(() => {
       <div
         v-for="call in calls"
         :key="call.id"
-        class="flex items-center justify-between rounded-lg bg-n-alpha-1 px-3 py-2 text-sm"
+        class="flex flex-col gap-1 rounded-lg bg-n-alpha-1 px-3 py-2 text-sm"
       >
-        <span class="text-n-slate-12">
-          {{ call.from_number }} → {{ call.phone_number }}
-        </span>
-        <span class="text-xs text-n-slate-11">{{ call.status }}</span>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-n-slate-12">
+            {{ call.from_number }} → {{ call.phone_number }}
+          </span>
+          <span class="text-xs text-n-slate-11">
+            <template v-if="call.duration_seconds">
+              {{ call.duration_seconds }}s ·
+            </template>
+            {{ call.status }}
+          </span>
+        </div>
+        <!-- O que a chamada consumiu. Sem isto o custo por minuto só aparece
+             na fatura. -->
+        <div
+          v-if="call.metrics && call.metrics.turns"
+          class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-xs text-n-slate-10"
+        >
+          <span>
+            {{
+              $t('INTEGRATION_SETTINGS.TWILIO.VOICE.TURNS', {
+                count: call.metrics.turns,
+              })
+            }}
+          </span>
+          <span v-if="call.metrics.latency_median_ms">
+            {{
+              $t('INTEGRATION_SETTINGS.TWILIO.VOICE.LATENCY', {
+                median: call.metrics.latency_median_ms,
+                worst: call.metrics.latency_worst_ms,
+              })
+            }}
+          </span>
+          <span>
+            {{
+              $t('INTEGRATION_SETTINGS.TWILIO.VOICE.USAGE', {
+                tokens: (
+                  call.metrics.prompt_tokens + call.metrics.completion_tokens
+                ).toLocaleString(),
+                chars: (call.metrics.tts_characters || 0).toLocaleString(),
+                seconds: call.metrics.stt_seconds,
+              })
+            }}
+          </span>
+        </div>
       </div>
     </div>
 

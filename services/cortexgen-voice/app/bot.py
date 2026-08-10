@@ -19,6 +19,7 @@ from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame
+from pipecat.observers.user_bot_latency_observer import UserBotLatencyObserver
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -56,6 +57,7 @@ from pipecat.turns.user_turn_completion_mixin import (
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
 from .chatwoot import ConfigError, report_call
+from .metrics import CallMetrics
 
 
 # O Pipecat já ensina o modelo a marcar se quem fala terminou. Falta o caso que
@@ -295,11 +297,20 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         ]
     )
 
-    # As métricas são o que vai alimentar o custo por minuto e a latência na
-    # Fase 4 — ligar depois seria refazer a instrumentação.
+    # O que a chamada consumiu, e o que quem ligou esperou. O observador de
+    # latência mede da última sílaba dela à primeira do bot — que é a espera
+    # sentida, não a soma dos tempos internos.
+    metrics = CallMetrics()
+    latency = UserBotLatencyObserver()
+
+    @latency.event_handler("on_latency_measured")
+    async def _on_latency(_observer, seconds):
+        metrics.record_latency(seconds)
+
     task = PipelineTask(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
+        observers=[metrics, latency],
         conversation_id=call_id,
     )
 
@@ -332,6 +343,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
             "from_number": from_number,
             "duration_seconds": duration,
             "transcript": _transcript_of(context),
+            "metrics": metrics.as_payload(),
             **await _read_the_call(context, config["llm"]),
         }
     )

@@ -13,7 +13,9 @@ class VoiceAgent::CallsController < VoiceAgent::BaseController
     params.permit(
       :call_sid, :phone_number, :from_number, :duration_seconds, :summary,
       :name, :email, :company, :city, :whatsapp,
-      transcript: [:role, :content]
+      transcript: [:role, :content],
+      metrics: [:turns, :prompt_tokens, :completion_tokens, :tts_characters,
+                :stt_seconds, :latency_median_ms, :latency_worst_ms]
     )
   end
 end

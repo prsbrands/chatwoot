@@ -705,7 +705,10 @@
         "TIMEOUT": "Ring for (s)",
         "SAVE_ROUTE": "Save route",
         "ROUTE_SAVED": "Route saved and number pointed to CortexGen Chat",
-        "CALLS_TITLE": "Recent calls"
+        "CALLS_TITLE": "Recent calls",
+        "TURNS": "{count} turns",
+        "LATENCY": "{median}ms typical · {worst}ms worst",
+        "USAGE": "{tokens} tokens · {chars} spoken chars · {seconds}s transcribed"
       }
     }
   },

@@ -127,7 +127,8 @@ class Voice::CallReportService
     TwilioVoiceCall.find_by(call_sid: @params[:call_sid])&.update(
       status: 'completed',
       duration_seconds: @params[:duration_seconds],
-      conversation_id: conversation.id
+      conversation_id: conversation.id,
+      metrics: @params[:metrics].presence || {}
     )
   end
 end
