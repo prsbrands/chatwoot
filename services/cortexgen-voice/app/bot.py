@@ -255,13 +255,31 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
 
 
 def _model_cascade(config: dict, fallback: dict | None) -> list[str] | None:
-    """Principal e reserva num pedido só, quando os dois moram no mesmo lugar."""
+    """Principal e reserva num pedido só, quando o fornecedor sabe fazer isso.
+
+    Quem desce para o segundo modelo é o roteador do OpenRouter, lendo o array
+    `models` no corpo. **É extensão dele, não do protocolo da OpenAI** — a API
+    da OpenAI devolve `400 Unrecognized request argument supplied: models` e a
+    chamada morre logo depois da saudação, que é a única fala que não passa
+    pelo modelo. Foi o que aconteceu ao mudar o primário para a OpenAI direto e
+    manter a reserva "igual ao primário".
+
+    Reserva de verdade fora do OpenRouter exige um segundo request depois do
+    erro, e isso é outro problema: no meio de um stream já falado pela metade.
+    """
     if not fallback:
         return None
 
     if fallback["base_url"] != config["base_url"]:
         logger.warning(
             f"fallback on {fallback['base_url']} ignored: a call cannot switch providers mid-stream"
+        )
+        return None
+
+    if "openrouter.ai" not in config["base_url"]:
+        logger.warning(
+            f"fallback ignored: {config['base_url']} does not take a `models` array — "
+            "only OpenRouter routes to a second model inside one request"
         )
         return None
 

@@ -74,7 +74,16 @@ other = _model_cascade(
 )
 assert other is None, other
 assert _model_cascade(FAKE["llm"], None) is None
-print("llm fallback:", same)
+
+# O array `models` é extensão do OpenRouter. Mandá-lo para a OpenAI devolve
+# `400 Unrecognized request argument supplied: models` — e o bot fala só a
+# saudação, que é a única frase que não passa pelo modelo. Aconteceu numa
+# chamada real ao mover o primário para a OpenAI direto mantendo a reserva
+# "igual ao primário", que até então sempre significara OpenRouter.
+direto = {**FAKE["llm"], "base_url": "https://api.openai.com/v1", "model": "gpt-4.1-mini"}
+assert _model_cascade(direto, {**direto, "model": "gpt-4.1"}) is None
+assert _llm_extras(direto, {**direto, "model": "gpt-4.1"}) == {}
+print("llm fallback:", same, "· fora do OpenRouter: recusado")
 
 # O Pipecat repassa `extra` como kwargs do SDK da OpenAI. Mandar `models` direto
 # ali derrubou TODA chamada com "unexpected keyword argument" — e nada nesta
