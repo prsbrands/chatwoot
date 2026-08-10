@@ -10,10 +10,9 @@ Produção está em **`64fda3a37`**, verificada: `/api`, `/app/login`, `/super_a
 
 **Fases 0 a 3 entregues e validadas com chamadas reais.** O bot atende o **+16893539100**, conversa em espanhol e a ligação vira conversa, contato e lead no painel. Persona ativa: `nathan-es-voice` (Deepgram `nova-3` + ElevenLabs `ny3E2DZImeZm00WLGZi9`).
 
-**Duas coisas para ajustar na persona antes de mostrar para cliente:**
+Modelo já em `openai/gpt-4.1-mini`, com `deepseek/deepseek-v4-flash-0731` de reserva na mesma cascata.
 
-1. **Trocar `openai/gpt-4.1` por `openai/gpt-4.1-mini`** — 5× mais barato e menos irregular na latência (ver correção abaixo).
-2. **Encurtar o prompt.** Tem 14,5 KB de registro escrito, com instrução de se apresentar que faz o bot repetir a apresentação depois da frase de abertura. Voz quer prompt curto e falado.
+**Falta ajustar na persona antes de mostrar para cliente:** o prompt tem 14,5 KB de registro escrito e manda o bot se apresentar — o que o faz repetir a apresentação logo depois da frase de abertura já ter feito isso. Voz quer prompt curto e falado.
 
 ### Fase 3 — o que já está em produção
 
