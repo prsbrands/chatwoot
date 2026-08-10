@@ -857,7 +857,21 @@ O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugest�
 
   `ops/brand/png_tool.py` existe porque a máquina não tem PIL nem ImageMagick: lê e escreve PNG com a biblioteca padrão e cobre recolorir, recortar e o ponto de não lido. O `sips` do macOS faz o resto.
 
-- **As cores do tema ainda são as do Chatwoot.** Com a marca verde no ar, o contraste ficou evidente: o botão de login e os links são azuis, e o balão do widget é violeta (`#7C3AED`, na inbox 10). São configuráveis — a cor do widget por inbox em Settings → Inboxes, e a paleta do painel em `tailwind.config.js`. Não mexi porque é decisão de marca, não de código.
+- ~~**As cores do tema ainda são as do Chatwoot**~~ — **trocadas** em 10/08 (`f7a269ae6`).
+
+  **O token `n-brand` em `theme/colors.js` manda em 128 lugares**, incluindo o botão de login. É a única mudança que realmente importa; o resto é consequência.
+
+  **O verde do tema NÃO é o verde do logo, de propósito.** `#63BE80` aparece 49 vezes como fundo de botão com `text-white` **fixo no componente**, e branco sobre ele dá **2,28:1** — menos da metade do mínimo de 4,5:1, e pior que o azul que estava lá (3,78:1). O tema usa **`#388550`**, que mantém o matiz (h=0,386) e chega a **4,53:1** com branco. Num botão esse contraste independe do tema claro/escuro, porque é texto contra o próprio fundo do botão — foi isso que permitiu um valor chapado em vez de variável por tema.
+
+  Se algum dia alguém "corrigir" o token para o verde do logo achando que é inconsistência, o resultado é texto ilegível em todo botão primário.
+
+  **Três lugares casavam fundo da marca com texto azul** (botão suave, aba ativa, etiqueta de sugestão) e passaram a usar a própria marca: 4,01:1 contra os 4,22:1 anteriores — paridade, sem o choque verde/azul.
+
+  Fora do painel: cor padrão do formulário de inbox, `DEFAULT_WIDGET_COLOR` do onboarding, `DEFAULT_COLOR` do portal, e o fundo do balão no `sdk.js` (o que aparece no site do cliente antes de a config carregar).
+
+  **Fica de fora** o default da coluna `widget_color` no banco (`#1f93ff`), que exigiria migration para um caso que a UI já cobre mandando a cor. E a paleta legada `woot.*`, derivada do azul do Radix, que sobrevive em telas marginais (billing enterprise, playground do Super Admin).
+
+  **Atenção ao dado:** o `widget_color` das inboxes existentes foi atualizado para `#388550`. A inbox 10 estava em `#0E0E0E` — se aquilo era escolha deliberada, é um campo em Settings → Inboxes.
 - **Locales não-EN** ainda dizem "Chatwoot" (`app/javascript/dashboard/i18n/locale/pt_BR/` etc.).
 - **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
 - ~~**Segurança do webhook**~~ — **fechado** em 10/08, ver "O webhook do bot passou a exigir assinatura" abaixo. Não eram ~10 linhas.
