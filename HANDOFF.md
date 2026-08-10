@@ -625,7 +625,46 @@ MAILER_SENDER_EMAIL=CortexGen Chat <no-reply@cortexgen.cloud>
 
 **A chave é restrita a envio** (`restricted_api_key`): a API de domínios devolve 401. Bom para segurança, e significa que conferir verificação de domínio pelo código não é possível — o teste é enviar.
 
-**Entrada de e-mail continua fora.** O `MX` de `prsbrands.com` aponta para `mail.prsbrands.com`, inalcançável da VPS. O Resend resolve **saída**; inbox de e-mail no Chatwoot exigiria encaminhamento + `MAILER_INBOUND_EMAIL_DOMAIN` e um ingress. Escopo à parte.
+**Entrada de e-mail: RESOLVIDA no mesmo dia, por Mailgun.** Ver a seção seguinte. (O `MX` de `prsbrands.com` continua no GreenGeeks e fora de alcance — quem recebe agora é o `cortexgen.cloud`.)
+
+### 1c. Entrada de e-mail — Mailgun → ActionMailbox (10/08)
+
+Cadeia completa, provada ponta a ponta: `MX → Mailgun → Route → POST no ingress (204) → conversa 63 na inbox 17`, com o contato criado a partir do remetente.
+
+| peça | valor |
+|---|---|
+| MX de `cortexgen.cloud` | `mxa`/`mxb.mailgun.org` (região **US**) |
+| Route no Mailgun | `match_recipient(".*@cortexgen.cloud")` → `forward(<ingress>)` + `store()` |
+| ingress | `https://prs.cortexgen.cloud/rails/action_mailbox/mailgun/inbound_emails/mime` |
+| inbox | **17 — "E-mail — CortexGen"**, casando `contato@cortexgen.cloud` |
+| env | `RAILS_INBOUND_EMAIL_SERVICE=mailgun`, `MAILGUN_INGRESS_SIGNING_KEY`, `MAILER_INBOUND_EMAIL_DOMAIN=cortexgen.cloud` |
+
+Script: `ops/set-mailgun-inbound.sh` (pede a signing key sem exibi-la).
+
+**A URL do ingress termina em `/mime`**, não em `/inbound_emails` — o caminho "óbvio" devolve 404. Vale conferir na tabela de rotas antes de configurar qualquer provedor: `Rails.application.routes.routes.map { |r| r.path.spec.to_s }.grep(/action_mailbox/)`.
+
+**O ingress estava desligado sem dar erro.** O `.env` trazia `RAILS_INBOUND_EMAIL_SERVICE=` **vazio**, e `ENV.fetch('RAILS_INBOUND_EMAIL_SERVICE', 'relay')` devolve string vazia quando a variável existe em branco — o Rails ficava com `ingress = :""`, sem ingress ativo e sem reclamar. Vazio não é ausente, e o default nunca entrou.
+
+**A sonda que diagnostica em segundos**, sem depender de propagação nem de conta de terceiro — pergunta ao MX do Mailgun se ele aceita o destinatário:
+
+```python
+import smtplib
+s = smtplib.SMTP("mxa.mailgun.org", 25, timeout=20); s.ehlo()
+s.docmd("MAIL FROM:<teste@prs.cortexgen.cloud>")
+print(s.docmd("RCPT TO:<contato@cortexgen.cloud>"))
+```
+
+As respostas se distinguem e valem uma tabela:
+
+| resposta | significa |
+|---|---|
+| `550 5.7.1 Relaying denied` | o domínio **não está** na conta Mailgun |
+| `550 5.0.1 Recipient rejected` | domínio registrado, **falta a Route** |
+| `250 Recipient address accepted` | pronto para receber |
+
+**Erro de sequência que custou um endereço:** mandei o e-mail de teste **antes** de a Route existir, levou bounce `550`, e o Resend pôs `contato@cortexgen.cloud` na lista de supressão. Depois disso, mensagem enviada pelo Resend para esse endereço é aceita pela API e **não é entregue** — o que sumiu foi só o teste, mas o endereço segue suprimido até alguém limpar no dashboard (a chave é restrita a envio, então não dá pela API). **Sonde com o `RCPT TO` antes de enviar qualquer coisa.**
+
+`store()` junto do `forward()` na Route é rede de segurança: POST que falhar deixa a mensagem guardada no Mailgun em vez de evaporar.
 
 `cortexgen.cloud` não tem SPF na raiz. Não faz falta para o Resend, porque o envelope sai por `send.cortexgen.cloud`, que tem o seu — só faria falta se algum dia sair e-mail direto da raiz.
 
