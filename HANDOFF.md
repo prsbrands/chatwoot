@@ -607,7 +607,29 @@ Webhook → Guard → Persona (Supabase) → Historico (10 últimas msgs)
 
 ## Pendências
 
-### 1. E-mail — bloqueado por rede (a mais antiga)
+### 1. E-mail — RESOLVIDO em 2026-08-10 com relay Resend
+
+**O bloqueio nunca foi de SMTP em geral — era da rota até o GreenGeeks.** Da mesma VPS, `smtp.resend.com` responde nas portas 465, 587, 2465, 2587 **e 25**, e `api.resend.com` devolve 401 (alcançável, só sem credencial). A pendência mais antiga do projeto caiu por um caminho que sempre esteve livre; o diagnóstico anterior generalizou um bloqueio específico.
+
+Config ativa no `.env` (backup em `.env.bak-resend-*`), aplicada pelo `/opt/cortexgen-chat/set-resend.sh`, que pede a chave sem exibi-la:
+
+```
+SMTP_ADDRESS=smtp.resend.com   SMTP_PORT=465   SMTP_USERNAME=resend
+SMTP_AUTHENTICATION=plain      SMTP_TLS=true   SMTP_DOMAIN=cortexgen.cloud
+MAILER_SENDER_EMAIL=CortexGen Chat <no-reply@cortexgen.cloud>
+```
+
+**O remetente mudou de `@prsbrands.com` para `@cortexgen.cloud` de propósito.** Quem tem DKIM verificado no Resend é o `cortexgen.cloud`; enviar como `@prsbrands.com` por ali seria remetente sem assinatura — caminho curto para spam num e-mail de reset de senha. Os três registros do Resend estão publicados: `MX send.cortexgen.cloud → feedback-smtp.us-east-1.amazonses.com`, `TXT send.cortexgen.cloud → v=spf1 include:amazonses.com ~all`, e o DKIM em `resend._domainkey.cortexgen.cloud`. O DMARC do domínio está em `p=none` e alinha pelo DKIM.
+
+**Provado com dois envios reais:** um `ActionMailer` direto (`ENVIADO ok`) e um reset de senha de verdade pela fila, entregue pelo Sidekiq em 470 ms sem erro. Atenção ao que o reset testou: `User.find(1)` nesta instalação devolve um **SuperAdmin** (`technology@prsbrands.com`), então o link recebido é o do painel Super Admin. O caminho de e-mail é o mesmo do convite de agente, que ainda não foi exercitado com um agente novo.
+
+**A chave é restrita a envio** (`restricted_api_key`): a API de domínios devolve 401. Bom para segurança, e significa que conferir verificação de domínio pelo código não é possível — o teste é enviar.
+
+**Entrada de e-mail continua fora.** O `MX` de `prsbrands.com` aponta para `mail.prsbrands.com`, inalcançável da VPS. O Resend resolve **saída**; inbox de e-mail no Chatwoot exigiria encaminhamento + `MAILER_INBOUND_EMAIL_DOMAIN` e um ingress. Escopo à parte.
+
+`cortexgen.cloud` não tem SPF na raiz. Não faz falta para o Resend, porque o envelope sai por `send.cortexgen.cloud`, que tem o seu — só faria falta se algum dia sair e-mail direto da raiz.
+
+### 1b. Histórico do bloqueio antigo (mantido para contexto)
 `mail.prsbrands.com` (GreenGeeks, 65.60.38.74) é **inalcançável da VPS**: ping 100% loss e timeout em todas as portas (25/80/443/465/587/993). `mtr` mostra a rota morrendo no salto 4 — borda da Hostinger → GreenGeeks. É bloqueio de rede/edge, **não** o firewall CSF do servidor (por isso o suporte "não vê bloqueio"; o whitelist de 24h não teve efeito). Da rede local do Paulo tudo conecta.
 
 O `.env` já está com SMTP correto (`mail.prsbrands.com:465`, `postmaster@prsbrands.com`, senha gravada, `SMTP_TLS=true`) — só não trafega.
