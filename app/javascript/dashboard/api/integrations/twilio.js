@@ -63,6 +63,10 @@ class TwilioAPI extends ApiClient {
   deleteVoiceRoute(id) {
     return axios.delete(`${this.url}/voice_routes/${id}`);
   }
+
+  alerts() {
+    return axios.get(`${this.url}/alerts`);
+  }
 }
 
 export default new TwilioAPI();

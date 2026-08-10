@@ -391,6 +391,7 @@ Rails.application.routes.draw do
               resource :credentials, only: [:show, :create, :destroy]
               resources :numbers, only: [:index, :create]
               resources :voice_routes, only: [:index, :create, :destroy]
+              resources :alerts, only: [:index]
               resources :sip, only: [:index, :create] do
                 member do
                   get :credentials

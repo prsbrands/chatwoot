@@ -20,6 +20,7 @@ const domains = ref([]);
 const credentials = ref([]);
 const routes = ref([]);
 const calls = ref([]);
+const alerts = ref([]);
 const selectedDomain = ref(null);
 const isBusy = ref(false);
 const newSubdomain = ref('');
@@ -105,6 +106,18 @@ const fetchAll = async () => {
     if (managedDomain.value) await fetchCredentials();
   } catch (error) {
     alertError(error);
+  }
+};
+
+// Carregado à parte e sem barulho: cada alerta exige um fetch individual no
+// Twilio para saber a causa de verdade, e uma tela de configuração não pode
+// ficar esperando — nem quebrar — porque a API deles está lenta ou fora.
+const fetchAlerts = async () => {
+  try {
+    const { data } = await TwilioAPI.alerts();
+    alerts.value = data.alerts;
+  } catch {
+    alerts.value = [];
   }
 };
 
@@ -220,6 +233,7 @@ const copyCredential = async () => {
 onMounted(() => {
   fetchAll();
   fetchPersonas();
+  fetchAlerts();
 });
 </script>
 
@@ -433,6 +447,44 @@ onMounted(() => {
           icon="i-lucide-trash-2"
           @click="removeRoute(route)"
         />
+      </div>
+    </div>
+
+    <!-- O que o Twilio tentou e não conseguiu.
+         Uma chamada que morre antes de alcançar o nosso webhook não deixa
+         rastro em log nenhum daqui: nem Rails, nem nginx. Sem esta lista, a
+         única forma de saber é desconfiar e entrar no console do Twilio. -->
+    <div v-if="alerts.length" class="flex flex-col gap-2">
+      <p class="text-sm font-medium text-n-slate-12">
+        {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.ALERTS_TITLE') }}
+      </p>
+      <p class="text-xs text-n-slate-11">
+        {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.ALERTS_HELP') }}
+      </p>
+      <div
+        v-for="alert in alerts"
+        :key="alert.sid"
+        class="flex flex-col gap-1 rounded-lg bg-n-ruby-2 px-3 py-2 text-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-medium text-n-ruby-11">
+            {{ alert.request_method }} {{ alert.request_url }}
+          </span>
+          <a
+            :href="alert.docs_url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="shrink-0 font-mono text-xs text-n-ruby-11 underline"
+          >
+            {{ alert.error_code }}
+          </a>
+        </div>
+        <!-- A causa vem do corpo da resposta, não do resumo do alerta: o resumo
+             chama tudo de "Got HTTP 502" mesmo quando foi falha de DNS. -->
+        <span class="text-xs text-n-slate-11">{{ alert.cause }}</span>
+        <span class="text-xs text-n-slate-10">
+          {{ new Date(alert.created_at).toLocaleString() }}
+        </span>
       </div>
     </div>
 

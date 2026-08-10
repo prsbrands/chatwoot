@@ -37,7 +37,37 @@ class Integrations::Twilio::AccountClient
     raise ApiError, twilio_message(e)
   end
 
+  # O que o Twilio tentou e não conseguiu. É o único lugar onde uma chamada
+  # perdida antes de chegar até nós deixa rastro: se ele não alcança o nosso
+  # webhook, não há log nosso para consultar — nem no Rails, nem no nginx.
+  #
+  # Duas chamadas foram perdidas assim em 10/08 e só descobrimos porque alguém
+  # foi perguntar ao Twilio dias depois.
+  def recent_alerts(since: 7.days.ago, limit: 20)
+    client.monitor.v1.alerts.list(start_date: since, limit: limit).map { |alert| serialize_alert(alert) }
+  rescue ::Twilio::REST::RestError => e
+    raise ApiError, twilio_message(e)
+  end
+
   private
+
+  # `alert_text` resume tudo como "Got HTTP 502 response" mesmo quando não houve
+  # 502 nenhum — as duas perdas de 10/08 foram falha de DNS, e esse resumo custou
+  # uma sessão inteira de diagnóstico na direção errada. Quem diz a verdade é o
+  # `response_body`, e ele só vem no fetch individual. Por isso o N+1: são poucos
+  # alertas, numa tela que quase nunca é aberta, e o texto certo é o produto.
+  def serialize_alert(alert)
+    detail = client.monitor.v1.alerts(alert.sid).fetch
+    {
+      sid: alert.sid,
+      error_code: alert.error_code,
+      created_at: alert.date_created,
+      request_url: alert.request_url,
+      request_method: alert.request_method,
+      cause: detail.response_body.to_s.lines.map(&:strip).reject(&:empty?).first(2).join(' '),
+      docs_url: alert.more_info
+    }
+  end
 
   def first_page(search)
     filters = { page_size: PAGE_SIZE }

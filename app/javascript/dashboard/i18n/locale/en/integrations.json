@@ -707,6 +707,8 @@
         "TIMEOUT": "Ring for (s)",
         "SAVE_ROUTE": "Save route",
         "ROUTE_SAVED": "Route saved and number pointed to CortexGen Chat",
+        "ALERTS_TITLE": "Failures Twilio saw",
+        "ALERTS_HELP": "Calls that never reached this server leave no trace in its logs — Twilio is the only one that saw them. The cause below comes from Twilio's own response, not from its summary line, which labels everything a 502.",
         "CALLS_TITLE": "Recent calls",
         "TURNS": "{count} turns",
         "LATENCY": "{median}ms typical · {worst}ms worst",
