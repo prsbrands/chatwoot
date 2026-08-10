@@ -318,11 +318,18 @@ def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
         api_key=config["api_key"],
         base_url=config["base_url"],
         retry_on_timeout=True,
-        # Seis segundos era o número da ElevenLabs para o painel deles. Ao
-        # telefone, seis segundos de silêncio já são uma ligação perdida — uma
-        # chamada real esperou 5,4 s por um primeiro token e quem ligou desligou
-        # antes de ouvir a resposta.
-        retry_timeout_secs=3.0,
+        # **Um retry nunca faz quem ligou esperar menos** — ele descarta o
+        # request em curso e refaz o prefill do zero. Só compensa quando o
+        # modelo emudeceu de vez; contra modelo apenas lento, ele dobra a conta.
+        #
+        # Com 3 s isso virou o defeito: numa chamada real três de quatro turnos
+        # bateram no limite, e a espera foi de 9,8 s, 7,9 s e 7,6 s. O único
+        # turno que não disparou retry respondeu em 1,3 s.
+        #
+        # 5 s fica acima de qualquer TTFB saudável medido (0,4–1,4 s) com folga
+        # larga, e abaixo dos 6 s que já custaram uma ligação — quem ligou
+        # desliga antes disso.
+        retry_timeout_secs=5.0,
         settings=OpenAILLMService.Settings(
             model=config["model"],
             temperature=config["temperature"],
