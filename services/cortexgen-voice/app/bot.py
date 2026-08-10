@@ -313,40 +313,40 @@ def _tts(config: dict, language: Language | None) -> ElevenLabsTTSService:
     )
 
 
-class SilenceWhileBotSpeaks(FrameProcessor):
-    """Enquanto o bot fala, o transcritor ouve silêncio.
+class SilenceUntilBotHasSpoken(FrameProcessor):
+    """O transcritor só começa a ouvir quando o bot termina de se apresentar.
 
-    A linha devolve a voz do bot. Quatro chamadas provaram: com o microfone
-    de quem ligou mudo, a saudação voltou transcrita — 'suragavada para fins
-    de Quality ID', 'su router va de para fin de Quality ID' — sempre o mesmo
-    "Gracias por llamar a Pe-erre-ese Brands" mastigado. O Flux chamava isso
-    de turno de quem ligou, interrompia a saudação **em 3 s cravados**, e a
-    pergunta "¿Cuál es su nombre?" nunca chegava ao telefone. O bot então
-    respondia ao próprio eco com "No entendí bien".
+    Sobre o quase-silêncio de uma linha telefônica o Flux alucina uma frase
+    de estoque. Cinco chamadas, sempre o mesmo esqueleto — 'estado de casa,
+    suragavada para fins de Quality ID', 'Estalo já será para frente de
+    Quality ID' — inclusive numa em que o microfone de quem ligou estava
+    mudo. Ele declara turno em cima disso, a interrupção mata a saudação, e a
+    pergunta "¿Cuál es su nombre?" nunca chega ao telefone. O bot ainda
+    responde à alucinação com "No entendí bien".
 
-    Não é a nossa pista voltando: o Twilio manda só `inbound` (contado no
-    log). É eco de linha, e o Twilio não cancela eco em Media Streams. Sem
-    filtro licenciado (krisp/aic/koala) a saída é meio-duplex, que é o que
-    todo IVR faz.
+    O gatilho está no primeiro segundo, **antes de o bot emitir um byte**:
+    numa chamada o turno fantasma abriu 544 ms depois de a saudação começar,
+    a partir de áudio capturado quando o bot ainda estava calado. Por isso
+    não basta silenciar enquanto ele fala — a porteira tem de nascer fechada
+    e só abrir quando a apresentação terminar. Um bot que escuta antes de
+    acabar de se apresentar perde a própria pergunta.
 
     Fica **antes** do STT de propósito: o que não chega ao Deepgram não vira
     turno, e nada a jusante precisa saber disso. É a diferença para o mute
     que matou uma chamada em 62 s — aquele agia depois do STT e deixava um
     turno pela metade na máquina de estados; este troca bytes por silêncio e
-    não guarda estado nenhum.
+    não guarda estado nenhum. Nada pode cortar a saudação, então o
+    `BotStoppedSpeakingFrame` que abre a porteira sempre chega.
 
-    Sem margem depois que o bot cala: o rabo de eco que ainda volta dura uns
-    poucos décimos, e o Flux precisou de ~3 s de eco contínuo para declarar
-    turno nas quatro chamadas. Margem só encolheria a janela em que quem
-    ligou consegue falar.
-
-    O preço é o barge-in: enquanto o bot fala, não dá para cortá-lo. É o que
-    um cancelador de eco compraria de volta.
+    O preço é o barge-in: enquanto o bot fala, não dá para cortá-lo, e um
+    "aló" durante a abertura se perde. Quem ligou responde depois da
+    pergunta — que agora ele ouve.
     """
 
     def __init__(self):
         super().__init__()
         self._bot_speaking = False
+        self._opening_done = False
         self.frames_silenced = 0
 
     async def process_frame(self, frame, direction: FrameDirection):
@@ -358,7 +358,10 @@ class SilenceWhileBotSpeaks(FrameProcessor):
             self._bot_speaking = True
         elif isinstance(frame, BotStoppedSpeakingFrame):
             self._bot_speaking = False
-        elif self._bot_speaking and isinstance(frame, InputAudioRawFrame):
+            self._opening_done = True
+        elif (self._bot_speaking or not self._opening_done) and isinstance(
+            frame, InputAudioRawFrame
+        ):
             # Silêncio, não descarte: o Flux conta com áudio contínuo para
             # cronometrar os próprios turnos.
             self.frames_silenced += 1
@@ -484,7 +487,7 @@ async def run_call(websocket, stream_id: str, call_id: str, from_number: str, co
         ),
     )
 
-    echo_gate = SilenceWhileBotSpeaks()
+    echo_gate = SilenceUntilBotHasSpoken()
 
     pipeline = Pipeline(
         [

@@ -248,12 +248,14 @@ assert _ser.tracks_seen == {"outbound": 1, "inbound": 2}, _ser.tracks_seen
 print("audio tracks:", _ser.tracks_seen, "(outbound descartada)")
 
 
-# O eco da linha não pode chegar ao transcritor.
+# Nada chega ao transcritor antes de o bot terminar de se apresentar.
 #
-# A voz do bot volta pela linha e o Flux a chamava de turno de quem ligou:
-# saudação cortada em 3 s, sempre antes de "¿Cuál es su nombre?". Enquanto o
-# bot fala, a entrada tem de ser silêncio — e voltar ao normal assim que ele
-# cala, senão a chamada trava esperando um turno que não vem.
+# O Flux alucina uma frase de estoque sobre o quase-silêncio da linha e chama
+# aquilo de turno de quem ligou. Numa chamada o turno fantasma abriu 544 ms
+# depois de a saudação começar, a partir de áudio capturado quando o bot ainda
+# estava calado — por isso o primeiro quadro, antes de qualquer fala do bot,
+# também tem de sair silenciado. E tem de voltar ao normal assim que ele cala,
+# senão a chamada trava esperando um turno que não vem.
 from pipecat.frames.frames import (
     BotStartedSpeakingFrame,
     BotStoppedSpeakingFrame,
@@ -261,17 +263,24 @@ from pipecat.frames.frames import (
 )
 from pipecat.tests.utils import run_test as _run_test
 
-from app.bot import SilenceWhileBotSpeaks
+from app.bot import SilenceUntilBotHasSpoken
 
-_gate = SilenceWhileBotSpeaks()
+_gate = SilenceUntilBotHasSpoken()
 _loud = lambda: InputAudioRawFrame(  # noqa: E731
     audio=b"\x7f" * 320, sample_rate=8000, num_channels=1
 )
 _down, _ = _asyncio.run(
     _run_test(
         _gate,
-        frames_to_send=[BotStartedSpeakingFrame(), _loud(), BotStoppedSpeakingFrame(), _loud()],
+        frames_to_send=[
+            _loud(),
+            BotStartedSpeakingFrame(),
+            _loud(),
+            BotStoppedSpeakingFrame(),
+            _loud(),
+        ],
         expected_down_frames=[
+            InputAudioRawFrame,
             BotStartedSpeakingFrame,
             InputAudioRawFrame,
             BotStoppedSpeakingFrame,
@@ -279,10 +288,11 @@ _down, _ = _asyncio.run(
         ],
     )
 )
-_during, _after = _down[1], _down[3]
+_opening, _during, _after = _down[0], _down[2], _down[4]
+assert _opening.audio == bytes(320), "áudio antes da saudação tinha de sair silenciado"
 assert _during.audio == bytes(320), "áudio durante a fala do bot tinha de sair silenciado"
-assert _after.audio == b"\x7f" * 320, "áudio depois da fala do bot não pode ser tocado"
-assert _gate.frames_silenced == 1, _gate.frames_silenced
-print("echo gate: 1 quadro silenciado durante a fala, 0 depois")
+assert _after.audio == b"\x7f" * 320, "depois da saudação o áudio não pode ser tocado"
+assert _gate.frames_silenced == 2, _gate.frames_silenced
+print("echo gate: silencia antes e durante a saudação, abre depois")
 
 print("\nSMOKE OK")
