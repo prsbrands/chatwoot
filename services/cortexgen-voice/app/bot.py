@@ -629,7 +629,10 @@ READING_PROMPT = """Lee esta llamada telefónica y devuelve SOLO un objeto JSON,
 - summary: dos o tres frases en español. Quién llamó, qué necesita, cuál es el siguiente paso.
 - name: el nombre de la persona tal como lo dijo. null si no lo dio.
 - email: solo si lo dictó. Une las letras deletreadas. null si no lo dio.
-- company: el nombre de la empresa. Une las letras si lo deletreó. null si no lo dio.
+- company: la empresa DE QUIEN LLAMÓ. Une las letras si la deletreó. null si no la dio.
+  Nunca uses PRS Brands ni ninguna variante ("Pe-erre-ese Brands", "PRS"): esa es
+  la empresa que atendió la llamada, no la del prospecto. Un rubro suelto
+  ("taller automotivo", "clínica") tampoco es un nombre de empresa.
 - city: solo si dijo en qué ciudad está. Un país, un dominio (.pa, .br) o un
   prefijo telefónico NO son una ciudad. null si no la dijo.
 - whatsapp: solo si dio un número distinto del que llamó. null en cualquier otro caso.
