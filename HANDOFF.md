@@ -846,7 +846,18 @@ O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugest�
 `CAPTAIN_OPEN_AI_MODEL` **não afeta o assistente de escrita** (só o runtime de agents em `config/initializers/ai_agents.rb`); os modelos vêm do `config/llm.yml` por feature.
 
 ### 8. Cosméticas
-- **Logos** são placeholders gerados (círculo violeta + "C", #7C3AED) — trocar pela arte oficial mantendo os nomes de arquivo em `public/brand-assets/`, favicons em `public/`, e assets em `app/javascript/{widget,dashboard,design-system}`; depois rebuildar a imagem.
+- ~~**Logos** são placeholders gerados~~ — **arte oficial no ar** em 10/08 (`2e1389f00`). 37 arquivos gerados por `ops/brand/gerar.sh` a partir de `app/assets/images/ico.png` (512×512, ícone quadrado) e `cga.png` (350×100, logo horizontal). Rodar de novo quando a arte mudar; é idempotente.
+
+  Três coisas que a geração teve de resolver, e que voltam se alguém regerar à mão:
+  - **O texto do logo é branco**, então só serve em fundo escuro — e o painel usa os dois (`block dark:hidden` / `hidden dark:block`). O `logo.svg` recebe o texto recolorido para `#1B1B1B`, o mesmo escuro do ícone.
+  - **Os destinos são SVG e a arte é PNG.** Não dá para vetorizar, então o SVG embute o PNG em base64: mantém os nomes que o código e o `installation_config.yml` já apontam, e os logos aparecem a 32–40 px de altura, bem abaixo da resolução da arte.
+  - **O ícone do balão do widget** fica sobre a cor que o cliente escolhe, então é monocromático: só o símbolo recortado (o texto começa na coluna 108), em branco.
+
+  Os `favicon-badge-*` também foram refeitos, com o ponto vermelho nas proporções medidas no arquivo antigo (`#EF4444`, centro em 0,797 do lado, raio 1/6) — senão o favicon voltaria a ser roxo justamente quando chega mensagem.
+
+  `ops/brand/png_tool.py` existe porque a máquina não tem PIL nem ImageMagick: lê e escreve PNG com a biblioteca padrão e cobre recolorir, recortar e o ponto de não lido. O `sips` do macOS faz o resto.
+
+- **As cores do tema ainda são as do Chatwoot.** Com a marca verde no ar, o contraste ficou evidente: o botão de login e os links são azuis, e o balão do widget é violeta (`#7C3AED`, na inbox 10). São configuráveis — a cor do widget por inbox em Settings → Inboxes, e a paleta do painel em `tailwind.config.js`. Não mexi porque é decisão de marca, não de código.
 - **Locales não-EN** ainda dizem "Chatwoot" (`app/javascript/dashboard/i18n/locale/pt_BR/` etc.).
 - **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
 - ~~**Segurança do webhook**~~ — **fechado** em 10/08, ver "O webhook do bot passou a exigir assinatura" abaixo. Não eram ~10 linhas.
