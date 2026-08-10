@@ -691,7 +691,37 @@ Auditoria do que fizemos no Agent Dashboard vs. o que o Super Admin enxerga. **B
 
 **Achado que corrige uma premissa**: os serviços de escrita do composer (`rewrite`, `summarize`, `reply_suggestion`, `label_suggestion`) estão em `lib/captain/` e `lib/llm/` — **árvore MIT**, não enterprise. `Llm::Config` lê `CAPTAIN_OPEN_AI_API_KEY` + `CAPTAIN_OPEN_AI_ENDPOINT` do `InstallationConfig` e o `openai_api_base` é configurável, ou seja **aponta para o OpenRouter que já usamos**. O que está em `enterprise/` é o Captain "produto" (assistentes, documentos, RAG). Falta validar ponta a ponta; a flag `captain_integration` está marcada `premium`.
 
-**Ainda aberto (fase 2 multi-tenant):** `bot_personas` e `bot_knowledge_docs` não têm coluna de conta (só `bot_channel_routes` e `bot_providers` têm) — admin da conta B edita persona da conta A.
+~~**Ainda aberto (fase 2 multi-tenant):** `bot_personas` e `bot_knowledge_docs` não têm coluna de conta~~ — **fechado** em `8d8b268f2`, ver abaixo.
+
+### Isolamento entre contas na camada de bots (10/08, `8d8b268f2`)
+
+`bot_channel_routes` e `bot_providers` já eram por conta; **persona e documento ficaram de fora — e são justamente o que o cliente escreve**. Com o painel cedido a uma segunda conta, o admin dela abriria a lista e editaria o `system_prompt` da primeira. Preventivo: hoje só existe a conta 1, mas no dia da segunda já nasceria vazando.
+
+SQL em `db/botlayer/bot_layer_per_account.sql`, aplicado (4 personas e 2 docs migrados para a conta 1):
+
+- `chatwoot_account_id` **NOT NULL** nas duas tabelas, sem default — linha sem conta é bug de chamador e deve falhar alto, não virar persona órfã.
+- **Slug único dentro da conta.** Era único no servidor: o segundo cliente que criasse `atendimento` receberia erro de duplicado por causa de uma linha que ele não pode ver.
+- Filtro por conta em **toda** leitura e escrita do client PostgREST, inclusive nas de id conhecido — senão saber o UUID bastaria para editar.
+- **`is_global` passa a significar global dentro da conta.** Esta é a parte que não se vê: documento global entra no prompt de todas as personas, e sem o recorte o texto de um cliente sairia pela boca do bot de outro. As duas views (`bot_route_resolved` e `bot_persona_resolved`) ganharam `d.chatwoot_account_id = p.chatwoot_account_id` no join.
+
+Dois caminhos que passariam batido, porque não estão na tela de personas:
+
+- **Provisionamento do WhatsApp** buscava persona por slug sem conta (`fetch_persona_id`), e o slug padrão vem de config **global** — apontaria para a persona homônima de quem tivesse criado primeiro.
+- **Rota de canal** aceitava `persona_id` vindo do navegador sem conferir de quem era: bastava apontar a própria inbox para o UUID alheio para o bot responder com o prompt de outro cliente.
+
+**Provado com uma conta 999 de teste, nas duas direções** (fixtures removidas depois):
+
+```
+conta 1 recebe o próprio doc global · não recebe o da 999   → t / f
+conta 999 recebe o próprio          · não recebe o da 1     → t / f
+personas visíveis pela conta 1                              → só as 4 dela
+conta 1 resolve a persona da 999 por slug                   → nil
+conta 1 edita a persona da 999 com o UUID na mão            → nil, nome intacto
+```
+
+Depois do deploy: 7 rotas resolvendo com prompt e chave em `bot_route_resolved`, e a config de voz montando com 24.671 caracteres.
+
+**O que ainda falta para o segundo inquilino:** e-mail (pendência 1, bloqueia convite de agente e reset de senha) e a assinatura do webhook do bot no n8n.
 
 ### 7. CortexGen AI — assistente de escrita (2026-08-09, commit `0759ce331`)
 
