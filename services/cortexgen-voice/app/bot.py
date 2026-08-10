@@ -168,6 +168,17 @@ def _model_cascade(config: dict, fallback: dict | None) -> list[str] | None:
     return [config["model"], fallback["model"]]
 
 
+def _llm_extras(config: dict, fallback: dict | None) -> dict:
+    """Campos que o Pipecat repassa como kwargs do SDK da OpenAI.
+
+    O SDK não conhece `models` — quem entende é o OpenRouter. Campos assim vão
+    em `extra_body`, que é a porta do SDK para o que só o fornecedor conhece.
+    Passar direto derruba toda chamada com "unexpected keyword argument".
+    """
+    models = _model_cascade(config, fallback)
+    return {"extra_body": {"models": models}} if models else {}
+
+
 def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
     """O modelo que responde, com rede embaixo.
 
@@ -185,11 +196,6 @@ def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
     if style != "openai":
         raise ConfigError(f"language model provider speaks '{style}'; voice needs an OpenAI-compatible one")
 
-    extra = {}
-    models = _model_cascade(config, fallback)
-    if models:
-        extra["models"] = models
-
     return OpenAILLMService(
         api_key=config["api_key"],
         base_url=config["base_url"],
@@ -199,7 +205,7 @@ def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
             model=config["model"],
             temperature=config["temperature"],
             max_tokens=config["max_tokens"],
-            extra=extra,
+            extra=_llm_extras(config, fallback),
         ),
     )
 

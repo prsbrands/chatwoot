@@ -10,7 +10,7 @@ apareceria com o cliente na linha.
 from pipecat.pipeline.task import PipelineParams
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
 
-from app.bot import _language, _llm, _model_cascade, _stt, _tts
+from app.bot import _language, _llm, _llm_extras, _model_cascade, _stt, _tts
 
 FAKE = {
     "stt": {"api_style": "openai", "api_key": "k", "base_url": "https://openrouter.ai/api/v1", "model": "deepgram/nova-3"},
@@ -41,6 +41,21 @@ other = _model_cascade(
 assert other is None, other
 assert _model_cascade(FAKE["llm"], None) is None
 print("llm fallback:", same)
+
+# O Pipecat repassa `extra` como kwargs do SDK da OpenAI. Mandar `models` direto
+# ali derrubou TODA chamada com "unexpected keyword argument" — e nada nesta
+# camada percebeu, porque só quebra no request. Conferir contra a assinatura do
+# SDK pega isso sem rede.
+import inspect as _inspect
+
+from openai.resources.chat.completions import AsyncCompletions
+
+accepted = set(_inspect.signature(AsyncCompletions.create).parameters)
+extras = _llm_extras(FAKE["llm"], {**FAKE["llm"], "model": "openai/gpt-4.1-mini"})
+rejected = set(extras) - accepted
+assert not rejected, f"the OpenAI SDK would refuse these kwargs: {rejected}"
+assert extras["extra_body"]["models"] == same, extras
+print("llm extras aceitos pelo SDK:", list(extras))
 print("tts:", type(_tts(FAKE["tts"], language)).__name__)
 
 # O que mudou entre versões do Pipecat: onde mora o VAD e como se desliga a
@@ -109,5 +124,44 @@ try:
     raise SystemExit("tts accepted a provider it cannot speak to")
 except Exception as error:
     print("tts rejects unknown api_style:", type(error).__name__)
+
+# Cada métrica traz o valor num formato diferente — o do TTS é um número, o do
+# STT é um objeto. Somar o objeto como número passou pelo build e explodiu no
+# meio de uma chamada.
+from pipecat.frames.frames import MetricsFrame
+from pipecat.metrics.metrics import (
+    LLMTokenUsage,
+    LLMUsageMetricsData,
+    STTUsage,
+    STTUsageMetricsData,
+    TTSUsageMetricsData,
+)
+
+from app.metrics import CallMetrics
+
+collected = CallMetrics()
+collected.record(
+    MetricsFrame(
+        data=[
+            LLMUsageMetricsData(
+                processor="llm",
+                model="openai/gpt-4.1-mini",
+                value=LLMTokenUsage(prompt_tokens=5200, completion_tokens=310, total_tokens=5510),
+            ),
+            TTSUsageMetricsData(processor="tts", model="eleven_multilingual_v2", value=840),
+            STTUsageMetricsData(
+                processor="stt", model="nova-3", value=STTUsage(audio_seconds=47.3)
+            ),
+        ]
+    )
+)
+for seconds in (0.9, 1.4, 1.1, 3.2, 1.0):
+    collected.record_latency(seconds)
+
+payload = collected.as_payload()
+assert payload["prompt_tokens"] == 5200 and payload["tts_characters"] == 840, payload
+assert payload["stt_seconds"] == 47.3, payload
+assert payload["latency_median_ms"] == 1100 and payload["latency_worst_ms"] == 3200, payload
+print("metrics:", payload)
 
 print("\nSMOKE OK")

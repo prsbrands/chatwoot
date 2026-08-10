@@ -26,17 +26,22 @@ class CallMetrics(BaseObserver):
         self.latencies_ms: list[int] = []
 
     async def on_push_frame(self, data: FramePushed) -> None:
-        if not isinstance(data.frame, MetricsFrame):
-            return
+        if isinstance(data.frame, MetricsFrame):
+            self.record(data.frame)
 
-        for entry in data.frame.data:
+    # Separado do observador para o teste de fumaça poder alimentá-lo com
+    # métricas de verdade: o formato de cada uma difere (o do TTS é um número, o
+    # do STT é um objeto) e errar isso só aparece no meio de uma chamada.
+    def record(self, frame: MetricsFrame) -> None:
+        for entry in frame.data:
             if isinstance(entry, LLMUsageMetricsData):
                 self.prompt_tokens += entry.value.prompt_tokens or 0
                 self.completion_tokens += entry.value.completion_tokens or 0
             elif isinstance(entry, TTSUsageMetricsData):
                 self.tts_characters += entry.value or 0
             elif isinstance(entry, STTUsageMetricsData):
-                self.stt_seconds += entry.value or 0
+                # Aqui `value` é um objeto, não um número — ao contrário do TTS.
+                self.stt_seconds += entry.value.audio_seconds or 0
 
     def record_latency(self, seconds: float) -> None:
         """Do fim da fala de quem ligou à primeira sílaba do bot."""
