@@ -141,6 +141,14 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
                 # O mesmo "fim de turno" da persona, agora decidido pelo próprio
                 # Deepgram, que ouve o áudio em vez de só cronometrar silêncio.
                 endpointing=endpoint_ms,
+                # Sem estes dois o Deepgram só devolve texto quando ele decide
+                # que a fala acabou — e numa linha telefônica, com ruído de
+                # fundo contínuo, esse momento pode não chegar: uma chamada real
+                # ficou 17 s esperando a transcrição de uma palavra. Os parciais
+                # mantêm o texto fluindo e o `utterance_end_ms` é o limite duro
+                # que força o fechamento do trecho.
+                interim_results=True,
+                utterance_end_ms=1000,
             ),
         )
 
@@ -200,7 +208,11 @@ def _llm(config: dict, fallback: dict | None) -> OpenAILLMService:
         api_key=config["api_key"],
         base_url=config["base_url"],
         retry_on_timeout=True,
-        retry_timeout_secs=6.0,
+        # Seis segundos era o número da ElevenLabs para o painel deles. Ao
+        # telefone, seis segundos de silêncio já são uma ligação perdida — uma
+        # chamada real esperou 5,4 s por um primeiro token e quem ligou desligou
+        # antes de ouvir a resposta.
+        retry_timeout_secs=3.0,
         settings=OpenAILLMService.Settings(
             model=config["model"],
             temperature=config["temperature"],
