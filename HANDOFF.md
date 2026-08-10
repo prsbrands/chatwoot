@@ -104,6 +104,12 @@ Corrigido em `7f7b9ecc0`: fim de turno por **silêncio** (`SpeechTimeoutUserTurn
 
 **Correção de uma coisa que eu disse antes:** avisei que o prompt de 21 KB seria latência audível. **Não foi** — o modelo respondeu em 100 ms. O maior componente é o endpointing de 600 ms, que é ajustável na persona. Encurtar o prompt continua valendo por qualidade de conversa (respostas curtas e faladas), não por latência.
 
+### Skill `pipecat` — leia antes de mexer no serviço de voz
+
+`~/.claude/skills/pipecat/SKILL.md`. Carrega sozinha quando o assunto é Pipecat ou um sintoma de chamada. Contém o modelo de turno (início e fim são estratégias independentes; `None` aplica o padrão, não desliga), a armadilha do mute que mata a chamada em silêncio, a configuração de referência para telefonia, o que mudou de lugar na 1.7, e uma **tabela sintoma → assinatura no log → causa** para diagnosticar em segundos.
+
+A regra que custou seis ligações está lá: **uma mudança por chamada.**
+
 ### Armadilha: `extra` do Pipecat vira kwargs do SDK, não corpo do request
 
 O fallback de LLM foi entregue mandando `models` em `OpenAILLMSettings.extra`. O Pipecat faz `params.update(settings.extra)` e passa tudo para `AsyncCompletions.create(**params)` — o SDK da OpenAI **não conhece `models`** e recusou toda chamada com `unexpected keyword argument`. O bot falava a saudação (que não passa pelo modelo) e emudecia. O lugar certo é **`extra_body`**, a porta do SDK para campos que só o fornecedor entende.
