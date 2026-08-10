@@ -223,6 +223,7 @@ print("metrics:", payload)
 import base64 as _base64
 import json as _json
 
+from pipecat.frames.frames import StartFrame
 from pipecat.serializers.twilio import TwilioFrameSerializer as _TFS
 
 from app.bot import CallerAudioOnlySerializer
@@ -230,6 +231,9 @@ from app.bot import CallerAudioOnlySerializer
 _ser = CallerAudioOnlySerializer(
     stream_sid="MZsmoke", call_sid="CAsmoke", params=_TFS.InputParams(auto_hang_up=False)
 )
+# Sem o StartFrame o serializer não sabe a taxa de amostragem e o resampler
+# recusa o áudio de entrada — é o que o pipeline faz antes do primeiro quadro.
+_asyncio.run(_ser.setup(StartFrame(audio_in_sample_rate=8000, audio_out_sample_rate=8000)))
 _media = lambda track: _json.dumps(  # noqa: E731
     {"event": "media", "media": {"track": track, "payload": _base64.b64encode(b"\xff" * 160).decode()}}
 )
