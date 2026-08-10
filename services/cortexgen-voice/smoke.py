@@ -370,12 +370,12 @@ _hang = HangUpAfterFarewell()
 _hang.task = _FakeTask()
 
 # Falar no meio da chamada e terminar de falar não encerra nada.
-_push(_hang, _TTSText("¿Hay algo más en lo que pueda ayudarte?"))
+_push(_hang, _TTSText("¿Hay algo más en lo que pueda ayudarte?", "sentence"))
 _push(_hang, BotStoppedSpeakingFrame())
 assert _hang.task.stopped == 0, "desligou no meio da conversa"
 
 # A despedida sozinha também não: o áudio ainda está saindo.
-_push(_hang, _TTSText("Que tengas buen día."))
+_push(_hang, _TTSText("Que tengas buen día.", "sentence"))
 assert _hang.task.stopped == 0, "cortou a propria despedida"
 
 # Só quando ela termina de ser falada.
