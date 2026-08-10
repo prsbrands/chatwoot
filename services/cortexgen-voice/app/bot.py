@@ -209,7 +209,16 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
             settings=DeepgramFluxSTTService.Settings(
                 model=config["model"],
                 language_hints=[Language.ES, Language.PT],
-                eot_threshold=0.7,
+                # 0.7 fechava o turno na pausa natural de quem fala em blocos.
+                # "Doutor Juan" virou 'Doutor,' + 'one.' e custou três idas e
+                # voltas para capturar um nome; "Clínica Luis / Soy médico /
+                # tenemos atención" virou três turnos numa frase. E blips de
+                # 115 ms viravam fala, cortando o bot na primeira sílaba.
+                #
+                # O orçamento para subir veio do TTS: o eleven_flash_v2_5 tirou
+                # ~360 ms do primeiro áudio (0,55 s → 0,19 s). Esperar mais pelo
+                # fim do turno gasta parte disso e devolve a frase inteira.
+                eot_threshold=0.8,
                 eager_eot_threshold=0.5,
                 eot_timeout_ms=5000,
             ),

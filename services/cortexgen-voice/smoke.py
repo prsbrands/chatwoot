@@ -44,6 +44,11 @@ assert type(_stt(FAKE["stt_flux"], language, 600)).__name__ == "DeepgramFluxSTTS
 flux_query = _stt(FAKE["stt_flux"], language, 600)._build_query_string()
 assert "language_hint=es" in flux_query, flux_query
 assert "language_hint=pt" in flux_query, flux_query
+
+# O limiar de fim de turno é o que separa "Doutor Juan" de 'Doutor,' + 'one.'.
+# Confere o valor na query, porque é lá que ele vale — e porque um default que
+# volte a 0.7 sem avisar reaparece como o bot cortando a frase de quem liga.
+assert "eot_threshold=0.8" in flux_query, flux_query
 print("flux query:", flux_query)
 
 # Com Flux a máquina de turnos sai daqui: quem decide é quem ouve o áudio, e as
