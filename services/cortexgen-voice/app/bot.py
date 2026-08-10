@@ -177,11 +177,24 @@ def _stt(config: dict, language: Language | None, endpoint_ms: int):
         # `/v2/listen`. Não tem `endpointing`, `interim_results` nem
         # `utterance_end_ms`: os limiares são confiança de fim de turno, não
         # tempo de silêncio. `eot_timeout_ms` é o teto duro.
+        #
+        # `language` não existe aqui: o `_build_query_string` do Flux monta
+        # model, sample_rate, encoding, thresholds, keyterm, tag e
+        # `language_hint` — e mais nada. O `multi` que a persona manda nunca
+        # chegou à Deepgram; quem segurava o multilíngue era só o sufixo do
+        # modelo, sozinho e sem viés nenhum.
+        #
+        # Sem viés, numa linha de 8 kHz, ele passeia: quatro segundos de
+        # espanhol voltaram como "Es traurige Saussurer gravata paraffins de
+        # quali ditti" — alemão, francês e italiano na mesma frase. O bot
+        # respondeu ao que leu, e quem ligou ouviu um assunto que não era o
+        # dele. As duas línguas abaixo são as que esta instalação fala; vira
+        # campo de persona quando uma segunda instalação falar outras.
         return DeepgramFluxSTTService(
             api_key=config["api_key"],
             settings=DeepgramFluxSTTService.Settings(
                 model=config["model"],
-                language=language,
+                language_hints=[Language.ES, Language.PT],
                 eot_threshold=0.7,
                 eager_eot_threshold=0.5,
                 eot_timeout_ms=5000,

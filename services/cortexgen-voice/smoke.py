@@ -37,6 +37,15 @@ print("stt via flux:      ", type(_stt(FAKE["stt_flux"], language, 600)).__name_
 assert uses_flux(FAKE["stt_flux"]) and not uses_flux(FAKE["stt_direct"])
 assert type(_stt(FAKE["stt_flux"], language, 600)).__name__ == "DeepgramFluxSTTService"
 
+# O viés de idioma tem de chegar à Deepgram, e é isso que se confere: a query
+# string, não o objeto de settings. O `language` da persona ficou uma chamada
+# inteira parecendo configurado e nunca saiu do processo — o `_build_query_string`
+# do Flux simplesmente não o lê. Uma alucinação de idioma por turno foi o preço.
+flux_query = _stt(FAKE["stt_flux"], language, 600)._build_query_string()
+assert "language_hint=es" in flux_query, flux_query
+assert "language_hint=pt" in flux_query, flux_query
+print("flux query:", flux_query)
+
 # Com Flux a máquina de turnos sai daqui: quem decide é quem ouve o áudio, e as
 # estratégias External só repassam os quadros que ele emite.
 fx = _flux_turn_strategies()
