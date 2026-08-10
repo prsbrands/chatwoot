@@ -104,11 +104,31 @@ Corrigido em `7f7b9ecc0`: fim de turno por **silêncio** (`SpeechTimeoutUserTurn
 
 **Correção de uma coisa que eu disse antes:** avisei que o prompt de 21 KB seria latência audível. **Não foi** — o modelo respondeu em 100 ms. O maior componente é o endpointing de 600 ms, que é ajustável na persona. Encurtar o prompt continua valendo por qualidade de conversa (respostas curtas e faladas), não por latência.
 
+### Descoberta: Deepgram **Flux** substituiria toda a pilha de turnos
+
+A Deepgram tem duas famílias, e estamos na errada para o nosso caso:
+
+| | Nova (`/v1/listen`) — o que usamos | Flux (`/v2/listen`) |
+|---|---|---|
+| Para quê | legendas, gravações, transcrição geral | **agentes de voz conversacionais** |
+| Detecção de turno | **nossa**, manual | **embutida** (EOT, EagerEOT) |
+| Multilíngue | `language="multi"` | `flux-general-multi` + `language_hints` atualizáveis no meio da chamada |
+
+**O Pipecat 1.7 já suporta** — `pipecat.services.deepgram.flux.stt.DeepgramFluxSTTService`, com eventos `on_start_of_turn`, `on_eager_end_of_turn`, `on_end_of_turn` e `on_turn_resumed`.
+
+Resolveria de uma vez três problemas que venho remendando: a máquina de turnos frágil (passaria para a camada que ouve o áudio, que é onde a informação está), a mistura espanhol/português, e o "turno especulativo" do benchmark da ElevenLabs — que no Flux é o `EagerEOT`, de fábrica.
+
+**Não migrei** porque seria a maior mudança até agora e a regra de uma mudança por chamada vale mais depois de seis regressões. É a próxima decisão de arquitetura a tomar, não um ajuste.
+
 ### Skill `pipecat` — leia antes de mexer no serviço de voz
 
 `~/.claude/skills/pipecat/SKILL.md`. Carrega sozinha quando o assunto é Pipecat ou um sintoma de chamada. Contém o modelo de turno (início e fim são estratégias independentes; `None` aplica o padrão, não desliga), a armadilha do mute que mata a chamada em silêncio, a configuração de referência para telefonia, o que mudou de lugar na 1.7, e uma **tabela sintoma → assinatura no log → causa** para diagnosticar em segundos.
 
 A regra que custou seis ligações está lá: **uma mudança por chamada.**
+
+### Skill `deepgram`
+
+`~/.claude/skills/deepgram/SKILL.md`. Decisão Nova vs Flux, semântica de `endpointing` / `utterance_end_ms` / `interim_results` (e por que ruído de linha trava o primeiro — confirmado pela documentação da Deepgram), configuração de telefonia, idioma e troca de idioma, tabela de diagnóstico. Skills oficiais da Deepgram em <https://github.com/deepgram/skills>.
 
 ### Armadilha: `extra` do Pipecat vira kwargs do SDK, não corpo do request
 
