@@ -91,7 +91,7 @@ O prompt da persona de voz foi reescrito nesta sessão, e três lições valem m
 Nada aqui bloqueia atender uma chamada real.
 
 1. ~~O coletor de métricas está quebrado no Flux~~ — **consertado** em `441049df6`, **falta uma chamada para confirmar** (ver abaixo).
-2. **O prompt voltou a crescer e passou do ponto de partida**: 22,2 KB no início da sessão, 19,6 KB depois do corte, **23,4 KB hoje** — ~6.000 tokens reenviados por turno, ~54 mil por chamada de nove turnos. A latência ainda segura, mas foi nesse patamar que o retry disparou. Se voltar a aparecer `Retrying`, os cortes naturais são os blocos de **objeções** e os **exemplos por rubro**: os mais longos e os que menos entram numa chamada típica.
+2. **O prompt voltou a crescer e passou do ponto de partida**: 22,2 KB no início da sessão, 19,6 KB depois do corte, **23,4 KB hoje** (5.751 tokens medidos) — reenviados por turno. Se voltar a aparecer `Retrying`, os cortes naturais são os blocos de **objeções** e os **exemplos por rubro**: os mais longos e os que menos entram numa chamada típica. **Mas não corte esperando latência** — ver abaixo.
 3. **A reserva do LLM não existe.** Com o primário na OpenAI direto, o cascade é recusado (o array `models` só existe no OpenRouter). Só o `retry_on_timeout` de 5 s protege. As três opções — voltar ao OpenRouter e perder ~700 ms, ficar sem rede, ou construir um segundo request pós-erro — estão avaliadas em "pendência da troca de provider" acima. Ficar sem rede foi a escolha consciente.
 4. **Campos mortos no painel** — `End of turn (ms)`, `Wait until the caller finishes` e `Words needed to interrupt` não fazem nada sob Flux. Ou passam a escrever os limiares do Flux, ou somem quando o modelo é `flux-*`. Campo morto que parece configurado já custou uma migração inteira.
 5. **`keyterm` do Flux, ainda não usado.** Enviesa o reconhecimento para termos do domínio (*venta, cita, taller, agendar, seguimiento*). Uma linha no `_stt`. Vale depois que um sintoma de transcrição justifique.
@@ -129,7 +129,20 @@ Os três componentes da espera, medidos nesta chamada:
 | LLM TTFB | 0,29–1,87 s | tamanho do prompt e modelo |
 | TTS TTFB | ~0,135 s | já no fundo do poço |
 
-O LLM é o mais errático e o EOT o mais gordo — que são os itens 2 e 4 da fila.
+### Cortar o prompt não baixa a latência — medido, não estimado
+
+Antes de reescrever o prompt para ganhar tempo, este experimento contra a própria OpenAI (mesmo modelo, `max_tokens=1`, três chamadas de cada):
+
+| prompt | tokens | tempo até o primeiro byte | cache |
+|---|---|---|---|
+| cheio (23,9 KB) | 5.751 | 1.134 · 665 · **803** ms | 3.968–5.504 lidos do cache |
+| pela metade (11 KB) | 2.773 | 811 · 981 · **507** ms | 2.560 lidos do cache |
+
+**Cortar o prompt pela metade não moveu o relógio** (mediana 803 contra 811 ms). A OpenAI cacheia o prefixo — na segunda chamada, 5.504 dos 5.751 tokens vieram do cache —, então o prefill do nosso prompt já é quase de graça. A variação de 507 a 1.134 ms é jitter do fornecedor e é maior que qualquer efeito do tamanho.
+
+Encurtar o prompt continua valendo por **qualidade de conversa e risco de retry**, como já estava escrito aqui. Não vale por latência. (O `LLMTokenUsage` do Pipecat tem `cache_read_input_tokens` e o `CallMetrics` ainda não grava — seria a forma de ver o cache por chamada em vez de num experimento à parte.)
+
+Sobra o EOT como o único componente gordo que é nosso: ~0,8 s controlados pelo `eot_threshold`, hoje chumbado no código (item 4 da fila).
 
 ### Campos do painel que NÃO fazem nada sob Flux
 
