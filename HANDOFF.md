@@ -140,7 +140,15 @@ Antes de reescrever o prompt para ganhar tempo, este experimento contra a própr
 
 **Cortar o prompt pela metade não moveu o relógio** (mediana 803 contra 811 ms). A OpenAI cacheia o prefixo — na segunda chamada, 5.504 dos 5.751 tokens vieram do cache —, então o prefill do nosso prompt já é quase de graça. A variação de 507 a 1.134 ms é jitter do fornecedor e é maior que qualquer efeito do tamanho.
 
-Encurtar o prompt continua valendo por **qualidade de conversa e risco de retry**, como já estava escrito aqui. Não vale por latência. (O `LLMTokenUsage` do Pipecat tem `cache_read_input_tokens` e o `CallMetrics` ainda não grava — seria a forma de ver o cache por chamada em vez de num experimento à parte.)
+Encurtar o prompt continua valendo por **qualidade de conversa e risco de retry**, como já estava escrito aqui. Não vale por latência.
+
+**O próprio log de produção confirma**, e ninguém tinha reparado — o Pipecat já imprime a conta em todo turno:
+
+```
+OpenAILLMService#0 prompt tokens: 6470, completion tokens: 13, cache read input tokens: 6272
+```
+
+6.272 dos 6.470 vão cacheados. O `CallMetrics` ainda não grava `cache_read_input_tokens`; gravar tornaria isso visível por chamada em vez de depender de alguém ler o log.
 
 Sobra o EOT como o único componente gordo que é nosso: ~0,8 s controlados pelo `eot_threshold`, hoje chumbado no código (item 4 da fila).
 
@@ -198,6 +206,16 @@ Chamada que termina sem essa linha é despedida que escapou do casamento (`que t
 **A primeira versão não disparou, e a culpa era do teste.** Numa chamada real o bot disse *"Que tenga buen día."* e a linha continuou aberta. Motivo: a ElevenLabs sobe com **`push_text_frames=False`** porque tem marcação de tempo por palavra, então o `TTSTextFrame` sai **palavra por palavra** — o regex era testado contra `'Que'`, depois `'tengas'`, depois `'buen'`, e nenhuma palavra sozinha casa uma frase. O smoke alimentava a frase inteira: uma granularidade que a produção nunca gera, verde enquanto a chamada falhava.
 
 Corrigido em `600d4a43c` com um acumulador da fala corrente, zerado a cada `BotStartedSpeakingFrame` para não juntar o fim de uma frase com o começo de outra. **A regra vale além deste caso: quadro de texto do TTS é palavra, não frase.** Qualquer coisa que precise casar uma expressão no que o bot fala tem de acumular.
+
+**Validado em chamada real** (`CA5e46110548e285f81d3a9a0b0e74ee33`, 10/08):
+
+```
+17:53:23.901  farewell detected: 'Nuestro equipo continúa contigo. Gracias por
+              hablar con Pe-erre-ese Brands. Que tengas buen día.' — hanging up
+17:53:26.517  call finished after 144s
+```
+
+**2,6 s** entre a despedida e o fim, contra os 56 s da chamada anterior. E o encerramento pelo nosso lado não atrapalhou o registro: conversa 62 criada, contato com nome, empresa (`Casa Negra`) e o e-mail soletrado (`paulo@arrowgen.com`) — o mesmo "arrowgen" que já tinha quebrado antes. 13 turnos, mediana 1.767 ms em 0.70, coerente com os 1.756 ms da calibração.
 
 ### A regra que se pagou nesta sessão
 
