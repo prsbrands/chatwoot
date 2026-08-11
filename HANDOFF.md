@@ -339,6 +339,40 @@ Em qualquer um dos dois o Silero roda local para os turnos. **O Smart Turn v3 fo
 
 **Cartesia (TTS) e Gemini (LLM) não estão ligados** — o Paulo tem as chaves, mas nenhuma persona aponta para elas e cada uma exige uma ramificação no `_stt`/`_tts` do serviço. São ~10 minutos cada quando houver motivo (comparar voz, ou tirar o hop do OpenRouter no LLM).
 
+### O bot passou a ligar, não só a atender (10/08, `0aa0f57ca`)
+
+Validado em chamada real: `started as 'nathan-es-demo'`, 64 s, 6 turnos, mediana **1.867 ms**, contato gravado com o número do prospecto.
+
+Disparo em Settings → Integrations → Twilio → **Voz**, card "Call someone with the bot". Só aparecem números que já têm rota com persona — a chamada de saída reaproveita a rota para achar conta, credencial e configuração.
+
+**A inversão que quebraria em silêncio:** `set_route` resolvia pelo `To`. Numa chamada de saída o `To` é o prospecto e o `From` é o nosso número, então ele procuraria rota para o telefone do cliente e devolveria 404. O endpoint `voice/outgoing` resolve pelo `From`.
+
+**A persona viaja por chamada:** parâmetro do `<Stream>` → serviço de mídia → `/voice_agent/config?persona_slug=`. Sem override, vale a da rota. Foi o que permitiu um roteiro só para quem liga sem tocar no de quem atende.
+
+**`nathan-es-demo`** — 7,5 KB de roteiro contra os 20,6 KB da recepção, porque a conversa é mais estreita: apresenta, confirma se é boa hora, diagnostica em até 3 perguntas, mostra e passa ao consultor. Clona voz, STT, modelo e limiares da persona de entrada. Espera antes de falar em **1.000 ms**, não 2.500: aquela espera existe porque o Twilio descartava o começo do áudio ao receber; em chamada de saída quem atende já disse "alô".
+
+**Armadilha ao clonar persona:** o vínculo com a base de conhecimento vive em `bot_persona_knowledge` e **um `INSERT ... SELECT` não o copia**. A demo nasceu com prompt de 7.483 contra os 24.671 da recepção — sabia menos sobre a empresa justamente na ligação em que o prospecto pergunta o que ela faz. Corrigido para 11.564.
+
+**O que ainda não existe: a fila de quem pediu a ligação.** Hoje o disparo é manual. O fluxo da GHL (botão "receba uma ligação" no widget) precisa de uma página pública, e ela é também **o registro de consentimento** — ver abaixo.
+
+**Identificador de chamada:** sai o número da rota. Para prospecto panamenho, discar do `+1689` chega como internacional desconhecido e derruba a taxa de atendimento. O `+5078389480` (Panamá, já na conta e roteado desde 11/08) resolve isso.
+
+### Inbox de voz nasce na primeira chamada, não ao salvar a rota
+
+`Voice::CallReportService#inbox` faz `find_by(id: route.voice_inbox_id) || create_inbox`. Salvar a rota **não** cria inbox: ela aparece como `Voz — <número>` quando a primeira chamada é registrada. É de propósito (nada de inbox vazia), mas invisível na tela — a pergunta "e a inbox dele?" já apareceu uma vez.
+
+### Nomes de inbox seguem "Canal — identificador" (11/08)
+
+As inboxes antigas não tinham padrão e duas eram indistinguíveis (`PRS Brands` para Messenger e `prsbrands` para Instagram). Renomeadas:
+
+```
+2 WhatsApp — Com Cortex   8 Instagram — prsbrands   9 Messenger — PRS Brands
+10 Website — PRS Brands  14 WhatsApp — Numero2     15 SMS — +16893539100
+16 Voz — +16893539100    17 E-mail — CortexGen
+```
+
+O canal vem primeiro porque é o que o agente precisa saber antes do resto.
+
 ### Fase 3c entregue — a chamada vira conversa, contato e lead
 
 Ao desligar, o serviço de mídia manda transcrição, duração e os dados do lead para `/voice_agent/calls`. O Chatwoot cria conversa numa inbox **própria de voz** (`Voz — <número>`, tipo `Channel::Api`, gravada em `twilio_voice_routes.voice_inbox_id`).
