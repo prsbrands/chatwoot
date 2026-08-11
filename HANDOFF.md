@@ -4,7 +4,7 @@
 
 ---
 
-## ✅ O botão de ligar na conversa — entregue, falta uma chamada real
+## ✅ O botão de ligar na conversa — entregue e validado em chamada real (11/08)
 
 Chama-se **Call demo** e vive no cabeçalho da conversa, ao lado do ícone de ligação nativo do Chatwoot. Abre um diálogo com o número do contato já preenchido, o número que vai discar e a persona (em branco = a da rota), e chama o `POST /api/v1/accounts/:id/integrations/twilio/voice_calls` que já existia.
 
@@ -18,13 +18,43 @@ Três decisões que estão no código e não são óbvias na tela:
 - **O telefone do contato entra preenchido, mas editável.** Contato gravado sem código de país é comum, e o Twilio recusa o que não for E.164 com uma mensagem que não diz que o problema é o formato.
 - **O cache de rotas e personas vive em [voiceBotCall.js](app/javascript/dashboard/helper/voiceBotCall.js), fora do componente.** O topo de um `<script setup>` roda por instância: deixar o cache lá dentro daria dois requests a cada conversa aberta. O botão precisa da lista de rotas para decidir se aparece, então a busca não dá para adiar até o clique.
 
-**O que falta é uma ligação real pelo botão** — o endpoint já foi validado em 10/08, mas por este caminho ainda não.
+**Validado pelo log do Rails**, que é o único jeito de provar que o JS rodou:
+
+```
+01:52:35  GET  .../voice_routes   de 190.218.47.180   ← loadBotRoutes, decide se o botão aparece
+01:54:07  POST .../voice_calls    de 190.218.47.180   ← o clique
+01:57:47  POST .../voice_calls    de 127.0.0.1        ← a mesma chamada por SSH, para comparar
+```
+
+**Chamada disparada por SSH não valida o botão.** Ela exercita controller e serviço, que já estavam validados desde 10/08. O IP do navegador no log é a prova, e o `GET voice_routes` antes do POST é o que distingue "o botão apareceu" de "alguém chamou a API".
+
+**Armadilha ao testar o endpoint por dentro do container:** sem `X-Forwarded-Proto: https` ele responde **308**, não 200 — o mesmo detalhe que o smoke test do protocolo de deploy já exige. Pelo navegador não acontece, porque o nginx põe o header.
 
 Decisões já tomadas, para não reabrir:
 
 - **Não usar pré-chat como portão.** Ele aparece para todo visitante antes de deixá-lo falar com o bot. Precedente do próprio projeto: o email collect box foi desligado na inbox 10 em 08/08 porque *"o prompt do Nathan já pede e-mail no momento certo"*. Vale igual para telefone. Se quiser mesmo, ative o campo como **opcional**.
 - **Campanha de Live Chat é o gancho**, não o formulário: dispara por URL + tempo na página e **cria a conversa**, onde o Nathan de texto já vive. Campanha nenhuma disca — o executor tem três ramos (`Twilio SMS`, `Sms`, `Whatsapp`) e nenhum de voz.
 - **Ligar automático fica para depois.** Primeiro um humano no meio, para ver o que acontece quando alguém digita o número errado.
+
+### ▶️ RETOMAR AQUI — o bot conversava com o correio de voz (11/08, `5d970c267`)
+
+**Consertado, falta uma chamada não atendida para provar.**
+
+As duas primeiras ligações pelo botão caíram no correio de voz da Más Móvil, e o bot **conversou com o menu da operadora**: 150 s e 155 s, 7 e 8 turnos, alternando pergunta de diagnóstico com *"presione siete para revisar su mensaje"*. O Twilio trata "atendido pela gravação" como atendido, conecta o `<Stream>`, e nada desligava.
+
+O detalhe que dói: às 01:55:52 o próprio modelo disse **"Parece que está escuchando un mensaje automático"** — e seguiu perguntando. É o mesmo padrão do bot que se despedia e ficava na linha: o modelo nota, mas nenhum código age. **Quando o modelo percebe algo e nada acontece, o que falta é um observador, não prompt.**
+
+Conserto: `machine_detection` no `Voice::OutboundCallService` + `POST /twilio/voice/amd_status` no `Twilio::VoiceRoutingController`, que derruba a chamada por REST.
+
+**Assíncrono de propósito** (`async_amd`). No modo síncrono o Twilio só pede o TwiML depois de decidir, e quem atende de verdade ouviria alguns segundos de silêncio a mais em **toda** chamada boa — caro num projeto cujo gargalo declarado é latência. Assim a chamada começa na hora e o webhook a derruba depois.
+
+**`AnsweredBy=unknown` não derruba.** O Twilio não decidiu; desligar na cara de um humano é pior que pagar por uma secretária ocasional.
+
+`set_route` resolve pelo `From` no `amd_status`, como no `outgoing` — mesma inversão da chamada de saída, e esquecer isso daria 404 no webhook, que falharia em silêncio.
+
+**Pendência conhecida:** o `CallReportService` não tem piso mínimo, então mesmo derrubada em segundos a chamada ainda vira conversa — curta e vazia, em vez de 155 s com lead extraído. Resolver é no serviço Python, outro deploy; o custo, que era o problema, já está resolvido.
+
+**O CRM não foi corrompido:** `lead_fit = LOW` nas duas (o extrator acertou em classificar a gravação). As conversas 67 e 68 foram apagadas; a 66 é legítima.
 
 ### O estado hoje, em uma tela
 
@@ -60,7 +90,8 @@ Três coisas que estavam escritas aqui como verdade e não eram:
 
 ### A fila, na ordem que eu seguiria
 
-1. ~~O botão de ligar na conversa~~ — **entregue** (acima), falta discar uma vez por ele.
+1. ~~O botão de ligar na conversa~~ — **entregue e validado** em chamada real (acima).
+1. **Provar o AMD**: uma chamada não atendida, de propósito, e confirmar `TWILIO_VOICE_AMD_HANGUP` no log do Rails e duração de segundos em vez de minutos (acima).
 2. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
 3. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
 4. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
