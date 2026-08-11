@@ -785,7 +785,41 @@ Auditoria do que fizemos no Agent Dashboard vs. o que o Super Admin enxerga. **B
 - **Config global saiu do ENV**: `OPENWA_API_URL/KEY/BOT_PERSONA_SLUG` e `SUPABASE_REST_URL/SERVICE_ROLE_KEY` passaram a ser lidas por `GlobalConfigService.load`, com entradas em `config/installation_config.yml` e páginas **Super Admin → Settings → WhatsApp Gateway / Bot Layer**. O `GlobalConfigService` cai no ENV enquanto o `InstallationConfig` não existir e **grava o valor do ENV na primeira leitura** — não precisa migrar nada, e as envs do `.env` podem sair depois.
 - **Prontidão das outras integrações** (nenhuma ligada, decisão do Paulo): `shopify_integration` perdeu `chatwoot_internal` (a flag era invisível no Super Admin self-hosted, então o card nunca ligava) e a página **AI Assistant** (`config_key: captain`) voltou ao Super Admin. Agora toda integração listada no painel é conectável só colando credencial — exceto o card **OpenAI**, ver abaixo.
 
-**Card OpenAI é morto** — não há processor para `'openai'` no `HookJob` e a implementação está em `enterprise/`. Com `DISABLE_ENTERPRISE=1` o cliente cola a chave e nada acontece. Decidir: remover do `config/integration/apps.yml` ou apontar para a nossa camada de bots.
+**Card OpenAI NÃO é morto** (corrigido em 10/08). Ele de fato não tem processor no `HookJob` — mas não precisa: é **cofre de chave por conta** para o assistente de escrita, e o próprio `hook.rb` diz `# OpenAI integration migrated to Captain::EditorService`. Serve para o cliente a quem se cede o painel pagar a própria OpenAI em vez da chave da instância. **Manter.**
+
+### As quatro integrações da tela, auditadas (10/08)
+
+Nenhuma é enterprise — todas têm o código na árvore MIT e os gems no Gemfile. Nenhuma estava configurada (`Integrations::Hook.count == 0`), que é por que a tela mostrava tudo "Disabled".
+
+| card | funciona na MIT? | o que exige |
+|---|---|---|
+| **OpenAI** | sim, como cofre de chave | chave OpenAI da conta (o endpoint é global — ver pendência 7) |
+| **Dialogflow** | sim — `google-cloud-dialogflow-v2` no Gemfile, processor em `lib/` | projeto GCP + JSON de service account, **por inbox** |
+| **Google Translate** | sim — `google-cloud-translate-v3` no Gemfile | projeto GCP + JSON |
+| **Cloudflare RealtimeKit** (card `dyte`) | sim, e **já migrado** | `account_id` + `app_id` + `api_token` |
+
+**O assistente de escrita foi testado e funciona** — fecha a lacuna 4 de "Lacunas conhecidas". `Captain::RewriteService` com a chave de instância reescreveu *"oi tudo bem quero saber precos"* em *"Olá, tudo bem? Gostaria de obter informações sobre os preços..."*.
+
+**O card `dyte` não fala mais com a Dyte.** `lib/dyte.rb` aponta para `https://api.cloudflare.com/client/v4/accounts/{id}/realtime/kit/{app}/…` — a Cloudflare comprou a Dyte e esta versão acompanhou. O produto está em **Beta, grátis** (10 mil min, depois US$0,002/min). Dá um **botão de chamada de vídeo na conversa** (`VideoCallButton.vue`); o cliente entra pelo widget.
+
+**Dialogflow é um segundo motor de bot.** Funciona, mas ligado numa inbox que já tem persona do bot layer resulta em dois cérebros respondendo à mesma mensagem. Decisão do Paulo em 10/08: **deixar visível**.
+
+### RealtimeKit — EM STAND BY (10/08), erro do lado da Cloudflare
+
+Tentativa de configurar parou na **validação de credencial do próprio Chatwoot**, que roda antes de salvar e por isso **não deixou estado pela metade** (`Integrations::Hook.count` segue 0).
+
+`Integrations::Cloudflare::RealtimeKitCredentialsValidator` faz duas chamadas, nesta ordem:
+
+```
+1. GET /user/tokens/verify              exige 200 + success:true + result.status == "active"
+2. GET /accounts/{id}/realtime/kit/apps confere se o app_id está na lista
+```
+
+Parou na **1**: `invalid_api_token`. Causa provável — *Global API Key* no lugar de *API Token*, que são credenciais diferentes na Cloudflare e só a segunda passa nesse endpoint. O token certo se cria em My Profile → API Tokens → Custom Token, escopo **Account → Realtime → Edit**, com a conta em Account Resources.
+
+**Para retomar:** `ops/set-realtimekit.sh` (instalado em `/opt/cortexgen-chat/`). Ele pede os três valores sem ecoar o token, roda as **mesmas duas chamadas com a resposta crua da Cloudflare na tela** — inclusive listando os `app_id` que existem na conta, útil quando o app está certo e o id foi copiado errado — grava o hook e cria uma reunião de teste.
+
+**Armadilha para depois de conectar:** ao adicionar participantes o Chatwoot pede o preset **`group-call-host`** (com `group_call_host` como reserva). Sem um preset com um desses nomes no app, a reunião é criada mas ninguém entra — e nada avisa até alguém clicar no botão de chamada.
 
 **Achado que corrige uma premissa**: os serviços de escrita do composer (`rewrite`, `summarize`, `reply_suggestion`, `label_suggestion`) estão em `lib/captain/` e `lib/llm/` — **árvore MIT**, não enterprise. `Llm::Config` lê `CAPTAIN_OPEN_AI_API_KEY` + `CAPTAIN_OPEN_AI_ENDPOINT` do `InstallationConfig` e o `openai_api_base` é configurável, ou seja **aponta para o OpenRouter que já usamos**. O que está em `enterprise/` é o Captain "produto" (assistentes, documentos, RAG). Falta validar ponta a ponta; a flag `captain_integration` está marcada `premium`.
 
