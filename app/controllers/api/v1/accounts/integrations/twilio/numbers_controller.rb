@@ -5,7 +5,12 @@ class Api::V1::Accounts::Integrations::Twilio::NumbersController < Api::V1::Acco
   # cada um, para a tela mostrar o que dá para fazer antes de o cliente tentar.
   def index
     page = client.phone_numbers(search: params[:search], page_url: params[:page_url])
-    numbers = page[:numbers].map { |number| number.merge(inbox: inbox_for(number[:phone_number])) }
+    numbers = page[:numbers].map do |number|
+      number.merge(
+        inbox: inbox_for(number[:phone_number]),
+        voice_inbox: voice_inbox_for(number[:phone_number])
+      )
+    end
     render json: { numbers: numbers, next_page_url: page[:next_page_url], sms_webhook_url: sms_webhook_url }
   end
 
@@ -37,6 +42,24 @@ class Api::V1::Accounts::Integrations::Twilio::NumbersController < Api::V1::Acco
 
   def twilio_channels
     @twilio_channels ||= Current.account.twilio_sms.includes(:inbox).index_by(&:phone_number)
+  end
+
+  # A rota de voz cria a própria inbox (`Voz — <número>`) na primeira chamada,
+  # separada da inbox de SMS do mesmo número — ver `Voice::CallReportService`.
+  # Sem isso, a tela de números não sabia nada sobre voz e marcava como
+  # "Not connected yet" um número que só faz chamada, nunca SMS.
+  def voice_inbox_for(phone_number)
+    route = voice_routes[phone_number]
+    return if route.blank? || route.voice_inbox_id.blank?
+
+    inbox = Current.account.inboxes.find_by(id: route.voice_inbox_id)
+    return if inbox.blank?
+
+    { id: inbox.id, name: inbox.name }
+  end
+
+  def voice_routes
+    @voice_routes ||= Current.account.twilio_voice_routes.index_by(&:phone_number)
   end
 
   # O endpoint de entrada de SMS é único da instalação: o Chatwoot resolve o

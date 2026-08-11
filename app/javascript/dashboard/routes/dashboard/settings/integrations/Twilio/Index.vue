@@ -342,35 +342,48 @@ onMounted(fetchAll);
                   </div>
                 </td>
                 <td class="py-3 pr-4 align-top">
-                  <button
-                    v-if="number.inbox"
-                    class="text-n-brand hover:underline"
-                    @click="goToInbox(number.inbox)"
-                  >
-                    {{ number.inbox.name }}
-                  </button>
-                  <span v-else class="text-n-slate-10">
-                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.UNLINKED') }}
-                  </span>
+                  <div class="flex flex-col items-start gap-1">
+                    <button
+                      v-if="number.inbox"
+                      class="text-n-brand hover:underline"
+                      @click="goToInbox(number.inbox)"
+                    >
+                      {{
+                        $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SMS_INBOX', {
+                          name: number.inbox.name,
+                        })
+                      }}
+                    </button>
+                    <button
+                      v-if="number.voice_inbox"
+                      class="text-n-brand hover:underline"
+                      @click="goToInbox(number.voice_inbox)"
+                    >
+                      {{
+                        $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.VOICE_INBOX', {
+                          name: number.voice_inbox.name,
+                        })
+                      }}
+                    </button>
+                    <span
+                      v-if="!number.inbox && !number.voice_inbox"
+                      class="text-n-slate-10"
+                    >
+                      {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.UNLINKED') }}
+                    </span>
+                  </div>
                 </td>
                 <td class="py-3 text-right align-top whitespace-nowrap">
                   <Button
-                    v-if="!number.inbox"
+                    v-if="number.capabilities.sms && !number.inbox"
                     sm
                     blue
                     ghost
                     :label="
                       $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CONNECT_SMS')
                     "
-                    :disabled="!number.capabilities.sms"
                     @click="openProvisionDialog(number)"
                   />
-                  <span
-                    v-if="!number.capabilities.sms"
-                    class="block text-xs text-n-slate-10"
-                  >
-                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NO_SMS') }}
-                  </span>
                 </td>
               </tr>
             </tbody>
