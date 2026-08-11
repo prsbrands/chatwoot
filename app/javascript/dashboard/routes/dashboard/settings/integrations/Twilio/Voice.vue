@@ -549,32 +549,46 @@ onMounted(() => {
       <p class="text-sm text-n-slate-11">
         {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_HELP') }}
       </p>
-      <div class="flex flex-col gap-3 rounded-xl bg-n-card p-4 outline outline-1 outline-n-container">
-        <div class="grid gap-3 md:grid-cols-3">
-          <Select
-            v-model="outboundForm.phone_number"
-            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_FROM')"
-            :options="botRoutes"
-          />
-          <Input
-            v-model="outboundForm.to"
-            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_TO')"
-            placeholder="+50761234567"
-          />
-          <Select
-            v-model="outboundForm.persona_slug"
-            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_PERSONA')"
-            :options="outboundPersonaOptions"
-          />
+      <div
+        class="flex flex-col gap-4 rounded-xl bg-n-card p-4 outline outline-1 outline-n-container"
+      >
+        <!-- O `Select` daqui não tem prop de rótulo — só usa `label` dentro das
+             opções. Rotular por fora é o padrão do resto desta tela, e é o que
+             deixa os três campos alinhados pelo topo. -->
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_FROM') }}
+            </label>
+            <Select v-model="outboundForm.phone_number" :options="botRoutes" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_TO') }}
+            </label>
+            <Input v-model="outboundForm.to" placeholder="+50761234567" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm text-n-slate-12">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_PERSONA') }}
+            </label>
+            <Select
+              v-model="outboundForm.persona_slug"
+              :options="outboundPersonaOptions"
+            />
+          </div>
         </div>
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-n-slate-10">
+        <div
+          class="flex flex-col gap-3 border-t border-n-weak pt-3 md:flex-row md:items-center md:justify-between"
+        >
+          <span class="max-w-2xl text-xs text-n-slate-11">
             {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_CONSENT') }}
           </span>
           <Button
             :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_ACTION')"
             :disabled="!canCall"
             :is-loading="isCalling"
+            class="shrink-0"
             @click="placeCall"
           />
         </div>
