@@ -713,6 +713,9 @@ Rails.application.routes.draw do
     # Chamada saindo: o bot liga. Resolve a rota pelo `From`, que numa
     # chamada de saida e o NOSSO numero — o `To` e o prospecto.
     post 'voice/outgoing', to: 'voice_routing#outgoing', as: :voice_outgoing
+    # Resultado da deteccao de secretaria eletronica, que chega depois de a
+    # chamada ja ter comecado. Resolve a rota pelo `From`, como o `outgoing`.
+    post 'voice/amd_status', to: 'voice_routing#amd_status', as: :voice_amd_status
     post 'voice/dial_status', to: 'voice_routing#dial_status', as: :voice_dial_status
 
     if ChatwootApp.enterprise?

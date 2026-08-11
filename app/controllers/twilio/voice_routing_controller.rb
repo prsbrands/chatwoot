@@ -5,6 +5,9 @@
 # Nada aqui toca `enterprise/`: o canal de voz da Chatwoot é da licença
 # comercial e as rotas dele nem existem nesta edição.
 class Twilio::VoiceRoutingController < ApplicationController
+  # O que o Twilio chama de "não é gente" na detecção de secretária eletrônica.
+  MACHINE_ANSWERS = %w[machine_start machine_end_beep machine_end_silence machine_end_other fax].freeze
+
   before_action :set_route
   before_action :verify_twilio_signature
 
@@ -35,6 +38,29 @@ class Twilio::VoiceRoutingController < ApplicationController
   # viaja como parâmetro do stream.
   def outgoing
     render xml: connect_to_bot(other_party: params[:To].to_s, persona_slug: params[:persona_slug]).to_s
+  end
+
+  # Caiu no correio de voz. O Twilio trata "atendido pela secretária" como
+  # chamada atendida, conecta o `<Stream>` e o bot conversa com a gravação até
+  # alguém desligar: duas chamadas em 11/08 gastaram 305 s negociando com o menu
+  # da operadora, e o modelo chegou a dizer "parece que está escuchando un
+  # mensaje automático" antes de seguir perguntando.
+  #
+  # A detecção é assíncrona de propósito: no modo síncrono o Twilio só pede o
+  # TwiML depois de decidir, e quem atende de verdade ouviria alguns segundos de
+  # silêncio a mais em toda chamada — caro num projeto cujo gargalo é latência.
+  # Aqui a chamada começa na hora e este webhook a derruba depois, se for máquina.
+  #
+  # `unknown` não derruba: o Twilio não decidiu, e desligar na cara de um humano
+  # é pior do que pagar por uma secretária ocasional.
+  def amd_status
+    answered_by = params[:AnsweredBy]
+    return head :ok unless MACHINE_ANSWERS.include?(answered_by)
+
+    Rails.logger.info("TWILIO_VOICE_AMD_HANGUP sid=#{params[:CallSid]} answered_by=#{answered_by}")
+    update_call_status(answered_by)
+    hang_up_call
+    head :ok
   end
 
   # `DialCallStatus` é 'completed' quando a conversa aconteceu; qualquer outro
@@ -78,9 +104,18 @@ class Twilio::VoiceRoutingController < ApplicationController
       raise(StandardError, 'VOICE_STREAM_URL is not set — Super Admin → Settings → Voice Agent')
   end
 
+  # Encerrar a chamada pelo nosso lado. O `<Stream>` cai junto quando o Twilio
+  # completa a chamada, então o serviço de mídia fecha sozinho e grava o
+  # relatório — não é preciso avisá-lo.
+  def hang_up_call
+    credential = @route.account.twilio_credential
+    client = ::Twilio::REST::Client.new(credential.account_sid, credential.auth_token)
+    client.calls(params[:CallSid]).update(status: 'completed')
+  end
+
   # Numa chamada entrando, o nosso número é o destino; numa saindo, é a origem.
   def set_route
-    nosso_numero = action_name == 'outgoing' ? params[:From] : (params[:To].presence || params[:Called])
+    nosso_numero = %w[outgoing amd_status].include?(action_name) ? params[:From] : (params[:To].presence || params[:Called])
     @route = TwilioVoiceRoute.find_by(phone_number: nosso_numero, enabled: true)
     head :not_found if @route.blank?
   end

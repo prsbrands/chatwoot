@@ -12,7 +12,7 @@ class Voice::OutboundCallService
     numero = normalized_to
     raise Error, "#{to} não parece um número em formato internacional (+código país)" if numero.blank?
 
-    call = client.calls.create(to: numero, from: route.phone_number, url: twiml_url)
+    call = client.calls.create(to: numero, from: route.phone_number, url: twiml_url, **machine_detection)
     record(call, numero)
     call
   rescue ::Twilio::REST::RestError => e
@@ -41,6 +41,19 @@ class Voice::OutboundCallService
       from_number: numero,
       status: call.status
     )
+  end
+
+  # Sem isto o bot conversa com o correio de voz até alguém desligar. Assíncrono
+  # porque o modo síncrono segura o TwiML até decidir, e o preço seria silêncio
+  # no começo de toda chamada atendida por gente — ver `amd_status` no
+  # `Twilio::VoiceRoutingController`.
+  def machine_detection
+    {
+      machine_detection: 'Enable',
+      async_amd: 'true',
+      async_amd_status_callback: Rails.application.routes.url_helpers.twilio_voice_amd_status_url(host: ENV.fetch('FRONTEND_URL', nil)),
+      async_amd_status_callback_method: 'POST'
+    }
   end
 
   def twiml_url
