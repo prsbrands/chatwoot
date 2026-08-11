@@ -40,7 +40,9 @@ Decisões já tomadas, para não reabrir:
 
 **Consertado, falta uma chamada não atendida para provar.**
 
-As duas primeiras ligações pelo botão caíram no correio de voz da Más Móvil, e o bot **conversou com o menu da operadora**: 150 s e 155 s, 7 e 8 turnos, alternando pergunta de diagnóstico com *"presione siete para revisar su mensaje"*. O Twilio trata "atendido pela gravação" como atendido, conecta o `<Stream>`, e nada desligava.
+Duas ligações para o celular do Paulo caíram no correio de voz da Más Móvil, e o bot **conversou com o menu da operadora**: 150 s e 155 s, 7 e 8 turnos, alternando pergunta de diagnóstico com *"presione siete para revisar su mensaje"*. O Twilio trata "atendido pela gravação" como atendido, conecta o `<Stream>`, e nada desligava.
+
+**A causa não foi "ninguém atendeu" — foi o Não Perturbe por horário do celular.** Isso é bom: torna o cenário **reproduzível sob demanda**. Para testar o AMD, ligue para um número com DND ativo em vez de esperar uma chamada perdida acontecer. Chamada US → US no mesmo período foi atendida e conversou normalmente, então não é o botão nem a rota.
 
 O detalhe que dói: às 01:55:52 o próprio modelo disse **"Parece que está escuchando un mensaje automático"** — e seguiu perguntando. É o mesmo padrão do bot que se despedia e ficava na linha: o modelo nota, mas nenhum código age. **Quando o modelo percebe algo e nada acontece, o que falta é um observador, não prompt.**
 
@@ -50,7 +52,24 @@ Conserto: `machine_detection` no `Voice::OutboundCallService` + `POST /twilio/vo
 
 **`AnsweredBy=unknown` não derruba.** O Twilio não decidiu; desligar na cara de um humano é pior que pagar por uma secretária ocasional.
 
-`set_route` resolve pelo `From` no `amd_status`, como no `outgoing` — mesma inversão da chamada de saída, e esquecer isso daria 404 no webhook, que falharia em silêncio.
+**O webhook do AMD chega com quatro campos e nenhum telefone** — e isso custou uma versão:
+
+```
+MachineDetectionDuration, CallSid, AnsweredBy, AccountSid
+```
+
+A primeira versão resolvia a rota pelo `From`, como o `outgoing`. Ele não vem. O `set_route` devolvia 404 e o hangup nunca rodava — **sem erro nenhum no log além de um `Filter chain halted as :set_route`**, que é precisamente o tipo de falha silenciosa que este endpoint existe para evitar. Visto em produção: `AnsweredBy=machine_start` detectado em 2.980 ms, e a chamada seguiu viva até o humano desligar.
+
+Corrigido em `0e9052981`: a rota sai do `TwilioVoiceCall` já gravado, pelo `CallSid` — o único identificador que o webhook traz.
+
+**Dá para provar sem gastar chamada.** Suba a `:test` na 3099 e mande o webhook com um `CallSid` real: **403** significa que a rota resolveu e só a assinatura barrou (correto); **404** significa que o `set_route` ainda falha. Um `CallSid` inexistente deve continuar dando 404.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -H 'X-Forwarded-Proto: https' -H 'Host: prs.cortexgen.cloud' \
+  -d 'CallSid=<sid real>' -d 'AnsweredBy=machine_start' \
+  http://127.0.0.1:3099/twilio/voice/amd_status
+```
 
 **Pendência conhecida:** o `CallReportService` não tem piso mínimo, então mesmo derrubada em segundos a chamada ainda vira conversa — curta e vazia, em vez de 155 s com lead extraído. Resolver é no serviço Python, outro deploy; o custo, que era o problema, já está resolvido.
 
