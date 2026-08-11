@@ -231,6 +231,28 @@ class Rack::Attack
   ##-----------------------------------------------##
 
   ###-----------------------------------------------###
+  ###------Public Voice Demo Request Throttling-----###
+  ###-----------------------------------------------###
+
+  # Quantas vezes um único visitante pode tentar o formulário de demo.
+  throttle('public/voice_requests/ip', limit: ENV.fetch('RATE_LIMIT_VOICE_REQUESTS_IP', '5').to_i, period: 1.hour) do |req|
+    req.ip if req.path_without_extensions == '/public/api/v1/voice_requests' && req.post?
+  end
+
+  # Impede discar duas vezes pro mesmo número na mesma janela, mesmo vindo de
+  # IPs diferentes — é o telefone que importa aqui, não quem preencheu o
+  # formulário. Chave pela string crua: o `Voice::PublicCallRequestService`
+  # cobre o mesmo limite pelo número já normalizado, então um formato
+  # diferente do mesmo telefone não escapa dos dois.
+  throttle('public/voice_requests/phone',
+           limit: 1, period: ENV.fetch('RATE_LIMIT_VOICE_REQUESTS_PHONE_HOURS', '6').to_i.hours) do |req|
+    next unless req.path_without_extensions == '/public/api/v1/voice_requests' && req.post?
+
+    phone = ActionDispatch::Request.new(req.env).params['phone_number'].presence
+    phone.gsub(/[^\d+]/, '') if phone
+  end
+
+  ###-----------------------------------------------###
   ###----------Application API Throttling-----------###
   ###-----------------------------------------------###
 
