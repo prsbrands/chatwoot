@@ -134,6 +134,19 @@
       "VOICE_CALL_FAILED": "Could not start the call.",
       "WHATSAPP_CALL_PERMISSION_REQUESTED": "Sent a call permission request to the contact. Try again once they accept.",
       "WHATSAPP_CALL_PERMISSION_PENDING": "Call permission request already sent recently. Try again once the contact accepts.",
+      "CALL_DEMO": {
+        "TOOLTIP": "Call demo",
+        "TITLE": "Call demo",
+        "DESCRIPTION": "Calls this contact from one of your numbers and lets the voice bot run the conversation.",
+        "FROM": "Call from",
+        "TO": "Number to call",
+        "PERSONA": "Persona",
+        "PERSONA_ROUTE": "Same as the route (answers incoming)",
+        "CONSENT": "Only call people who asked to be called. An automated voice reaching someone who did not ask for it is regulated in most countries.",
+        "ACTION": "Place call",
+        "PLACED": "Calling now — status: {status}",
+        "FAILED": "Could not place the call."
+      },
       "SLA_STATUS": {
         "FRT": "FRT {status}",
         "NRT": "NRT {status}",

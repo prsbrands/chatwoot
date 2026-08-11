@@ -4,11 +4,21 @@
 
 ---
 
-## ▶️ RETOMAR AQUI — o botão "Ligar com o bot" na conversa
+## ✅ O botão de ligar na conversa — entregue, falta uma chamada real
 
-**É a única peça que falta**, e ela destrava todos os caminhos de uma vez. Pega o telefone do contato da conversa, mostra qual número vai discar e chama `POST /api/v1/accounts/:id/integrations/twilio/voice_calls` — endpoint que já existe e foi validado em ligação real em 10/08.
+Chama-se **Call demo** e vive no cabeçalho da conversa, ao lado do ícone de ligação nativo do Chatwoot. Abre um diálogo com o número do contato já preenchido, o número que vai discar e a persona (em branco = a da rota), e chama o `POST /api/v1/accounts/:id/integrations/twilio/voice_calls` que já existia.
 
 Por que ele e não uma landing: pré-chat, campanha do widget, WhatsApp e e-mail **todos terminam numa conversa com um contato que tem telefone**. Um botão ali serve os quatro; uma landing serve um.
+
+Onde está: [CallDemoButton.vue](app/javascript/dashboard/components/widgets/conversation/CallDemoButton.vue), montado em [ConversationHeader.vue](app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue).
+
+Três decisões que estão no código e não são óbvias na tela:
+
+- **O botão só aparece para administrador**, porque o endpoint é admin-only como o resto da integração — uma ligação custa dinheiro e toca no telefone de alguém. Se um agente precisar disparar, a mudança é no `BaseController` da integração, não aqui.
+- **O telefone do contato entra preenchido, mas editável.** Contato gravado sem código de país é comum, e o Twilio recusa o que não for E.164 com uma mensagem que não diz que o problema é o formato.
+- **O cache de rotas e personas vive em [voiceBotCall.js](app/javascript/dashboard/helper/voiceBotCall.js), fora do componente.** O topo de um `<script setup>` roda por instância: deixar o cache lá dentro daria dois requests a cada conversa aberta. O botão precisa da lista de rotas para decidir se aparece, então a busca não dá para adiar até o clique.
+
+**O que falta é uma ligação real pelo botão** — o endpoint já foi validado em 10/08, mas por este caminho ainda não.
 
 Decisões já tomadas, para não reabrir:
 
@@ -50,7 +60,7 @@ Três coisas que estavam escritas aqui como verdade e não eram:
 
 ### A fila, na ordem que eu seguiria
 
-1. **O botão de ligar na conversa** (acima).
+1. ~~O botão de ligar na conversa~~ — **entregue** (acima), falta discar uma vez por ele.
 2. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
 3. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
 4. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
