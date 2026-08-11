@@ -21,6 +21,8 @@ const credentials = ref([]);
 const routes = ref([]);
 const calls = ref([]);
 const alerts = ref([]);
+const isCalling = ref(false);
+const outboundForm = ref({ phone_number: '', to: '', persona_slug: '' });
 const selectedDomain = ref(null);
 const isBusy = ref(false);
 const newSubdomain = ref('');
@@ -81,6 +83,29 @@ const voicePersonas = computed(() =>
     .map(persona => ({ value: persona.slug, label: persona.display_name }))
 );
 
+// Só número já roteado para o bot pode discar: a chamada de saída reaproveita a
+// rota para achar a conta, a credencial do Twilio e o resto da configuração.
+const botRoutes = computed(() =>
+  routes.value
+    .filter(route => route.enabled && route.bot_persona_slug)
+    .map(route => ({ value: route.phone_number, label: route.phone_number }))
+);
+
+// Em branco = usa a persona da rota, que é a de quem atende.
+const outboundPersonaOptions = computed(() => [
+  {
+    value: '',
+    label: t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_PERSONA_ROUTE'),
+  },
+  ...voicePersonas.value,
+]);
+
+const canCall = computed(
+  () =>
+    Boolean(outboundForm.value.phone_number) &&
+    /^\+\d{8,}$/.test(outboundForm.value.to.trim())
+);
+
 const humanAnswers = computed(() => routeForm.value.answer_mode === 'human');
 
 const needsPersona = computed(
@@ -103,6 +128,9 @@ const fetchAll = async () => {
     domains.value = domainsRes.data.domains;
     routes.value = routesRes.data.routes;
     calls.value = routesRes.data.calls;
+    if (!outboundForm.value.phone_number && botRoutes.value.length) {
+      outboundForm.value.phone_number = botRoutes.value[0].value;
+    }
     if (managedDomain.value) await fetchCredentials();
   } catch (error) {
     alertError(error);
@@ -221,6 +249,28 @@ const removeRoute = async route => {
     await fetchAll();
   } catch (error) {
     alertError(error);
+  }
+};
+
+const placeCall = async () => {
+  if (!canCall.value) return;
+  isCalling.value = true;
+  try {
+    const { data } = await TwilioAPI.placeVoiceCall({
+      ...outboundForm.value,
+      to: outboundForm.value.to.trim(),
+    });
+    useAlert(
+      t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_PLACED', {
+        status: data.status,
+      })
+    );
+    outboundForm.value.to = '';
+    await fetchAll();
+  } catch (error) {
+    alertError(error);
+  } finally {
+    isCalling.value = false;
   }
 };
 
@@ -487,6 +537,47 @@ onMounted(() => {
         <span class="text-xs text-n-slate-10">
           {{ new Date(alert.created_at).toLocaleString() }}
         </span>
+      </div>
+    </div>
+
+    <!-- Ligar para alguém: o bot discando, em vez de atendendo.
+         Serve para demonstrar o agente sem depender de a pessoa ligar. -->
+    <div v-if="botRoutes.length" class="flex flex-col gap-3">
+      <p class="text-sm font-medium text-n-slate-12">
+        {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_TITLE') }}
+      </p>
+      <p class="text-sm text-n-slate-11">
+        {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_HELP') }}
+      </p>
+      <div class="flex flex-col gap-3 rounded-xl bg-n-card p-4 outline outline-1 outline-n-container">
+        <div class="grid gap-3 md:grid-cols-3">
+          <Select
+            v-model="outboundForm.phone_number"
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_FROM')"
+            :options="botRoutes"
+          />
+          <Input
+            v-model="outboundForm.to"
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_TO')"
+            placeholder="+50761234567"
+          />
+          <Select
+            v-model="outboundForm.persona_slug"
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_PERSONA')"
+            :options="outboundPersonaOptions"
+          />
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs text-n-slate-10">
+            {{ $t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_CONSENT') }}
+          </span>
+          <Button
+            :label="$t('INTEGRATION_SETTINGS.TWILIO.VOICE.OUTBOUND_ACTION')"
+            :disabled="!canCall"
+            :is-loading="isCalling"
+            @click="placeCall"
+          />
+        </div>
       </div>
     </div>
 

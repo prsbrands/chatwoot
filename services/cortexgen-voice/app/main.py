@@ -40,7 +40,7 @@ async def voice_stream(websocket: WebSocket) -> None:
         return
 
     try:
-        config = await fetch_call_config(phone_number)
+        config = await fetch_call_config(phone_number, custom.get("persona_slug", ""))
     except ConfigError:
         await websocket.close()
         return

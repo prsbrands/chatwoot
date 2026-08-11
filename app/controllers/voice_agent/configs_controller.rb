@@ -6,7 +6,9 @@ class VoiceAgent::ConfigsController < VoiceAgent::BaseController
   # Twilio no evento `start` do stream.
   def show
     route = TwilioVoiceRoute.find_by!(phone_number: params[:phone_number], enabled: true)
-    render json: Voice::CallConfigService.new(route: route).perform
+    # `persona_slug` só vem em chamada de saída, onde o roteiro é de quem liga e
+    # não o da rota, que é de quem atende.
+    render json: Voice::CallConfigService.new(route: route, persona_slug: params[:persona_slug]).perform
   end
 
   private

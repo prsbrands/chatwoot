@@ -10,7 +10,7 @@ class ConfigError(Exception):
     """A chamada não pode ser conduzida — falta rota, persona ou chave."""
 
 
-async def fetch_call_config(phone_number: str) -> dict:
+async def fetch_call_config(phone_number: str, persona_slug: str = "") -> dict:
     """Persona, prompt já composto e credenciais dos três provedores.
 
     Uma leitura por chamada. O Chatwoot resolve tudo e responde 422 com o que
@@ -21,7 +21,9 @@ async def fetch_call_config(phone_number: str) -> dict:
     async with httpx.AsyncClient(timeout=settings.config_timeout) as client:
         response = await client.get(
             url,
-            params={"phone_number": phone_number},
+            # `persona_slug` só vem em chamada de saída: lá o roteiro é de quem
+            # liga, e não o da rota, que é de quem atende.
+            params={"phone_number": phone_number, **({"persona_slug": persona_slug} if persona_slug else {})},
             headers={"Authorization": f"Bearer {settings.service_token}"},
         )
 

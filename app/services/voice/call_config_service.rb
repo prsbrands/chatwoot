@@ -5,8 +5,9 @@
 class Voice::CallConfigService
   class MisconfiguredError < StandardError; end
 
-  def initialize(route:)
+  def initialize(route:, persona_slug: nil)
     @route = route
+    @persona_slug = persona_slug
   end
 
   def perform
@@ -24,7 +25,9 @@ class Voice::CallConfigService
 
   def persona
     @persona ||= begin
-      slug = @route.bot_persona_slug.presence ||
+      # A persona da chamada ganha da rota: numa ligação de saída o roteiro é
+      # outro. Sem override, vale o da rota, que é o caminho de sempre.
+      slug = @persona_slug.presence || @route.bot_persona_slug.presence ||
              raise(MisconfiguredError, "#{@route.phone_number} is not routed to a bot")
 
       # Pela conta da rota: o slug só é único dentro dela, então pedir sem a

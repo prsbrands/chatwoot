@@ -391,6 +391,7 @@ Rails.application.routes.draw do
               resource :credentials, only: [:show, :create, :destroy]
               resources :numbers, only: [:index, :create]
               resources :voice_routes, only: [:index, :create, :destroy]
+              resources :voice_calls, only: [:create]
               resources :alerts, only: [:index]
               resources :sip, only: [:index, :create] do
                 member do
@@ -709,6 +710,9 @@ Rails.application.routes.draw do
     # Roteamento de voz próprio. As rotas de voz da Chatwoot logo abaixo são da
     # edição enterprise e não existem nesta instalação.
     post 'voice/incoming', to: 'voice_routing#incoming', as: :voice_incoming
+    # Chamada saindo: o bot liga. Resolve a rota pelo `From`, que numa
+    # chamada de saida e o NOSSO numero — o `To` e o prospecto.
+    post 'voice/outgoing', to: 'voice_routing#outgoing', as: :voice_outgoing
     post 'voice/dial_status', to: 'voice_routing#dial_status', as: :voice_dial_status
 
     if ChatwootApp.enterprise?

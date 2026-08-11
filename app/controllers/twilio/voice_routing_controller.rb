@@ -22,6 +22,21 @@ class Twilio::VoiceRoutingController < ApplicationController
     render xml: response.to_s
   end
 
+  # Chamada saindo: o bot liga para alguém, em vez de atender.
+  #
+  # Precisa de endpoint próprio por causa de uma inversão que quebraria em
+  # silêncio: numa chamada de saída o `To` é a pessoa e o `From` é o nosso
+  # número, então o `set_route` normal procuraria rota para o número do
+  # prospecto e devolveria 404. Por isso `set_route` olha o `From` aqui.
+  #
+  # A persona também é outra. O roteiro da rota é de quem atende — abre com
+  # "obrigado por ligar" e faz triagem de fornecedor. Quem liga precisa se
+  # apresentar e dizer por que ligou, então quem dispara escolhe a persona e ela
+  # viaja como parâmetro do stream.
+  def outgoing
+    render xml: connect_to_bot(other_party: params[:To].to_s, persona_slug: params[:persona_slug]).to_s
+  end
+
   # `DialCallStatus` é 'completed' quando a conversa aconteceu; qualquer outro
   # valor (no-answer, busy, failed) significa que ninguém atendeu — e é aí que o
   # transbordo para o bot acontece.
@@ -43,13 +58,16 @@ class Twilio::VoiceRoutingController < ApplicationController
   # mantém a chamada de pé enquanto o WebSocket viver. Os parâmetros são o que o
   # serviço recebe no evento `start` — sem eles ele saberia o `CallSid` mas não
   # qual número foi discado, que é a chave da configuração.
-  def connect_to_bot
+  # `other_party` é quem está do outro lado da linha: quem ligou, numa chamada
+  # entrando; quem foi chamado, numa saindo. É o número que vira contato no CRM.
+  def connect_to_bot(other_party: nil, persona_slug: nil)
     ::Twilio::TwiML::VoiceResponse.new do |response|
       response.connect do |connect|
         connect.stream(url: stream_url) do |stream|
           stream.parameter(name: 'call_sid', value: params[:CallSid])
           stream.parameter(name: 'phone_number', value: @route.phone_number)
-          stream.parameter(name: 'from_number', value: params[:From].to_s)
+          stream.parameter(name: 'from_number', value: other_party.presence || params[:From].to_s)
+          stream.parameter(name: 'persona_slug', value: persona_slug) if persona_slug.present?
         end
       end
     end
@@ -60,8 +78,10 @@ class Twilio::VoiceRoutingController < ApplicationController
       raise(StandardError, 'VOICE_STREAM_URL is not set — Super Admin → Settings → Voice Agent')
   end
 
+  # Numa chamada entrando, o nosso número é o destino; numa saindo, é a origem.
   def set_route
-    @route = TwilioVoiceRoute.find_by(phone_number: params[:To].presence || params[:Called], enabled: true)
+    nosso_numero = action_name == 'outgoing' ? params[:From] : (params[:To].presence || params[:Called])
+    @route = TwilioVoiceRoute.find_by(phone_number: nosso_numero, enabled: true)
     head :not_found if @route.blank?
   end
 

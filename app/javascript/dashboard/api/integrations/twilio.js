@@ -64,6 +64,10 @@ class TwilioAPI extends ApiClient {
     return axios.delete(`${this.url}/voice_routes/${id}`);
   }
 
+  placeVoiceCall(data) {
+    return axios.post(`${this.url}/voice_calls`, data);
+  }
+
   alerts() {
     return axios.get(`${this.url}/alerts`);
   }
