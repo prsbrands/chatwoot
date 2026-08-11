@@ -1,32 +1,61 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-08-10 · Instância: https://prs.cortexgen.cloud
+Última sessão: 2026-08-11 · Instância: https://prs.cortexgen.cloud
 
 ---
 
-## ▶️ RETOMAR AQUI — o agente de voz está usável
+## ▶️ RETOMAR AQUI — o botão "Ligar com o bot" na conversa
 
-**O critério de "usável" do protocolo foi batido em 10/08.** Testes 1, 2, 3, 5 e 6 passando, ruído de ambiente passando, e duas chamadas seguidas dentro do alvo de latência. O teste 4 (interromper) está reprovado **por desenho** — ver "o preço aceito" abaixo.
+**É a única peça que falta**, e ela destrava todos os caminhos de uma vez. Pega o telefone do contato da conversa, mostra qual número vai discar e chama `POST /api/v1/accounts/:id/integrations/twilio/voice_calls` — endpoint que já existe e foi validado em ligação real em 10/08.
 
-Última validação, `CAf0439b6d218ee96f69fe25e7b086ba6f`: alguém ligou para **vender** algo. O bot roteou sem tentar diagnosticar, capturou empresa e contato, e o CRM registrou `company_name = ERC Two BLX`, `lead_fit = LOW`, com resumo e próximo passo escritos.
+Por que ele e não uma landing: pré-chat, campanha do widget, WhatsApp e e-mail **todos terminam numa conversa com um contato que tem telefone**. Um botão ali serve os quatro; uma landing serve um.
 
-**Mas o alvo de latência não está batido.** Com o coletor consertado em 10/08, a espera real de quem liga é **~2,2 s**, não os 1.268 ms que se acreditava — a régua antiga media do `EndOfTurn` em diante e ignorava ~0,8 s. Detalhe e decomposição em "O alvo de 1,5 s nunca foi batido", abaixo.
+Decisões já tomadas, para não reabrir:
 
-Chegar aqui exigiu **oito correções, uma por chamada**: três na abertura, quatro na latência e uma na qualificação. Duas hipóteses minhas foram derrubadas por instrumentação. A ordem está registrada abaixo porque ela importa — várias só puderam existir depois da anterior.
+- **Não usar pré-chat como portão.** Ele aparece para todo visitante antes de deixá-lo falar com o bot. Precedente do próprio projeto: o email collect box foi desligado na inbox 10 em 08/08 porque *"o prompt do Nathan já pede e-mail no momento certo"*. Vale igual para telefone. Se quiser mesmo, ative o campo como **opcional**.
+- **Campanha de Live Chat é o gancho**, não o formulário: dispara por URL + tempo na página e **cria a conversa**, onde o Nathan de texto já vive. Campanha nenhuma disca — o executor tem três ramos (`Twilio SMS`, `Sms`, `Whatsapp`) e nenhum de voz.
+- **Ligar automático fica para depois.** Primeiro um humano no meio, para ver o que acontece quando alguém digita o número errado.
 
-**A fila do que sobrou está no fim desta seção.** Nenhum item bloqueia uma chamada real.
+### O estado hoje, em uma tela
 
-Config ativa:
+| | estado |
+|---|---|
+| Voz entrando | ✅ atende, qualifica, registra no CRM e **desliga sozinho** |
+| Voz saindo | ✅ disparo pelo painel, persona `nathan-es-demo`, validado |
+| Latência | ~1,9–2,2 s de espera real. **O alvo de 1,5 s nunca foi batido** — a régua antiga media o pedaço errado |
+| Números | `+16893539100` (US) e `+5078389480` (Panamá), os dois roteados para o bot |
+| E-mail | ✅ saída por Resend, entrada por Mailgun, os dois provados |
+| Isolamento entre contas | ✅ persona e base de conhecimento por conta |
+| Webhook do bot | ✅ exige assinatura do Chatwoot |
+| Marca | ✅ arte, tema verde e nome em 57 idiomas |
+
+Config de voz ativa:
 
 ```
-stt : deepgram flux-general-multi  ·  language_hints=[es, pt]
-llm : OpenAI DIRETO, gpt-4.1-mini  (sem o prefixo `openai/`, que é do OpenRouter)
-tts : eleven_flash_v2_5  ·  voz ny3E2DZImeZm00WLGZi9
-persona: temperature 0.3 · max_tokens 300 · greeting_delay_ms 2500 · interruptible on
-prompt: persona ~19,3 KB + base de voz 4,1 KB = ~23,4 KB (~6.000 tokens/turno)
+stt : deepgram flux-general-multi · language_hints=[es, pt] · eot_threshold 0.70 (campo da persona)
+llm : OpenAI DIRETO, gpt-4.1-mini (sem o prefixo `openai/`, que é do OpenRouter)
+tts : eleven_flash_v2_5 · voz ny3E2DZImeZm00WLGZi9
+personas: nathan-es-voice (recepção, 24,7 KB) · nathan-es-demo (saliente, 11,6 KB)
 ```
 
-Limiares do Flux, fixos no código (`_stt` em `app/bot.py`): `eot_threshold=0.8`, `eager_eot_threshold=0.5`, `eot_timeout_ms=5000`. São **confiança de fim de turno**, não milissegundos de silêncio.
+`eager_eot_threshold=0.5` e `eot_timeout_ms=5000` seguem chumbados no `_stt`. Só o `eot_threshold` virou campo.
+
+### O que esta sessão mudou de ideia, e vale ler antes de otimizar
+
+Três coisas que estavam escritas aqui como verdade e não eram:
+
+1. **"Mediana de 1.268 ms, alvo batido"** — a régua media do `EndOfTurn` em diante e ignorava ~0,8 s de silêncio em que quem ligou já tinha calado. A espera real é ~2,2 s.
+2. **"Encurtar o prompt reduz latência"** — não reduz. A OpenAI cacheia o prefixo (6.272 de 6.470 tokens vêm do cache, visível no log de todo turno). Cortar o prompt pela metade não moveu o relógio.
+3. **"O card OpenAI é morto"** — não é. É cofre de chave por conta, e o assistente de escrita foi testado e funciona.
+
+### A fila, na ordem que eu seguiria
+
+1. **O botão de ligar na conversa** (acima).
+2. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
+3. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
+4. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
+5. **`lead_fit` vazio** — a extração devolve nulo ou categoria fora do vocabulário, e o código descarta **em silêncio**. Falta uma linha de log em `call_report_service.rb` para distinguir os dois casos.
+6. **Latência**, se ainda incomodar: o único componente gordo que é nosso é a espera do EOT (~0,8 s). O caminho de verdade é o **EagerEndOfTurn**, que o Flux já anuncia em 0.5 e o Pipecat deixa para a aplicação implementar. É a maior mudança do projeto.
 
 ### Como a latência caiu de 2.256 para 1.146 ms
 
@@ -980,6 +1009,26 @@ cd /opt/cortexgen-voice && docker compose build \
 - Rails console: `docker compose exec rails bundle exec rails console`
 - Supabase: `docker exec supabase-db psql -U postgres -d postgres`
 - Acesso SSH: `ssh -i ~/.ssh/id_ed25519_cortexgen root@187.77.20.155`
+- n8n: compose em `/docker/n8n-y4jd/`, container `n8n-y4jd-n8n-1`
+
+### Scripts de configuração (`ops/`)
+
+Todos perguntam a credencial sem exibi-la e fazem backup antes. **A chave nunca deve passar por chat nem por histórico de shell** — é por isso que existem.
+
+| script | o quê |
+|---|---|
+| `ops/set-resend.sh` | SMTP de saída pelo Resend |
+| `ops/set-mailgun-inbound.sh` | entrada de e-mail pelo ingress do ActionMailbox |
+| `ops/set-realtimekit.sh` | Cloudflare RealtimeKit — diagnostica antes de gravar |
+| `ops/brand/gerar.sh` | os 37 arquivos de marca, a partir de `app/assets/images/{ico,cga}.png` |
+| `ops/n8n/guard.js` | o nó Guard do workflow, com a verificação de assinatura |
+
+SQL da camada de bots em `db/botlayer/`, aplicado com
+`docker exec -i supabase-db psql -U postgres -d postgres < arquivo.sql`.
+
+### Como transferir um segredo sem vê-lo
+
+Padrão usado três vezes nesta sessão, vale repetir: leia do banco de origem para um arquivo, `docker cp` para o destino, leia e apague lá dentro. O valor nunca é impresso nem passa por linha de comando. Exemplo do que foi feito com o segredo do agent bot para o n8n em "O webhook do bot passou a exigir assinatura".
 
 ## Decisão de licença (não reabrir sem motivo)
 
