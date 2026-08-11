@@ -115,8 +115,21 @@ class Twilio::VoiceRoutingController < ApplicationController
 
   # Numa chamada entrando, o nosso número é o destino; numa saindo, é a origem.
   def set_route
-    nosso_numero = %w[outgoing amd_status].include?(action_name) ? params[:From] : (params[:To].presence || params[:Called])
+    return set_route_from_call if action_name == 'amd_status'
+
+    nosso_numero = action_name == 'outgoing' ? params[:From] : (params[:To].presence || params[:Called])
     @route = TwilioVoiceRoute.find_by(phone_number: nosso_numero, enabled: true)
+    head :not_found if @route.blank?
+  end
+
+  # O webhook do AMD chega com quatro campos e **nenhum telefone**:
+  # `CallSid`, `AnsweredBy`, `MachineDetectionDuration` e `AccountSid`. Resolver
+  # pelo `From` como o `outgoing` devolve 404 — foi assim que a primeira versão
+  # deixou uma chamada seguir para o correio de voz sem que nada no log gritasse
+  # além de um "Filter chain halted". A rota sai da chamada já gravada.
+  def set_route_from_call
+    call = TwilioVoiceCall.find_by(call_sid: params[:CallSid])
+    @route = call && TwilioVoiceRoute.find_by(phone_number: call.phone_number, enabled: true)
     head :not_found if @route.blank?
   end
 
