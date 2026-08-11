@@ -1,11 +1,12 @@
 # O caminho do formulário público do site até a ligação automática de demo.
 # Diferente do `Voice::OutboundCallService` (chamado pelo painel, por um
 # admin logado), aqui quem está do outro lado é um visitante anônimo — por
-# isso as três checagens que o painel não precisa fazer: consentimento
-# gravado, telefone em formato válido e o mesmo número não tendo recebido
-# outra ligação recente. `VoiceCallRequest` fica gravado em qualquer
-# desfecho, porque é também o registro de consentimento exigido para ligar
-# com voz automatizada/IA — não só um log de erro.
+# isso as quatro checagens que o painel não precisa fazer: consentimento
+# gravado, telefone em formato válido, DDI com rota de demo configurada e o
+# mesmo número não tendo recebido outra ligação recente. `VoiceCallRequest`
+# fica gravado em qualquer desfecho, porque é também o registro de
+# consentimento exigido para ligar com voz automatizada/IA — não só um log
+# de erro.
 class Voice::PublicCallRequestService
   # Defesa em profundidade: o Rack::Attack já limita por IP e pela string
   # crua do telefone antes da requisição chegar aqui. Este limite compara o
@@ -17,7 +18,7 @@ class Voice::PublicCallRequestService
 
   def perform
     request = VoiceCallRequest.create!(
-      account: route.account,
+      account: account,
       twilio_voice_route: route,
       name: name,
       email: email,
@@ -43,6 +44,7 @@ class Voice::PublicCallRequestService
   def rejection_reason
     return 'consent_not_given' unless consent
     return 'invalid_phone_number' if normalized_phone.blank?
+    return 'country_not_supported' if route.nil?
     return 'recent_call_to_number' if called_recently?
 
     nil
@@ -52,7 +54,7 @@ class Voice::PublicCallRequestService
     call = Voice::OutboundCallService.new(
       route: route,
       to: normalized_phone,
-      persona_slug: persona_slug
+      persona_slug: route.public_demo_persona_slug
     ).perform
     request.update!(status: 'dispatched', call_sid: call.sid)
     request
@@ -75,17 +77,35 @@ class Voice::PublicCallRequestService
     @normalized_phone = limpo.start_with?('+') && limpo.length > 8 ? limpo : nil
   end
 
-  # Configurado por fora, não pelo visitante: quem chama o formulário público
-  # não escolhe de qual número ou com qual roteiro a ligação sai.
+  # A rota é escolhida pelo DDI do número discado, não pelo visitante — é o
+  # que faz a demo ligar do número panamenho pra quem está no Panamá, do
+  # brasileiro pra quem está no Brasil, e por aí vai (mesma razão que já
+  # fazia o outbound existente preferir o +5078389480 ao +16893539100 pra
+  # prospecto panamenho: identificador de chamada nacional responde mais).
+  # Do mais longo pro mais curto, pra um DDI de 1 dígito não casar por
+  # engano dentro do prefixo de um de 2 ou 3.
   def route
-    @route ||= TwilioVoiceRoute.find_by!(phone_number: route_phone_number, enabled: true)
+    return @route if defined?(@route)
+    return @route = nil if normalized_phone.blank?
+
+    digits = normalized_phone.delete('+')
+    code = configured_dial_codes.find { |dial_code| digits.start_with?(dial_code) }
+    @route = code && TwilioVoiceRoute.find_by(public_demo_dial_code: code, enabled: true)
   end
 
-  def route_phone_number
-    ENV.fetch('PUBLIC_VOICE_DEMO_ROUTE_NUMBER')
+  def configured_dial_codes
+    TwilioVoiceRoute.where.not(public_demo_dial_code: nil)
+                     .order(Arel.sql('length(public_demo_dial_code) DESC'))
+                     .pluck(:public_demo_dial_code)
   end
 
-  def persona_slug
-    ENV.fetch('PUBLIC_VOICE_DEMO_PERSONA_SLUG', 'nathan-demo-br')
+  # Não vem de nenhuma rota específica — é preciso ter uma conta pra gravar
+  # até o pedido que não bateu com DDI nenhum. Toda rota com demo configurada
+  # pertence à mesma conta hoje; se um dia isso deixar de ser verdade, o
+  # `first!` falha alto em vez de atribuir o pedido à conta errada.
+  def account
+    @account ||= Account.joins(:twilio_voice_routes)
+                         .where.not(twilio_voice_routes: { public_demo_dial_code: nil })
+                         .first!
   end
 end
