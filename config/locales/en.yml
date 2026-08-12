@@ -146,6 +146,7 @@ en:
       not_configured: 'OpenWA gateway is not configured. Set the gateway URL and API key in Super Admin → Settings → WhatsApp Gateway.'
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
       invalid_inbox: 'The selected inbox must be an API channel inbox.'
+      session_not_found: 'Session not found for this account.'
     dyte:
       invalid_message_type: 'Invalid message type. Action not permitted'
       realtimekit_credentials_required: 'Cloudflare RealtimeKit credentials are required. Delete the existing Dyte integration and create it again with Cloudflare RealtimeKit credentials.'

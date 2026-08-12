@@ -4,11 +4,12 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
   before_action -> { check_admin_authorization? }
   before_action :ensure_feature_enabled
   before_action :ensure_configured
+  before_action :ensure_session_owned, only: %i[qr start stop logout destroy]
 
   rescue_from Integrations::Openwa::Client::ApiError, with: :render_openwa_error
 
   def index
-    render json: { sessions: client.sessions, adapter_instances: slim_adapter_instances }
+    render json: { sessions: scoped_sessions, adapter_instances: slim_adapter_instances }
   end
 
   def create
@@ -55,8 +56,34 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
 
   private
 
+  # O gateway OpenWA não conhece conta — ele serve todos os deployments que
+  # falam com ele, inclusive sessões criadas fora deste painel (ex.: o plugin
+  # prs-agent). O único elo com a conta é o `accountId` gravado na config da
+  # instância do adapter no provisionamento (ProvisionService#adapter_config).
+  # Sessão sem instância vinculada à conta atual fica de fora: sem dono
+  # identificado não é "de todo mundo".
+  def account_instances
+    @account_instances ||= client.adapter_instances.select do |instance|
+      instance.dig('config', 'accountId').to_s == Current.account.id.to_s
+    end
+  end
+
+  def owned_session_ids
+    @owned_session_ids ||= account_instances.map { |instance| instance['sessionScope'] }.to_set
+  end
+
+  def scoped_sessions
+    client.sessions.select { |session| owned_session_ids.include?(session['id']) }
+  end
+
+  def ensure_session_owned
+    return if owned_session_ids.include?(permitted_params[:session_id])
+
+    render json: { error: I18n.t('errors.openwa.session_not_found') }, status: :not_found
+  end
+
   def slim_adapter_instances
-    instances = client.adapter_instances
+    instances = account_instances
     inbox_ids = instances.filter_map { |instance| instance.dig('config', 'inboxId') }
     inbox_names = Current.account.inboxes.where(id: inbox_ids).pluck(:id, :name).to_h
     instances.map do |instance|
