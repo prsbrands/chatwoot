@@ -140,6 +140,7 @@ en:
     botlayer:
       not_configured: 'Bot layer is not configured. Set the Supabase REST URL and service role key in Super Admin → Settings → Bot Layer.'
       no_models: 'The provider returned no models.'
+      voice_inbox_not_allowed: 'This inbox belongs to a Twilio voice route. Voice calls are answered by the calling persona directly, not through this channel route — attaching a text bot here makes it reply to the call transcript as if it were a live chat.'
     twilio:
       not_connected: 'Connect a Twilio account first in Settings → Integrations → Twilio.'
     openwa:
