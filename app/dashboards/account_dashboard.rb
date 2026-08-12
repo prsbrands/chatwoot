@@ -22,7 +22,7 @@ class AccountDashboard < Administrate::BaseDashboard
 
                                  attributes
                                else
-                                 {}
+                                 { all_features: ProjectAccountFeaturesField }
                                end
 
   ATTRIBUTE_TYPES = {
@@ -62,7 +62,7 @@ class AccountDashboard < Administrate::BaseDashboard
                                       attrs << :captain_models
                                       attrs
                                     else
-                                      []
+                                      %i[all_features]
                                     end
   SHOW_PAGE_ATTRIBUTES = (%i[
     id
@@ -86,7 +86,7 @@ class AccountDashboard < Administrate::BaseDashboard
                                  attrs << :captain_models
                                  attrs
                                else
-                                 []
+                                 %i[all_features]
                                end
   FORM_ATTRIBUTES = (%i[
     name
