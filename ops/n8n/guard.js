@@ -1,4 +1,19 @@
 const crypto = require('crypto');
+const https = require('https');
+
+// O sandbox do Code node do n8n roda num task runner separado sem `fetch`
+// global (confirmado ao vivo: "fetch is not defined"), mesmo com Node 24 no
+// container. O modulo nativo `https` funciona porque ja esta liberado junto
+// com `crypto` (NODE_FUNCTION_ALLOW_BUILTIN no docker-compose do n8n).
+function getJson(url, headers) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers }, res => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+    }).on('error', reject);
+  });
+}
 
 const raw = $input.first().json;
 const b = raw.body || raw;
@@ -49,11 +64,11 @@ if (!supabaseUrl || !supabaseKey) throw new Error('SUPABASE_REST_URL/SUPABASE_SE
 
 const lookupUrl = supabaseUrl + '/bot_channel_routes?chatwoot_account_id=eq.' + accountId +
   '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret';
-const lookupResponse = await fetch(lookupUrl, {
-  headers: { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey },
-});
-if (!lookupResponse.ok) throw new Error('falha ao consultar bot_channel_routes: HTTP ' + lookupResponse.status);
-const rows = await lookupResponse.json();
+const lookupResponse = await getJson(lookupUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
+if (lookupResponse.statusCode < 200 || lookupResponse.statusCode >= 300) {
+  throw new Error('falha ao consultar bot_channel_routes: HTTP ' + lookupResponse.statusCode);
+}
+const rows = JSON.parse(lookupResponse.body);
 const segredo = rows[0] && rows[0].chatwoot_agent_bot_secret;
 // Rota criada antes desta migracao (ou nunca migrada) nao tem o secret
 // gravado — falha alto em vez de aceitar sem verificar.
