@@ -23,15 +23,41 @@ const railsJson = obj => JSON.stringify(obj)
   .split(LS).join('\\u2028')
   .split(PS).join('\\u2029');
 
-const segredo = $env.CHATWOOT_WEBHOOK_SECRET;
 const assinatura = headers['x-chatwoot-signature'];
 const ts = headers['x-chatwoot-timestamp'];
 
 // Falhar alto, nao em silencio: `return []` deixaria a execucao verde e a
 // mensagem sumindo, que e o modo de falha que mais custou neste projeto.
 // Execucao com erro aparece na lista de execucoes do n8n.
-if (!segredo) throw new Error('CHATWOOT_WEBHOOK_SECRET ausente no ambiente do n8n');
 if (!assinatura || !ts) throw new Error('webhook sem assinatura do Chatwoot — recusado');
+
+// Cada conta tem seu proprio AgentBot com seu proprio secret — nao da mais
+// pra verificar contra um valor fixo (era CHATWOOT_WEBHOOK_SECRET, copiado
+// uma vez do bot da conta 1). accountId/inboxId vem do payload ainda NAO
+// verificado, mas usa-los so pra escolher QUAL secret tentar nao abre
+// brecha: quem nao souber o secret certo continua barrado no proximo passo,
+// tanto faz o que declarou aqui. Bug visto em producao 12/08: conta dagente
+// com bot Vitor, Guard comparando contra o secret do Nathan, mensagem nunca
+// respondida — em silencio, porque a assinatura so falhava.
+const accountId = b.account && b.account.id;
+const inboxId = (b.inbox && b.inbox.id) || (b.conversation && b.conversation.inbox_id);
+if (!accountId || !inboxId) throw new Error('payload sem account/inbox — nao da pra saber qual secret verificar');
+
+const supabaseUrl = $env.SUPABASE_REST_URL;
+const supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseUrl || !supabaseKey) throw new Error('SUPABASE_REST_URL/SUPABASE_SERVICE_ROLE_KEY ausente no ambiente do n8n');
+
+const lookupUrl = supabaseUrl + '/bot_channel_routes?chatwoot_account_id=eq.' + accountId +
+  '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret';
+const lookupResponse = await fetch(lookupUrl, {
+  headers: { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey },
+});
+if (!lookupResponse.ok) throw new Error('falha ao consultar bot_channel_routes: HTTP ' + lookupResponse.status);
+const rows = await lookupResponse.json();
+const segredo = rows[0] && rows[0].chatwoot_agent_bot_secret;
+// Rota criada antes desta migracao (ou nunca migrada) nao tem o secret
+// gravado — falha alto em vez de aceitar sem verificar.
+if (!segredo) throw new Error('sem secret de bot gravado para conta ' + accountId + ' / inbox ' + inboxId + ' — recrie a rota em Bot Personas > Channels');
 
 const esperado = 'sha256=' + crypto
   .createHmac('sha256', segredo)
@@ -63,8 +89,8 @@ const content = String(b.content || '').trim();
 if (!content) return [];
 const sender = meta.sender || {};
 return [{ json: {
-  accountId: (b.account && b.account.id) || 1,
-  inboxId: (b.inbox && b.inbox.id) || conv.inbox_id,
+  accountId: accountId,
+  inboxId: inboxId,
   conversationId: conv.id,
   messageId: b.id,
   content: content,

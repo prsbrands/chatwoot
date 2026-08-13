@@ -1,6 +1,6 @@
 class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Accounts::Integrations::Botlayer::BaseController
   def index
-    render json: { routes: client.routes(Current.account.id) }
+    render json: { routes: client.routes(Current.account.id).map { |route| strip_secret(route) } }
   end
 
   # Upsert por (conta, inbox): cria a rota se não existe, atualiza se existe.
@@ -12,11 +12,12 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
     route = client.upsert_route(
       route_params.to_h.merge(
         chatwoot_account_id: Current.account.id,
-        channel_label: inbox.name
+        channel_label: inbox.name,
+        chatwoot_agent_bot_secret: agent_bot_secret_for(route_params[:chatwoot_agent_bot_id])
       )
     )
     sync_agent_bot(inbox, route['chatwoot_agent_bot_id'], route['is_active'])
-    render json: route
+    render json: strip_secret(route)
   end
 
   def destroy
@@ -42,6 +43,23 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
 
   def render_voice_inbox_error
     render json: { error: I18n.t('errors.botlayer.voice_inbox_not_allowed') }, status: :unprocessable_entity
+  end
+
+  # O Guard do n8n usa este segredo pra verificar a assinatura do webhook antes
+  # de confiar em qualquer payload — nunca deve sair daqui pro navegador.
+  def strip_secret(route)
+    route&.except('chatwoot_agent_bot_secret')
+  end
+
+  # Cada conta tem seu próprio AgentBot com seu próprio secret; gravar o
+  # secret junto da rota é o que deixa o Guard verificar a assinatura certa
+  # por conta+inbox, em vez de uma variável de ambiente fixa (bug visto em
+  # produção: conta dagente com bot Vitor, Guard comparando contra o secret
+  # do Nathan, mensagem nunca respondida).
+  def agent_bot_secret_for(agent_bot_id)
+    return nil if agent_bot_id.blank?
+
+    AgentBot.accessible_to(Current.account).find_by(id: agent_bot_id)&.secret
   end
 
   # O `persona_id` vem do navegador, e a inbox ser da conta não diz nada sobre a

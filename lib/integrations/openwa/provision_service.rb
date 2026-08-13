@@ -59,9 +59,13 @@ class Integrations::Openwa::ProvisionService
     return if agent_bot_id.blank?
 
     binding = AgentBotInbox.find_or_initialize_by(inbox: @inbox)
-    binding.agent_bot = AgentBot.accessible_to(account).find(agent_bot_id)
+    binding.agent_bot = agent_bot
     binding.status = :active
     binding.save!
+  end
+
+  def agent_bot
+    @agent_bot ||= AgentBot.accessible_to(account).find(agent_bot_id)
   end
 
   # Insere a rota inbox → persona na camada de bots (Supabase/PostgREST) para o
@@ -83,6 +87,9 @@ class Integrations::Openwa::ProvisionService
         channel_label: @inbox.name,
         persona_id: persona_id,
         chatwoot_agent_bot_id: agent_bot_id.to_i,
+        # O Guard do n8n verifica a assinatura do webhook contra o secret do
+        # bot desta rota, não uma env fixa — ver RoutesController#agent_bot_secret_for.
+        chatwoot_agent_bot_secret: agent_bot.secret,
         is_active: true
       }.to_json
     )
