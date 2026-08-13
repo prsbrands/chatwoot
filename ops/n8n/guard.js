@@ -63,7 +63,7 @@ const supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseKey) throw new Error('SUPABASE_REST_URL/SUPABASE_SERVICE_ROLE_KEY ausente no ambiente do n8n');
 
 const lookupUrl = supabaseUrl + '/bot_channel_routes?chatwoot_account_id=eq.' + accountId +
-  '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret';
+  '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret,chatwoot_agent_bot_access_token';
 const lookupResponse = await getJson(lookupUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
 if (lookupResponse.statusCode < 200 || lookupResponse.statusCode >= 300) {
   throw new Error('falha ao consultar bot_channel_routes: HTTP ' + lookupResponse.statusCode);
@@ -73,6 +73,26 @@ const segredo = rows[0] && rows[0].chatwoot_agent_bot_secret;
 // Rota criada antes desta migracao (ou nunca migrada) nao tem o secret
 // gravado — falha alto em vez de aceitar sem verificar.
 if (!segredo) throw new Error('sem secret de bot gravado para conta ' + accountId + ' / inbox ' + inboxId + ' — recrie a rota em Bot Personas > Channels');
+
+// Responde/Handoff postam de volta no Chatwoot autenticados como o bot; sem
+// o access_token certo por conta, account_accessible_for_bot? recusa com
+// "Bot is not authorized to access this account" (ensure_current_account_helper.rb).
+const botAccessToken = rows[0] && rows[0].chatwoot_agent_bot_access_token;
+if (!botAccessToken) throw new Error('sem access_token de bot gravado para conta ' + accountId + ' / inbox ' + inboxId + ' — recrie a rota em Bot Personas > Channels');
+
+// O no Historico le o historico da conversa com token de User (o de Agent
+// Bot nao pode chamar messages#index, de proposito — ver HANDOFF "Historico
+// com 401"). Token fixo de uma unica conta quebraria toda conta que nao
+// fosse essa (mesma classe de bug do secret acima); resolve por conta aqui
+// e passa adiante, em vez de credential fixo no proprio no Historico.
+const tokenUrl = supabaseUrl + '/bot_account_settings?chatwoot_account_id=eq.' + accountId + '&select=chat_user_token';
+const tokenResponse = await getJson(tokenUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
+if (tokenResponse.statusCode < 200 || tokenResponse.statusCode >= 300) {
+  throw new Error('falha ao consultar bot_account_settings: HTTP ' + tokenResponse.statusCode);
+}
+const tokenRows = JSON.parse(tokenResponse.body);
+const chatUserToken = tokenRows[0] && tokenRows[0].chat_user_token;
+if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + accountId + ' — rode o backfill de bot_account_settings');
 
 const esperado = 'sha256=' + crypto
   .createHmac('sha256', segredo)
@@ -114,4 +134,6 @@ return [{ json: {
   contactEmail: sender.email || '',
   callSummary: (sender.custom_attributes && sender.custom_attributes.call_summary) || '',
   startedAt: Date.now(),
+  chatUserToken: chatUserToken,
+  botAccessToken: botAccessToken,
 } }];

@@ -87,9 +87,12 @@ class Integrations::Openwa::ProvisionService
         channel_label: @inbox.name,
         persona_id: persona_id,
         chatwoot_agent_bot_id: agent_bot_id.to_i,
-        # O Guard do n8n verifica a assinatura do webhook contra o secret do
-        # bot desta rota, não uma env fixa — ver RoutesController#agent_bot_secret_for.
+        # O Guard verifica a assinatura do webhook contra o secret, e
+        # Responde/Handoff autenticam como o bot com o access_token — os dois
+        # por conta+inbox, não uma env/credential fixa — ver
+        # RoutesController#resolved_agent_bot.
         chatwoot_agent_bot_secret: agent_bot.secret,
+        chatwoot_agent_bot_access_token: agent_bot.access_token&.token,
         is_active: true
       }.to_json
     )

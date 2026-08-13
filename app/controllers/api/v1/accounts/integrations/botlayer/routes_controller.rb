@@ -9,11 +9,13 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
     return render_voice_inbox_error if activating_voice_inbox?(inbox)
 
     ensure_persona_belongs_to_account!
+    bot = resolved_agent_bot(route_params[:chatwoot_agent_bot_id])
     route = client.upsert_route(
       route_params.to_h.merge(
         chatwoot_account_id: Current.account.id,
         channel_label: inbox.name,
-        chatwoot_agent_bot_secret: agent_bot_secret_for(route_params[:chatwoot_agent_bot_id])
+        chatwoot_agent_bot_secret: bot&.secret,
+        chatwoot_agent_bot_access_token: bot&.access_token&.token
       )
     )
     sync_agent_bot(inbox, route['chatwoot_agent_bot_id'], route['is_active'])
@@ -45,21 +47,24 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
     render json: { error: I18n.t('errors.botlayer.voice_inbox_not_allowed') }, status: :unprocessable_entity
   end
 
-  # O Guard do n8n usa este segredo pra verificar a assinatura do webhook antes
-  # de confiar em qualquer payload — nunca deve sair daqui pro navegador.
+  # O Guard e os nós que postam de volta no Chatwoot (Responde/Handoff) usam
+  # estes campos pra verificar a assinatura e autenticar como o bot — nunca
+  # devem sair daqui pro navegador.
   def strip_secret(route)
-    route&.except('chatwoot_agent_bot_secret')
+    route&.except('chatwoot_agent_bot_secret', 'chatwoot_agent_bot_access_token')
   end
 
-  # Cada conta tem seu próprio AgentBot com seu próprio secret; gravar o
-  # secret junto da rota é o que deixa o Guard verificar a assinatura certa
-  # por conta+inbox, em vez de uma variável de ambiente fixa (bug visto em
-  # produção: conta dagente com bot Vitor, Guard comparando contra o secret
-  # do Nathan, mensagem nunca respondida).
-  def agent_bot_secret_for(agent_bot_id)
+  # Cada conta tem seu próprio AgentBot, com seu próprio secret (assina o
+  # webhook) e seu próprio access_token (autentica as chamadas de volta ao
+  # Chatwoot). Gravar os dois junto da rota é o que deixa o Guard verificar a
+  # assinatura certa e o Responde/Handoff postarem como o bot certo, por
+  # conta+inbox, em vez de uma env fixa ou um credential fixo no n8n — os
+  # dois bugs vistos em produção: conta dagente com bot Vitor, Guard/Responde
+  # comparando contra o secret/token do Nathan, mensagem nunca respondida.
+  def resolved_agent_bot(agent_bot_id)
     return nil if agent_bot_id.blank?
 
-    AgentBot.accessible_to(Current.account).find_by(id: agent_bot_id)&.secret
+    AgentBot.accessible_to(Current.account).find_by(id: agent_bot_id)
   end
 
   # O `persona_id` vem do navegador, e a inbox ser da conta não diz nada sobre a
