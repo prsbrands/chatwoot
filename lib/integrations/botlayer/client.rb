@@ -118,6 +118,18 @@ class Integrations::Botlayer::Client
     delete("bot_channel_routes?id=eq.#{uuid!(id)}")
   end
 
+  # O nó Historico do workflow lê as últimas mensagens da conversa com um token
+  # de **User**: o de Agent Bot não alcança `messages#index`
+  # (BOT_ACCESSIBLE_ENDPOINTS, de propósito). É por conta, não por rota — o
+  # mesmo token serve qualquer inbox dela.
+  def upsert_account_settings(account_id, attributes)
+    post(
+      'bot_account_settings?on_conflict=chatwoot_account_id',
+      attributes.merge(chatwoot_account_id: account_id.to_i),
+      prefer: 'return=minimal,resolution=merge-duplicates'
+    )
+  end
+
   private
 
   def uuid!(value)

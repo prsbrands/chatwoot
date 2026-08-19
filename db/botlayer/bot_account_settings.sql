@@ -13,6 +13,12 @@
 -- para qualquer inbox dela. RLS ligado sem policies, mesma proteção que já
 -- vale para bot_providers.api_key e bot_channel_routes.chatwoot_agent_bot_secret
 -- — só a service_role lê.
+--
+-- A linha NÃO é mais gravada à mão. Quem escreve é o Rails, nos dois caminhos
+-- que criam rota de bot: RoutesController#ensure_chat_user_token (Bot Personas
+-- → Channels) e Openwa::ProvisionService#create_bot_route (sessão de WhatsApp),
+-- os dois via Botlayer::Client#upsert_account_settings. O backfill manual era
+-- onde cada conta nova travava, sempre com o mesmo sintoma: bot mudo.
 
 create table if not exists bot_account_settings (
   chatwoot_account_id integer primary key,

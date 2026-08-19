@@ -9,6 +9,7 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
     return render_voice_inbox_error if activating_voice_inbox?(inbox)
 
     ensure_persona_belongs_to_account!
+    ensure_chat_user_token
     bot = resolved_agent_bot(route_params[:chatwoot_agent_bot_id])
     route = client.upsert_route(
       route_params.to_h.merge(
@@ -65,6 +66,20 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
     return nil if agent_bot_id.blank?
 
     AgentBot.accessible_to(Current.account).find_by(id: agent_bot_id)
+  end
+
+  # O terceiro credencial que o Guard resolve por conta. Os outros dois (secret
+  # e access_token do bot) já viajavam junto da rota; este ficava de fora e
+  # precisava ser gravado à mão em `bot_account_settings` antes de a conta
+  # responder — era onde cada inquilino novo travava, com o sintoma de sempre:
+  # bot mudo. Quem liga o bot num canal é sempre admin da conta
+  # (`check_admin_authorization?`), então o token dele serve.
+  #
+  # Reescreve a cada save de propósito: se o admin que provisionou sair da
+  # conta, o `Historico` passa a dar 401 e a execução fica vermelha na lista do
+  # n8n — outro admin salvar o canal regrava com um token vivo.
+  def ensure_chat_user_token
+    client.upsert_account_settings(Current.account.id, chat_user_token: Current.user.access_token.token)
   end
 
   # O `persona_id` vem do navegador, e a inbox ser da conta não diz nada sobre a

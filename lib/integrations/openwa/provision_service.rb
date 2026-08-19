@@ -78,6 +78,13 @@ class Integrations::Openwa::ProvisionService
     persona_id = fetch_persona_id
     return 'persona_not_found' if persona_id.blank?
 
+    # Terceiro credencial por conta, do mesmo par que o secret e o access_token
+    # abaixo: o nó Historico lê o histórico com token de **User**, que o de
+    # Agent Bot não alcança. Esta rota nasce fora do RoutesController, então
+    # sem esta linha uma conta provisionada só por aqui ficaria sem o token e o
+    # bot não responderia — ver Botlayer::Client#upsert_account_settings.
+    Integrations::Botlayer::Client.new.upsert_account_settings(account.id, chat_user_token: user.access_token.token)
+
     response = HTTParty.post(
       "#{supabase_rest_url}/bot_channel_routes?on_conflict=chatwoot_account_id,chatwoot_inbox_id",
       headers: supabase_headers.merge('Prefer' => 'return=minimal,resolution=merge-duplicates'),
