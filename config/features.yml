@@ -231,6 +231,14 @@
   display_name: Required Conversation Attributes
   enabled: false
   premium: true
+  # Todo o backend vive em enterprise/ (store_accessor em Enterprise::Concerns::Account,
+  # checagem em Enterprise::Macros::ExecutionService, param permitido em
+  # Enterprise::Api::V1::AccountsSettings). Com DISABLE_ENTERPRISE=1 nada disso carrega:
+  # Account#respond_to?(:conversation_required_attributes) é false, então não há onde
+  # gravar. Ligar a flag fazia o bloco aparecer no painel da conta, o agente configurar,
+  # o save responder sucesso e o strong params descartar em silêncio. Escondido aqui
+  # para o checkbox não existir — remover esta linha se a instalação virar enterprise.
+  chatwoot_internal: true
 - name: advanced_assignment
   display_name: Advanced Assignment
   enabled: false
