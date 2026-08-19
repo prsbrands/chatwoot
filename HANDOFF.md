@@ -691,6 +691,12 @@ Na 1.7 o `allow_interruptions` do `PipelineParams` **não existe mais** (virou `
 
 Plano completo em `PLAN-TWILIO-VOZ.md`.
 
+Levantamento dos **recursos nativos do Chatwoot** — o que serve na edição MIT, o que é
+enterprise disfarçado de configurável, e como usar cada um aqui — em `RECURSOS-NATIVOS.md`.
+Cobre push/Firebase, domínio de resposta por e-mail, automação, auto-resolver, macros e
+canned responses, e traz a síntese que vale sozinha: **há três portas para o n8n**, e só uma
+delas é assinada.
+
 ### O que já funciona em produção
 
 | Fase | Commit | Entrega |
@@ -1168,7 +1174,9 @@ O toggle "Show label suggestions" dentro do card OpenAI é o que liga as sugest�
   Widget e portal não precisaram: o `shared/components/Branding.vue` já lê `BRAND_NAME` do config e aplica `replaceInstallationName`, e a conta tem `disable_branding` ativo.
 
   **Verificado até onde dá sem sessão:** o regex está no bundle servido em produção (`new RegExp("(?<![\\w/@.])chatwoot(?!\\.[a-z])","gi")`). A tela de login está fixada em `en` (`locale: 'en'` no `v3app.js`), então **a confirmação visual em pt_BR exige estar logado** com o idioma trocado no perfil.
-- **Push mobile**: relay da Chatwoot desativado (`ENABLE_PUSH_RELAY_SERVER=false`); gerar VAPID se quiser web push.
+- **Push**: são **dois caminhos independentes**, e a linha antiga daqui estava errada num ponto.
+  - **Web push já funciona** — não há o que gerar. O `VapidService` cria e persiste o par de chaves na primeira leitura, e o `InstallationConfig VAPID_KEYS` desta instalação existe desde **07/08**. Falta só o agente aceitar a permissão no navegador: hoje há **zero** `NotificationSubscription` de qualquer tipo.
+  - **Push mobile depende do Firebase, e o Firebase depende de app próprio.** `FIREBASE_PROJECT_ID`/`FIREBASE_CREDENTIALS` (Super Admin → Settings → General) estão vazios e `ENABLE_PUSH_RELAY_SERVER=false`, então **nenhum push móvel sai hoje por nenhum dos dois caminhos**. Os dois são mutuamente exclusivos no código: `send_fcm_push` desiste sem credencial, `send_push_via_chatwoot_hub` desiste **com** credencial. Detalhe que decide a escolha: o relay posta o `fcm_options` inteiro em `hub.chatwoot.com/send_push`, e o `body` é o **texto da mensagem do cliente** (`push_message_body`) — conteúdo de conversa de terceiro saindo para servidor da Chatwoot, o que briga com a premissa do white label.
 - ~~**Segurança do webhook**~~ — **fechado** em 10/08, ver "O webhook do bot passou a exigir assinatura" abaixo. Não eram ~10 linhas.
 
 ---
