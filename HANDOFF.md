@@ -124,7 +124,21 @@ Decisões já tomadas, para não reabrir:
 
 ### ▶️ RETOMAR AQUI — o bot conversava com o correio de voz (11/08, `5d970c267`)
 
-**Consertado. Provado por dentro em 19/08; falta só ver a Twilio derrubar uma chamada viva.**
+**Consertado e provado em chamada real (19/08).** `CA4f5421b2b5f496ef87b4d4faf8e2db30`, de `+5078389480` para um celular com Não Perturbe ativo — o gatilho reproduzível descrito abaixo. O correio de voz atendeu, o Twilio classificou, e a chamada morreu em **4 segundos**:
+
+```
+13:33:07.526  POST /twilio/voice/outgoing?persona_slug=nathan-es-demo   ← o Twilio pede o TwiML
+13:33:11.357  POST /twilio/voice/amd_status                  de 104.23.211.127 (Twilio)
+13:33:11.383  TWILIO_VOICE_AMD_HANGUP sid=CA4f54…db30 answered_by=machine_start
+```
+
+Sem `RestError` desta vez: o hangup pegou. Twilio confirma `status=completed duration=4s answered_by=machine_start`, contra os **150 s e 155 s** das duas chamadas de 11/08. E as métricas mostram que o bot nunca chegou a falar: `turns: 0`, `tts_characters: 0`, `prompt_tokens: 0`, só 3,6 s de áudio transcrito. **Nenhum token de LLM foi gasto conversando com uma gravação.**
+
+**A economia é real mas menor do que 155→4 sugere, e vale corrigir a expectativa:** a Twilio fatura por minuto iniciado. Esta chamada custou **US$ 0,3413** (1 minuto de celular no Panamá); as de 11/08, com 155 s, caíram em 3 minutos. O ganho é de ~3× por chamada não atendida, não de 38×. Continua valendo — e é o primeiro número de tarifa real que este projeto tem, o que interessa ao item de custo da fila.
+
+**A pendência do `CallReportService` se confirmou com dado real:** a chamada derrubada em 4 s ainda criou a **conversa 98** na inbox `Voz — +5078389480`, com **zero mensagens**. Não é só "curta e vazia" — é vazia mesmo, sem transcrição nenhuma, porque não houve turno. Um piso mínimo no serviço Python resolveria; o custo, que era o problema, já está resolvido.
+
+Antes da chamada real, o caminho inteiro já tinha sido provado por dentro, e a matriz continua sendo o teste barato para qualquer regressão futura:
 
 A prova sem gastar chamada foi além do 403/404 descrito adiante: um webhook **assinado de verdade** (assinatura gerada no próprio servidor com o `RequestValidator` da Twilio, sobre um `TwilioVoiceCall` descartável de SID inexistente) exercita o caminho inteiro. Matriz completa, contra a produção em `821c8ec09`:
 
@@ -222,8 +236,10 @@ Três coisas que estavam escritas aqui como verdade e não eram:
 
 1. ~~**Arquivar o `dagente-bot`**~~ (`M1DjJDW9oQA30uyq`) — **feito em 19/08** (topo).
 2. ~~**Provisionar o `chat_user_token`**~~ — **código pronto em 19/08, falta subir** (topo). Escrito, sem deploy: exige o protocolo de deploy (build `:test` antes) e, à parte, uma passada no nó Guard para levar a mensagem de erro nova (`ops/n8n/guard.js` diverge do workflow ao vivo só nessa string).
-3. **Provar o AMD** — **provado por dentro em 19/08** (matriz de `AnsweredBy`, log e chamada à REST da Twilio, acima). Falta só a ligação real para um número com Não Perturbe ativo, para ver a duração cair para segundos.
+3. ~~**Provar o AMD**~~ — **feito em 19/08**, em chamada real: 4 s em vez de 155 s, `machine_start`, bot sem falar e sem gastar token (topo).
 4. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
+
+   **Pista achada em 19/08, que encurta metade disso:** a perna do Twilio **não precisa de tabela chumbada** — o próprio recurso `Call` da API traz `price` e `price_unit` por chamada (`US$ 0,3413`, medido). Buscar isso no `CallReportService` e gravar junto das métricas dá custo real de telefonia por chamada sem inventar preço, que era a objeção que travou o campo de custo em dólar. Sobram LLM, STT e TTS, e o problema ali continua sendo o plano da ElevenLabs.
 5. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
 6. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
 7. **`lead_fit` vazio** — a extração devolve nulo ou categoria fora do vocabulário, e o código descarta **em silêncio**. Falta uma linha de log em `call_report_service.rb` para distinguir os dois casos.
