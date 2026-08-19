@@ -1,6 +1,92 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-08-11 · Instância: https://prs.cortexgen.cloud
+Última sessão: 2026-08-17 · Instância: https://prs.cortexgen.cloud
+
+---
+
+## ✅ O widget da conta 1 está ligado ao n8n — e toda resposta do bot deixava uma execução vermelha (17/08)
+
+O snippet com `websiteToken: 'MrtKJhxPBc9DgjjCaU4so6o1'` é a **inbox 10 da conta 1** (hoje chamada `CortexGen Chat`). A cadeia inteira estava montada, mas nunca tinha sido exercitada depois da troca do Guard em 13/08 — a última conversa era de 08/08. Provado com mensagem real: o Nathan respondeu em ~2 s, e o Vitor (conta 2, inbox 21) também, pelo mesmo workflow.
+
+| elo | estado |
+|---|---|
+| `AgentBotInbox` inbox 10 → Nathan | ativo, `outgoing_url` = `/webhook/cortexgen-bot` |
+| rota no Supabase | ativa, persona `nathan-website`, 11.626 caracteres de prompt |
+| secret e tokens por conta | gravados |
+| pré-chat | ligado, com **nome, e-mail e telefone obrigatórios** |
+
+**O defeito que o teste revelou:** desde 13/08, **toda** resposta do bot terminava numa execução vermelha `payload sem account/inbox`. O bot respondia normalmente — quem estourava era o evento seguinte. O Guard lia o inbox de `b.inbox.id`, que existe em `message_created`; em `conversation_updated` o corpo **é** a conversa e o campo mora na raiz (`b.inbox_id`). Das 17 execuções com erro desde 13/08, **15 eram esse falso alarme**, e as duas de verdade (`sem secret de bot`, `You are not authorized`) ficavam enterradas no meio.
+
+**Isso é pior do que parece aqui**, porque a regra escrita neste handoff é "execução vermelha = alguém tem de olhar". Um evento que falha sempre transforma a lista em ruído e devolve exatamente o modo de falha que o Guard existe para evitar — o silêncio, agora por excesso de alarme em vez de falta.
+
+Corrigido em `ops/n8n/guard.js` e no workflow ao vivo: `(b.inbox && b.inbox.id) || b.inbox_id || (b.conversation && b.conversation.inbox_id)`. Depois do patch, oito execuções seguidas verdes e resposta do bot nas duas contas.
+
+**Como o patch foi aplicado, e por que não pelo MCP:** `update_workflow` apaga as credenciais dos nós HTTP — aqui levaria junto Supabase (`Persona`, `Log`) e OpenRouter (`LLM`). O caminho seguro é o que já estava escrito adiante: `n8n export:workflow` → editar o JSON → `n8n import:workflow` → publicar de novo (a importação **desativa** o workflow; o `publish_workflow` do MCP reativa). O script de patch só sobrescreve o nó Guard **se a única diferença com o repo for a linha esperada** — senão aborta, para não engolir em silêncio uma edição feita na tela. Conferido depois do import: credenciais de Supabase e OpenRouter intactas, `Historico`/`Responde`/`Handoff` ainda com header por expressão. Backup do export em `/tmp/wf-bot.json.bak-*` na VPS.
+
+**Sobre captura de lead na conta 1:** quem captura é o **pré-chat obrigatório** — nome, e-mail e telefone viram contato antes da primeira mensagem. Não existe workflow de lead para o site da PRS (o `dagente-lead` é só da conta 2): o lead da conta 1 nasce e morre no Chatwoot, sem cópia em CRM externo. E o `enable_email_collect` da inbox 10 **voltou a ficar ligado** (tinha sido desligado de propósito em 08/08); com o pré-chat exigindo e-mail ele nunca dispara, então é inofensivo — mas é redundância que engana quem for depurar.
+
+---
+
+## ✅ A segunda conta em produção — e o que ela quebrou (11–15/08)
+
+`dagente` (conta 2) é o primeiro inquilino além da PRS: bot **Vitor**, widget no ar em `www.consultasdagente.com.br`, e as inboxes 20 (voz), 21 (widget), 22 (WhatsApp) e 23 (formulário do site). Foi montando ela que se descobriu que **três credenciais do workflow do bot eram fixas da conta 1** — funcionavam por acidente, porque só existia uma conta.
+
+| o que era fixo | como falhava | onde vive agora |
+|---|---|---|
+| secret do Guard (`$env.CHATWOOT_WEBHOOK_SECRET`, do bot Nathan) | assinatura nunca batia: execução vermelha e **mensagem nunca respondida**, sem sintoma nenhum para quem escreveu | `bot_channel_routes.chatwoot_agent_bot_secret` |
+| token de User do `Historico` | 401 "You are not authorized to access this account" | `bot_account_settings.chat_user_token` (tabela nova, por conta) |
+| token do bot em `Responde`/`Handoff` | 401 "Bot is not authorized to access this account" (`account_accessible_for_bot?`) | `bot_channel_routes.chatwoot_agent_bot_access_token` |
+
+Os três saem de uma consulta do próprio Guard no começo da execução e viajam no JSON até os nós seguintes — `Historico`, `Responde` e `Handoff` trocaram credencial fixa por header `api_access_token` calculado por expressão (`1043c316c`, `821c8ec09`). **Conferido no workflow ao vivo em 15/08**: o `CHATWOOT_WEBHOOK_SECRET` só sobrevive num comentário.
+
+~~**O que continua manual: o `chat_user_token`.**~~ — **provisionado automaticamente desde 19/08.** Era o terceiro credencial por conta e o único sem dono no código: secret e access_token do bot já viajavam junto da rota, e este precisava da linha em `bot_account_settings` gravada à mão antes de a conta responder. Era onde o terceiro inquilino ia travar, com o sintoma de sempre: bot mudo.
+
+Grava quem cria rota de bot, que são exatamente dois caminhos e ambos foram cobertos: `RoutesController#ensure_chat_user_token` (Bot Personas → Channels) e `Openwa::ProvisionService#create_bot_route` (sessão de WhatsApp, que escreve a rota sem passar pelo controller). Os dois chamam `Botlayer::Client#upsert_account_settings`, upsert por `chatwoot_account_id`.
+
+**De quem é o token, e por que isso não é detalhe:** do admin que liga o bot no canal. Quem chega ali passou por `check_admin_authorization?`, então é sempre admin daquela conta e o token vale para ela — é o mesmo critério que o provisionamento do OpenWA já usava para o `apiToken` do adapter. O preço: **admin que sai da conta leva o token junto**. Não é silencioso — o `Historico` passa a dar 401 e a execução fica vermelha na lista do n8n —, e o conserto é qualquer outro admin salvar o canal, que regrava. É por isso que a escrita é a cada save, e não só na criação.
+
+Contas 1 e 2 já têm a linha do backfill antigo; a primeira vez que alguém salvar um canal nelas, o token é substituído pelo de quem salvou.
+
+**`fetch` não existe no Code node** (`635a45a1f`). O n8n roda o código num `@n8n/task-runner` separado, mesmo com Node 24 no container: `require('https')` é o caminho, já liberado por `NODE_FUNCTION_ALLOW_BUILTIN=crypto,https`. Não falha em teste de sintaxe — só na primeira chamada real.
+
+Os outros vazamentos entre contas achados na mesma onda:
+
+- **Sessões de WhatsApp** (`986ec3eb4`): o gateway OpenWA não tem conceito de conta, então `sessions()` devolvia todas, e `qr/start/stop/logout/destroy` aceitavam qualquer `session_id` — dava para controlar a sessão de outra conta sabendo o id. Agora filtra pelo `accountId` que o provisionamento já gravava na config da instância do adapter. Sessão sem instância vinculada não tem dono identificado e some para todo mundo, em vez de ser de todos.
+- **Bot de texto em inbox de voz** (`8e9408114`): a inbox `Voz — <número>` só guarda a transcrição da ligação — quem conversa é o `cortexgen-voice`, direto pela persona da rota. Ligar um AgentBot nela fazia cada trecho da transcrição virar pergunta para o workflow de texto, e foi esse o "bot respondendo tudo errado" da dagente. Ativar agora é barrado; desativar continua livre, para desfazer o que já ficou ligado.
+- **Features por conta no Super Admin** (`c4d003e9c`): a tela de checkboxes é enterprise-only, então com `DISABLE_ENTERPRISE=1` não existia campo nenhum — não dava para ligar `bot_personas`/`whatsapp_sessions`/`ai_providers`/`twilio_integration` numa conta nova pelo painel.
+
+Do lado de voz, na mesma janela: o formulário público de demo passou a existir (`7fcfc410f`) — grava consentimento e telefone em `VoiceCallRequest` **antes** de discar, porque é o registro exigido para ligar com voz automatizada, não um log — e a rota é escolhida pelo DDI do telefone digitado (`47a785f43`), o que aceita país novo sem deploy. Número só de voz deixou de aparecer como "Not connected yet" na aba Numbers (`4aca29703`).
+
+### O formulário do site da dagente não tinha workflow — e o site engolia o erro (15/08)
+
+O simulador de `www.consultasdagente.com.br` faz `POST` em `n8n.cortexgen.cloud/webhook/dagente-lead`, e **o workflow nunca existiu**: 404 desde a publicação. Ninguém percebeu porque o site trata sucesso e falha do mesmo jeito —
+
+```js
+fetch(url, {...}).then(r => finish(r.ok)).catch(() => finish(false));
+```
+
+— os dois caminhos abrem o WhatsApp com o resumo e mostram uma mensagem amigável. Quem preencheu e não mandou a mensagem **não deixou rastro além do evento `lead_qualificado` no GTM** (contagem, sem nome nem telefone). Esses leads não são recuperáveis.
+
+Entregue: inbox **23 — `Site — Da Gente`** (`Channel::Api`, sem agent bot) e o workflow **`DaGente — Lead do site`** (`lBvaTfJxM6u6ZVhd`), publicado no mesmo path que o site já chama — **nada mudou no site**.
+
+```
+Webhook → Valida → Credenciais → BuscaContato → MontaContato → SalvaContato → IdDoContato → Conversa → Mensagem
+```
+
+Quatro decisões que não aparecem na tela:
+
+- **CORS explícito** para `consultasdagente.com.br`, com e sem `www`. É `fetch` de browser com `content-type: application/json`, ou seja tem preflight: sem `allowedOrigins` o `OPTIONS` reprova e o lead morre **sem erro visível em lugar nenhum**. Verificado: 204 com o `access-control-allow-origin` certo.
+- **Token por conta, lido do Supabase** (`bot_account_settings`), o mesmo caminho do Guard. Credencial fixa aqui seria o bug de 13/08 outra vez. Token de Agent Bot não serviria: `contacts` e `conversations` estão fora da `BOT_ACCESSIBLE_ENDPOINTS`.
+- **Dedupe por E.164.** O campo do site aceita qualquer formatação e a busca do Chatwoot é "contém", então só a igualdade exata do número normalizado conta como o mesmo contato. O `source_id` da conversa é o telefone, então o `ContactInboxBuilder` reaproveita o vínculo: lead repetido atualiza o contato e cria só a conversa, que é o evento.
+- **Falha alto.** Lead sem nome ou com telefone inválido levanta erro e aparece vermelho na lista do n8n; só o honeypot é descartado calado. **O consentimento é registrado, não é porteira** — recusar aqui perderia um lead que o site já mandou para o WhatsApp.
+
+Provado com dois POSTs reais: contato único, `location` preenchido, atributos atualizados no segundo envio, duas conversas abertas com a fala do visitante como `incoming`. Contato e conversas de teste apagados em seguida.
+
+**Não confundir com o pré-chat do widget**: os campos Nome/Telefone/E-mail da inbox 21 são nativos do Chatwoot e já gravam no contato, sem passar por n8n.
+
+**Armadilha do SDK do n8n, custou uma versão:** `wf.add(ifNode).to(a, { outputIndex: 0 })` + `.to(b, { outputIndex: 1 })` **valida verde e grava as duas conexões na saída 0** — o IF deixa de ser IF e os dois ramos rodam para todo item (aqui: atualizar e criar o mesmo contato). É a mesma família do "parâmetro fora de `config.parameters` grava o nó vazio" já registrado adiante. Confira `connections` no sqlite antes de publicar; e, quando o desvio for simples, um nó só com `method`/`url` por expressão (`={{ $json.contactId ? "PUT" : "POST" }}`) elimina a armadilha junto com o nó.
+
+~~**Pendência: o workflow `dagente-bot` (`M1DjJDW9oQA30uyq`) está ativo e órfão**~~ — **arquivado em 19/08.** Era cópia do Nathan feita em 13/08, com o Guard antigo de segredo fixo e credenciais fixas em `Historico`/`Responde`/`Handoff`; ninguém apontava para ele (o Vitor usa `cortexgen-bot`), mas quem repontasse voltava direto ao bot mudo. Despublicado e arquivado pelo MCP do n8n (`unpublish_workflow` → `archive_workflow`), com o path `/webhook/dagente-bot` desregistrado junto. Arquivar não apaga: reverter é desarquivar pela tela do n8n — e quem fizer isso herda o Guard velho, então republique só depois de trocar o nó pelo `ops/n8n/guard.js`.
 
 ---
 
@@ -38,7 +124,29 @@ Decisões já tomadas, para não reabrir:
 
 ### ▶️ RETOMAR AQUI — o bot conversava com o correio de voz (11/08, `5d970c267`)
 
-**Consertado, falta uma chamada não atendida para provar.**
+**Consertado. Provado por dentro em 19/08; falta só ver a Twilio derrubar uma chamada viva.**
+
+A prova sem gastar chamada foi além do 403/404 descrito adiante: um webhook **assinado de verdade** (assinatura gerada no próprio servidor com o `RequestValidator` da Twilio, sobre um `TwilioVoiceCall` descartável de SID inexistente) exercita o caminho inteiro. Matriz completa, contra a produção em `821c8ec09`:
+
+| `AnsweredBy` | HTTP | status gravado | tentou desligar? |
+|---|---|---|---|
+| `unknown` | 200 | intacto (`ringing`) | não — correto, o Twilio não decidiu |
+| `human` | 200 | intacto (`ringing`) | não |
+| `machine_start` | 500 | `machine_start` | **sim** |
+| `machine_end_beep` | 500 | `machine_end_beep` | **sim** |
+| `fax` | 500 | `fax` | **sim** |
+
+**O 500 é o sinal de sucesso, não de defeito:** significa que o `hang_up_call` chegou a falar com a Twilio e ela respondeu `[HTTP 404] 20404 Unable to update record` porque o `CallSid` da sonda é falso. Com um SID vivo, essa é a chamada que derruba. O log traz a linha que faltava:
+
+```
+TWILIO_VOICE_AMD_HANGUP sid=CAffff…ffff answered_by=machine_start
+Twilio::REST::RestError ([HTTP 404] 20404 : Unable to update record
+app/controllers/twilio/voice_routing_controller.rb:62
+```
+
+Ficam provados: rota resolvida pelo `CallSid` (o bug de `0e9052981`), assinatura validada, a porteira do `MACHINE_ANSWERS` nos dois sentidos, o `update_call_status` e a ida à REST da Twilio com a credencial da conta certa. **Não fica provado** que a Twilio encerra a chamada e que a duração cai para segundos — isso só uma ligação real mostra.
+
+**Efeito colateral que vale saber antes de vê-lo em produção:** se o webhook do AMD chegar para uma chamada que já terminou (quem atendeu desligou no exato momento da decisão), o `hang_up_call` toma o mesmo `20404` e o endpoint devolve **500**, com retry do lado da Twilio. É barulho, não perda — a chamada já acabou —, mas explica um 500 solitário no log que não é regressão.
 
 Duas ligações para o celular do Paulo caíram no correio de voz da Más Móvil, e o bot **conversou com o menu da operadora**: 150 s e 155 s, 7 e 8 turnos, alternando pergunta de diagnóstico com *"presione siete para revisar su mensaje"*. O Twilio trata "atendido pela gravação" como atendido, conecta o `<Stream>`, e nada desligava.
 
@@ -84,7 +192,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 | Latência | ~1,9–2,2 s de espera real. **O alvo de 1,5 s nunca foi batido** — a régua antiga media o pedaço errado |
 | Números | `+16893539100` (US) e `+5078389480` (Panamá), os dois roteados para o bot |
 | E-mail | ✅ saída por Resend, entrada por Mailgun, os dois provados |
-| Isolamento entre contas | ✅ persona e base de conhecimento por conta |
+| Isolamento entre contas | ✅ persona, base de conhecimento, sessões de WhatsApp e **credenciais do bot** por conta |
+| Segunda conta | ✅ `dagente` em produção: widget, WhatsApp, voz e formulário do site (ver o topo) |
 | Webhook do bot | ✅ exige assinatura do Chatwoot |
 | Marca | ✅ arte, tema verde e nome em 57 idiomas |
 
@@ -109,13 +218,16 @@ Três coisas que estavam escritas aqui como verdade e não eram:
 
 ### A fila, na ordem que eu seguiria
 
-1. ~~O botão de ligar na conversa~~ — **entregue e validado** em chamada real (acima).
-1. **Provar o AMD**: uma chamada não atendida, de propósito, e confirmar `TWILIO_VOICE_AMD_HANGUP` no log do Rails e duração de segundos em vez de minutos (acima).
-2. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
-3. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
-4. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
-5. **`lead_fit` vazio** — a extração devolve nulo ou categoria fora do vocabulário, e o código descarta **em silêncio**. Falta uma linha de log em `call_report_service.rb` para distinguir os dois casos.
-6. **Latência**, se ainda incomodar: o único componente gordo que é nosso é a espera do EOT (~0,8 s). O caminho de verdade é o **EagerEndOfTurn**, que o Flux já anuncia em 0.5 e o Pipecat deixa para a aplicação implementar. É a maior mudança do projeto.
+~~O botão de ligar na conversa~~ — **entregue e validado** em chamada real (acima).
+
+1. ~~**Arquivar o `dagente-bot`**~~ (`M1DjJDW9oQA30uyq`) — **feito em 19/08** (topo).
+2. ~~**Provisionar o `chat_user_token`**~~ — **código pronto em 19/08, falta subir** (topo). Escrito, sem deploy: exige o protocolo de deploy (build `:test` antes) e, à parte, uma passada no nó Guard para levar a mensagem de erro nova (`ops/n8n/guard.js` diverge do workflow ao vivo só nessa string).
+3. **Provar o AMD** — **provado por dentro em 19/08** (matriz de `AnsweredBy`, log e chamada à REST da Twilio, acima). Falta só a ligação real para um número com Não Perturbe ativo, para ver a duração cair para segundos.
+4. **Custo e capacidade** — hoje há tokens e segundos por chamada, mas não tarifa: não dá para saber margem. E ninguém mediu quantas chamadas simultâneas a VPS aguenta. São as duas surpresas da primeira conta que usar de verdade.
+5. **DNS secundário** — `ns1`/`ns2.dns-parking.com` são os dois da Hostinger. Foi o que derrubou duas chamadas em 10/08. Conserto é no registrador, não no código.
+6. **Cloudflare RealtimeKit** — em stand by, token reprovado na validação. Script pronto em `ops/set-realtimekit.sh`.
+7. **`lead_fit` vazio** — a extração devolve nulo ou categoria fora do vocabulário, e o código descarta **em silêncio**. Falta uma linha de log em `call_report_service.rb` para distinguir os dois casos.
+8. **Latência**, se ainda incomodar: o único componente gordo que é nosso é a espera do EOT (~0,8 s). O caminho de verdade é o **EagerEndOfTurn**, que o Flux já anuncia em 0.5 e o Pipecat deixa para a aplicação implementar. É a maior mudança do projeto.
 
 ### Como a latência caiu de 2.256 para 1.146 ms
 
@@ -460,7 +572,7 @@ As inboxes antigas não tinham padrão e duas eram indistinguíveis (`PRS Brands
 16 Voz — +16893539100    17 E-mail — CortexGen
 ```
 
-O canal vem primeiro porque é o que o agente precisa saber antes do resto.
+O canal vem primeiro porque é o que o agente precisa saber antes do resto. A inbox 10 foi renomeada depois disso e hoje se chama **`CortexGen Chat`** — fora do padrão, e é a do widget que está no ar. Depois de 11/08 a conta 1 ganhou `18 Voz — +5078389480` e `19 Voz — +551150289898`. A conta 2 tem `20 Voz — +558523981900`, `22 WhatsApp — teste1`, `23 Site — Da Gente` — e `21 Atendimento DaGente`, o widget, que **foge do padrão** e vale renomear para `Website — Da Gente` quando alguém passar por ali.
 
 ### Fase 3c entregue — a chamada vira conversa, contato e lead
 
@@ -656,7 +768,7 @@ Correção: nó **Historico** usa credencial `Chat User Token` (Header Auth `api
 - VPS srv1365122 (`187.77.20.155`), stack em `/opt/cortexgen-chat` (imagem `cortexgen-chat:v1`)
 - rails (porta 3021) + sidekiq + postgres pgvector + redis — isolado do Chatwoot antigo (`chat.cortexgen.cloud`, porta 3020)
 - nginx + Let's Encrypt (renova sozinho, expira 2026-11-05)
-- Fork `prsbrands/chatwoot`, branch `feature/cortexgen-whitelabel`. Produção e GitHub sincronizados em `9d2c4ef94`
+- Fork `prsbrands/chatwoot`, branch `feature/cortexgen-whitelabel`. Produção e GitHub sincronizados em `821c8ec09` (conferido em 15/08)
 - Edição Community/MIT: `DISABLE_ENTERPRISE=1`, `DISABLE_TELEMETRY=true`
 - Conta: **PRS Global Business** (id 1), flag `disable_branding` ativa
 
@@ -719,7 +831,7 @@ Floats e inteiros gigantes continuam divergindo e **não** são tratados: nenhum
 
 A segunda custou uma janela de bot mudo: importei o Guard, a mensagem legítima falhou, e só o `execution_data` no sqlite dizia o motivo. **Depois de importar, mande uma mensagem real e confira o status da execução** — 200 no webhook não significa nada, porque o `responseMode: onReceived` responde antes de processar.
 
-O segredo vai para o n8n por `CHATWOOT_WEBHOOK_SECRET` no `.env` de `/docker/n8n-y4jd/`, copiado direto do banco do Chatwoot sem passar por tela nem histórico.
+O segredo ia para o n8n por `CHATWOOT_WEBHOOK_SECRET` no `.env` de `/docker/n8n-y4jd/`, copiado direto do banco do Chatwoot sem passar por tela nem histórico. **Isso valeu até 13/08 e não vale mais** — um segredo fixo é o de um bot só, e toda conta nova tem o seu: o Guard passou a resolver o secret por conta no Supabase (ver "A segunda conta em produção" no topo). O que continua valendo daqui é o mecanismo da assinatura e o escaping do Rails, que não mudaram.
 
 Provado em produção: execuções 13455–13457 `success` com mensagens legítimas (o bot respondeu), execução 13458 `error` com POST forjado e **nenhuma resposta gerada**.
 
@@ -732,7 +844,7 @@ Webhook → Guard → Persona (Supabase) → Historico (10 últimas msgs)
   → Log (bot_interactions) → PrecisaHandoff → Handoff (toggle_status: open)
 ```
 
-- Credenciais por nó: **Persona/Log** `Supabase account 2` · **LLM** `OpenRouter account 2` · **Historico** `Chat User Token` (token de User) · **Responde/Handoff** `CortexGen Chat Bot (api_access_token)` (token do bot).
+- Credenciais por nó: **Persona/Log** `Supabase account 2` · **LLM** `OpenRouter account 2`. **`Historico`, `Responde` e `Handoff` não têm mais credencial fixa** — desde 13/08 mandam o header `api_access_token` por expressão, com o token que o Guard resolveu para aquela conta (ver "A segunda conta em produção" no topo). Este workflow atende **todas** as contas.
 - **Provider OpenRouter**, formato OpenAI-compat. Primário `deepseek/deepseek-v4-flash-0731` ($0.09/$0.18 por M, 1.05M ctx), fallback `tencent/hy3` ($0.13/$0.53, 262K) via o array `models` — o roteador cai no segundo na mesma chamada. Trocar de modelo = UPDATE em `bot_personas`, sem mexer no workflow.
 - Merge fields do GHL (`{{contact.first_name}}`, `{{contact.email}}`, `{{contact.call_summary}}`) são substituídos no `MontaPrompt` pelos dados do contato Chatwoot. O atributo `call_summary` existe nos contatos.
 - Handoff **determinístico** (keywords + `max_turns` + `content_filter`), não depende do modelo decidir.
