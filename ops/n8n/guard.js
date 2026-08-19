@@ -54,8 +54,14 @@ if (!assinatura || !ts) throw new Error('webhook sem assinatura do Chatwoot — 
 // tanto faz o que declarou aqui. Bug visto em producao 12/08: conta dagente
 // com bot Vitor, Guard comparando contra o secret do Nathan, mensagem nunca
 // respondida — em silencio, porque a assinatura so falhava.
+// Onde vive o inbox_id muda com o evento: em `message_created` ele vem no
+// objeto `inbox`; em `conversation_updated`/`conversation_created` o corpo E a
+// conversa, e o campo esta na raiz. Ler so o primeiro formato fazia toda
+// resposta do bot terminar numa execucao vermelha ('payload sem account/inbox')
+// — o bot respondia, mas a lista de execucoes ficava permanentemente suja e
+// escondia a falha de verdade. Visto em producao entre 13/08 e 17/08.
 const accountId = b.account && b.account.id;
-const inboxId = (b.inbox && b.inbox.id) || (b.conversation && b.conversation.inbox_id);
+const inboxId = (b.inbox && b.inbox.id) || b.inbox_id || (b.conversation && b.conversation.inbox_id);
 if (!accountId || !inboxId) throw new Error('payload sem account/inbox — nao da pra saber qual secret verificar');
 
 const supabaseUrl = $env.SUPABASE_REST_URL;
@@ -92,7 +98,7 @@ if (tokenResponse.statusCode < 200 || tokenResponse.statusCode >= 300) {
 }
 const tokenRows = JSON.parse(tokenResponse.body);
 const chatUserToken = tokenRows[0] && tokenRows[0].chat_user_token;
-if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + accountId + ' — rode o backfill de bot_account_settings');
+if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + accountId + ' — salve o canal em Bot Personas > Channels para gravar');
 
 const esperado = 'sha256=' + crypto
   .createHmac('sha256', segredo)
