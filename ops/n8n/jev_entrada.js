@@ -33,8 +33,10 @@ const MAX_SECTIONS = 80;
 
 const g = $('Guard').first().json;
 const rota = $('Persona').first().json;
-const hist = $input.first().json;
-const segue = jev => [{ json: Object.assign({}, hist, { jev: jev }) }];
+// Sai so a decisao; o historico o MontaPrompt le direto do no Historico.
+// Repassar o payload inteiro por aqui custava ~0,5 s por mensagem mesmo com o
+// Jev desligado — cada Code node paga para trafegar o que recebe e devolve.
+const segue = jev => [{ json: { jev: jev } }];
 
 if (!g.jev || !rota || !rota.persona_id) return segue(null);
 const act = g.jev.activities;
@@ -132,7 +134,7 @@ async function postarNoChatwoot(path, body) {
 
 // ---- o que perguntar ---------------------------------------------------------
 
-const payload = hist.payload || [];
+const payload = $('Historico').first().json.payload || [];
 const recentes = payload
   .filter(m => !m.private && (m.message_type === 0 || m.message_type === 1) && String(m.content || '').trim())
   .slice(-6)

@@ -5,7 +5,7 @@ const rota = $('Persona').first().json;
 const jev = $('JevEntrada').first().json.jev || {};
 if (!rota || !rota.persona_id) return [];
 
-const payload = $input.first().json.payload || [];
+const payload = $('Historico').first().json.payload || [];
 const chat = payload
   .filter(m => !m.private && (m.message_type === 0 || m.message_type === 1) && String(m.content || '').trim())
   .slice(-10);

@@ -69,8 +69,13 @@ if mp != code('monta_prompt.js'):
          "  : rota.composed_prompt;\n"
          "const systemText = String(composto || '')"),
         ("  rota.model, nativeOpenRouterFallback", "  jev.model || rota.model, nativeOpenRouterFallback"),
+        ("const payload = $input.first().json.payload || [];", "const payload = $('Historico').first().json.payload || [];"),
     ]
+    # Troca ja aplicada numa rodada anterior e pulada: o script roda tanto
+    # sobre o workflow de antes do Jev quanto sobre uma versao intermediaria.
     for old, new in trocas:
+        if new in mp:
+            continue
         if mp.count(old) != 1:
             fail('MontaPrompt ao vivo nao tem o trecho esperado: ' + old[:40])
         mp = mp.replace(old, new)
