@@ -12,6 +12,8 @@ credencial do OpenRouter: nada de parametro escrito de memoria.
 """
 import copy
 import json
+import secrets
+import string
 import sys
 import uuid
 from pathlib import Path
@@ -56,7 +58,13 @@ def link(a, *saidas):
     return a, {'main': [[{'node': b, 'type': 'main', 'index': 0}] for b in saidas]}
 
 
+# O import:workflow exige id (SQLITE_CONSTRAINT: workflow_entity.id sem ele).
+# Id novo a cada geracao: reimportar este arquivo cria outro workflow, nao
+# atualiza o anterior — para atualizar, use o id que o n8n ja tem.
+wf_id = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+
 wf = {
+    'id': wf_id,
     'name': 'CortexGen Follow-up',
     'nodes': nodes,
     'connections': dict([
