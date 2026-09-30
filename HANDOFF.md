@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.8.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.9.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -20,7 +20,7 @@
 - **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. Rode antes de recriar os containers e leia a saída. O teste de fumaça precisa ler `/api/v1/accounts/1/conversations`.
 - **Conversa de teste:** 131 da conta 1, contato "Teste Jev", inbox 10 (widget). Injete com `rails runner` + `c.messages.create!(... message_type: :incoming ...)`.
 
-### Bloco 1 → 0.9.0: código pronto em `a8e4ef567`, falta ir ao ar
+### Bloco 1 → 0.9.0: no ar (n8n) em 30/09, Rails pendente
 
 O que foi feito, e onde:
 - `ops/n8n/patch_bloco1.py` aplica tudo no workflow. Só roda se Guard, JevEntrada e JevRevisao ao vivo forem os do `25e1472f0`.

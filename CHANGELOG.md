@@ -14,6 +14,25 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.9.0] — 2026-09-30 · base Chatwoot 4.18.0
+
+**Passagem para humano com briefing**
+- Toda vez que o bot passa a conversa, fica uma nota privada no idioma do cliente com:
+  - por que o bot passou;
+  - o que o cliente quer;
+  - o que o bot já fez;
+  - compromissos e pendências;
+  - as 3 últimas mensagens do cliente, literais.
+- Vale para os quatro caminhos: palavra-chave/limite de turnos/filtro do modelo, o Jev antes de responder, a resposta retida pelo Jev e o opt-out.
+
+**Respostas em bolhas no WhatsApp, Instagram e Messenger**
+- A resposta sai em até 4 mensagens, com "digitando" e uma pausa pelo tamanho de cada uma. No widget continua uma mensagem só.
+
+**Opt-out que bloqueia**
+- "stop", "baja", "no me escriban más", "me tira da lista"… bloqueiam o contato, põem a etiqueta `opt-out` e abrem a conversa para a equipe. O bot não responde mais a contato bloqueado, também no OpenWA.
+- Para desfazer: desbloquear na tela do contato.
+- Campanhas de WhatsApp e SMS pulam contato bloqueado (entra com a próxima imagem do Rails).
+
 ## [0.8.0] — 2026-09-30 · base Chatwoot 4.18.0
 
 **Jev para a equipe**
