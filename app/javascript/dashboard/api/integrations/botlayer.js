@@ -58,6 +58,22 @@ class BotlayerAPI extends ApiClient {
     return axios.post(`${this.url}/providers/${id}/sync_models`);
   }
 
+  jev() {
+    return axios.get(`${this.url}/jev`);
+  }
+
+  updateJev(data) {
+    return axios.patch(`${this.url}/jev`, data);
+  }
+
+  saveJevKey(apiKey) {
+    return axios.put(`${this.url}/jev/key`, { api_key: apiKey });
+  }
+
+  deleteJevKey() {
+    return axios.delete(`${this.url}/jev/key`);
+  }
+
   routes() {
     return axios.get(`${this.url}/routes`);
   }

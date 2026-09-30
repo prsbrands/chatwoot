@@ -130,6 +130,14 @@ class Integrations::Botlayer::Client
     )
   end
 
+  def account_settings(account_id)
+    get("bot_account_settings?chatwoot_account_id=eq.#{account_id.to_i}&select=*").first || {}
+  end
+
+  def jev_summary(account_id)
+    post('rpc/bot_jev_summary', { p_account: account_id.to_i })
+  end
+
   private
 
   def uuid!(value)

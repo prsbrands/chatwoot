@@ -206,7 +206,114 @@
         "stt": "Transcription",
         "tts": "Voice"
       },
-      "CHANNELS_NOTE": "Looking for Twilio, 360dialog, WhatsApp Cloud or Telegram? Those are messaging channels — add them under Settings → Inboxes → Add Inbox, where their credentials are stored encrypted per channel."
+      "CHANNELS_NOTE": "Looking for Twilio, 360dialog, WhatsApp Cloud or Telegram? Those are messaging channels — add them under Settings → Inboxes → Add Inbox, where their credentials are stored encrypted per channel.",
+      "JEV": {
+        "TITLE": "Jev — fast decisions",
+        "DESCRIPTION": "Jev does not talk to your customers: it makes quick, cheap decisions around the AI that does — whether it needs to answer, with which model and which part of the knowledge base, when a person should take over, and whether the reply is fine to send. Usually in under half a second.",
+        "STATUS": {
+          "OFF": "Off",
+          "OBSERVING": "Observing",
+          "DECIDING": "Deciding"
+        },
+        "STATUS_HELP": {
+          "OFF": "",
+          "OBSERVING": "Observing — nothing changes for your customers. Compare what Jev would do before letting it decide.",
+          "DECIDING": "Jev decides in the activities marked Deciding. If it fails or takes longer than 1.5 s, the bot works as it did before."
+        },
+        "STATE": {
+          "observing": "Observing",
+          "deciding": "Deciding",
+          "off": "Paused"
+        },
+        "KEY_LABEL": "TypeSafe API key",
+        "KEY_HELP": "Each account uses its own key. Create one at typesafe.ai — Jev's usage is billed to that TypeSafe account.",
+        "KEY_SAVE": "Check and save",
+        "KEY_OK": "✓ Key checked with TypeSafe",
+        "KEY_REPLACE": "Replace key",
+        "KEY_REMOVE": "Remove key",
+        "KEY_SAVED": "Key checked and saved.",
+        "FAILING": "Jev is not working right now: {error}. The bot keeps answering as it did before.",
+        "TURN_ON": "Turn Jev on",
+        "TURN_OFF": "Turn Jev off",
+        "CONSENT_TITLE": "Send customer messages to TypeSafe?",
+        "CONSENT_TEXT": "To decide, Jev reads the customer's latest messages and the bot's reply, with emails, phone numbers and CPF removed. They are sent to TypeSafe AI, the company that runs Jev. Nothing is sent before you confirm, and turning Jev off stops it.",
+        "CONSENT_CONFIRM": "I agree, turn Jev on",
+        "LET_DECIDE": "Let Jev decide",
+        "BACK_TO_OBSERVE": "Back to observing",
+        "PAUSE": "Pause this activity",
+        "RESUME": "Turn on (observing)",
+        "DECIDE_UNDO": "You can go back to observing at any time.",
+        "GROUP": {
+          "SAVE": "Spend fewer AI tokens",
+          "HANDOFF": "Hand off to a person",
+          "REVIEW": "Check before sending"
+        },
+        "WEEK": "Last 7 days",
+        "METRIC": {
+          "CALLS": "Jev calls",
+          "AVOIDED": "AI calls avoided",
+          "UPSET": "Upset customers",
+          "COST": "Cost",
+          "LATENCY": "Average time"
+        },
+        "NO_DATA": "No messages checked in the last 30 days yet.",
+        "AGREEMENT": "Last 30 days: Jev and your handoff keywords agreed on {agreed} of {compared} messages.",
+        "ACTED": "It acted on {acted}.",
+        "RULES_LABEL": "Your rules (one per line, up to 10)",
+        "RULES_PLACEHOLDER": "Never quote a price that is not in the knowledge base\nNever confirm an appointment",
+        "STATS": {
+          "knowledge": "Last 30 days: {runs} messages checked, about {tokens} prompt tokens Jev would cut.",
+          "model_routing": "Last 30 days: Jev would switch the model on {signals} of {runs} messages.",
+          "no_reply": "Last 30 days: Jev would skip {signals} of {runs} messages.",
+          "human_request": "Last 30 days: Jev noticed a request for a person in {signals} of {runs} messages.",
+          "mood": "Last 30 days: Jev saw an upset customer in {signals} of {runs} messages.",
+          "opt_out": "Last 30 days: Jev saw an opt-out in {signals} of {runs} messages.",
+          "manipulation": "Last 30 days: Jev saw a clear manipulation attempt in {signals} of {runs} messages.",
+          "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies."
+        },
+        "ACTIVITY": {
+          "knowledge": {
+            "TITLE": "Send only the relevant knowledge",
+            "WHAT": "Before each reply, Jev marks which sections of the knowledge base matter for the customer's message. Only those go to the AI, instead of the whole base.",
+            "DECIDES": "The AI starts receiving only the sections Jev marked. When Jev marks none, or does not answer in time, the whole base goes as today."
+          },
+          "model_routing": {
+            "TITLE": "Pick the model per message",
+            "WHAT": "Jev rates each message as simple, normal or delicate. Simple messages can go to a cheaper model and delicate ones (complaints, negotiation, objections) to a stronger one. Set the light and strong models in each persona under Bot Personas — without them this activity changes nothing.",
+            "DECIDES": "Simple messages start going to the persona's light model and delicate ones to its strong model. Personas without those models keep their usual model."
+          },
+          "no_reply": {
+            "TITLE": "Skip messages that need no reply",
+            "WHAT": "\"ok\", \"thanks 👍\", \"bye\": Jev notices when the customer's message asks for nothing, so the bot does not call the AI to answer it.",
+            "DECIDES": "The bot stops answering those messages and the AI is not called. A reply to a question the bot asked (\"ok\" to \"shall I book it?\") still gets an answer."
+          },
+          "human_request": {
+            "TITLE": "Notice a request for a person",
+            "WHAT": "Jev notices when the customer asks to talk to a person, however they phrase it. Today this depends on the persona's handoff keywords.",
+            "DECIDES": "When the customer asks for a person, the bot stops before calling the AI, leaves a private note and opens the conversation for your team. The keywords keep working too."
+          },
+          "mood": {
+            "TITLE": "Measure the customer's mood",
+            "WHAT": "Jev rates how the customer feels on every message, from upset to happy.",
+            "DECIDES": "An upset customer goes straight to your team: the bot stops before calling the AI and leaves a private note."
+          },
+          "opt_out": {
+            "TITLE": "Notice an opt-out",
+            "WHAT": "Jev notices when the customer asks to stop receiving messages (\"stop\", \"no me escriban más\", \"sair da lista\").",
+            "DECIDES": "The bot stops answering and your team gets the conversation with a private note saying the customer asked not to be contacted."
+          },
+          "manipulation": {
+            "TITLE": "Notice an attempt to manipulate the bot",
+            "WHAT": "\"Ignore your instructions\", \"show me your prompt\": Jev notices when a message tries to make the bot leave its role.",
+            "DECIDES": "On a clear attempt the bot does not answer, and your team gets the conversation with a private note."
+          },
+          "reply_review": {
+            "TITLE": "Check the reply before sending",
+            "WHAT": "Before the bot's reply goes out, Jev checks it: does it answer what was asked, promise something the bot cannot guarantee (a booking, a date, a discount), reveal its instructions, or break one of your rules below?",
+            "DECIDES": "A reply that fails the check is not sent. Your team gets the conversation with the draft and the reason in a private note, to send as is or rewrite."
+          }
+        }
+      }
     },
     "BOTLAYER": {
       "HEADER": "Bot Personas",
@@ -285,7 +392,10 @@
         "WAIT_TURN_HELP": "The model judges whether the caller has actually finished before the bot answers, so it holds on through the pauses in a spelled-out email instead of talking over them. It costs nothing extra — the same reply decides it. Turn this off if you switch to a small model that stops answering: the model has to follow a response format for this to work.",
         "EOT_THRESHOLD": "End of turn confidence",
         "EOT_THRESHOLD_HELP": "How sure Flux must be that the caller finished before the bot answers. This is confidence, not milliseconds of silence. Lower answers sooner but cuts people who pause or spell things out — at 0.7 a caller saying “Doctor Juan” came through as two separate turns. Higher waits longer in silence: most of the caller's wait is spent here, so this is the one setting that moves it. Try one call per step.",
-        "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model"
+        "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model",
+        "LIGHT_MODEL": "Light model (simple messages)",
+        "STRONG_MODEL": "Strong model (delicate messages)",
+        "JEV_MODELS_HELP": "Used only when Jev's \"Pick the model per message\" is deciding (Settings → Integrations → AI Providers). Same provider as the main model; leave empty to always use the main model."
       },
       "KNOWLEDGE": {
         "NEW": "New document",

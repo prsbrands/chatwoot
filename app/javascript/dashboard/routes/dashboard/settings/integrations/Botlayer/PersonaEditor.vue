@@ -34,6 +34,8 @@ const emptyForm = () => ({
   model: '',
   fallback_provider: '',
   fallback_model: '',
+  light_model: '',
+  strong_model: '',
   temperature: 0.6,
   max_tokens: 1200,
   is_active: true,
@@ -174,14 +176,17 @@ const voiceGaps = computed(() => {
   const data = form.value;
   if (!data) return [];
   const gaps = [];
-  if (!data.stt_provider) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER'));
-  if (!data.tts_provider) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER'));
+  if (!data.stt_provider)
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER'));
+  if (!data.tts_provider)
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER'));
   if (data.tts_provider && !data.tts_voice_id) {
     gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_ID'));
   }
   // Só a transcrição precisa saber o idioma de antemão; a voz pode seguir o
   // texto, então em branco ali não é lacuna.
-  if (!data.stt_language) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_LANGUAGE'));
+  if (!data.stt_language)
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_LANGUAGE'));
   // Quem atende telefone diz sempre a mesma coisa ao atender. Deixar o modelo
   // improvisar a abertura muda o texto a cada chamada e custa o tempo de uma
   // ida ao modelo antes da primeira palavra.
@@ -202,7 +207,10 @@ const promptIsHeavyForVoice = computed(
 );
 
 const fallbackProviderOptions = computed(() => [
-  { value: '', label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SAME_AS_PRIMARY') },
+  {
+    value: '',
+    label: t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SAME_AS_PRIMARY'),
+  },
   ...providerOptions.value,
 ]);
 
@@ -217,7 +225,10 @@ const promptChars = computed(() => (form.value?.system_prompt || '').length);
 const knowledgeChars = computed(
   () =>
     globalKnowledgeChars.value +
-    linkedDocs.value.reduce((total, doc) => total + (doc.content || '').length, 0)
+    linkedDocs.value.reduce(
+      (total, doc) => total + (doc.content || '').length,
+      0
+    )
 );
 
 const totalChars = computed(() => promptChars.value + knowledgeChars.value);
@@ -267,6 +278,8 @@ const load = async () => {
       description: persona.description || '',
       fallback_provider: persona.fallback_provider || '',
       fallback_model: persona.fallback_model || '',
+      light_model: persona.light_model || '',
+      strong_model: persona.strong_model || '',
       stt_provider: persona.stt_provider || '',
       stt_model: persona.stt_model || '',
       tts_provider: persona.tts_provider || '',
@@ -306,6 +319,8 @@ const save = async () => {
     model: data.model,
     fallback_provider: data.fallback_provider || null,
     fallback_model: data.fallback_model || null,
+    light_model: data.light_model || null,
+    strong_model: data.strong_model || null,
     temperature: Number(data.temperature),
     max_tokens: Number(data.max_tokens),
     is_active: data.is_active,
@@ -348,11 +363,10 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1">
-    <div
-      v-if="isLoading"
-      class="flex flex-1 items-center justify-center"
-    >
+  <div
+    class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1"
+  >
+    <div v-if="isLoading" class="flex flex-1 items-center justify-center">
       <Spinner />
     </div>
     <template v-else-if="form">
@@ -375,11 +389,13 @@ onMounted(load);
               }}
             </h1>
             <p class="text-xs text-n-slate-11">
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TOTAL_CHARS', {
-                prompt: promptChars.toLocaleString(),
-                knowledge: knowledgeChars.toLocaleString(),
-                total: totalChars.toLocaleString(),
-              }) }}
+              {{
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TOTAL_CHARS', {
+                  prompt: promptChars.toLocaleString(),
+                  knowledge: knowledgeChars.toLocaleString(),
+                  total: totalChars.toLocaleString(),
+                })
+              }}
             </p>
           </div>
         </div>
@@ -414,7 +430,9 @@ onMounted(load);
             <h2
               class="text-xs font-semibold uppercase tracking-wide text-n-slate-10"
             >
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_IDENTITY') }}
+              {{
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_IDENTITY')
+              }}
             </h2>
             <Input
               v-model="form.display_name"
@@ -481,6 +499,39 @@ onMounted(load);
                 "
               />
             </div>
+            <!-- Só valem com o Jev ligado e "Modelo por mensagem" ativo em
+            AI Providers; mesmo provider do modelo principal. -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-n-slate-12">
+                  {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.LIGHT_MODEL') }}
+                </span>
+                <ModelCombobox
+                  v-model="form.light_model"
+                  :models="modelsOf(form.provider)"
+                  :placeholder="
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.OPTIONAL')
+                  "
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-n-slate-12">
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STRONG_MODEL')
+                  }}
+                </span>
+                <ModelCombobox
+                  v-model="form.strong_model"
+                  :models="modelsOf(form.provider)"
+                  :placeholder="
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.OPTIONAL')
+                  "
+                />
+              </div>
+            </div>
+            <p class="text-xs text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.JEV_MODELS_HELP') }}
+            </p>
             <div class="grid grid-cols-2 gap-3">
               <Input
                 v-model="form.temperature"
@@ -488,7 +539,9 @@ onMounted(load);
                 step="0.1"
                 min="0"
                 max="2"
-                :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TEMPERATURE')"
+                :label="
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TEMPERATURE')
+                "
               />
               <Input
                 v-model="form.max_tokens"
@@ -566,17 +619,18 @@ onMounted(load);
             </p>
             <p v-if="promptIsHeavyForVoice" class="text-xs text-n-amber-11">
               {{
-                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_PROMPT_HEAVY', {
-                  total: totalChars.toLocaleString(),
-                })
+                $t(
+                  'INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.VOICE_PROMPT_HEAVY',
+                  {
+                    total: totalChars.toLocaleString(),
+                  }
+                )
               }}
             </p>
 
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
-                {{
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER')
-                }}
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.STT_PROVIDER') }}
               </span>
               <Select
                 v-model="form.stt_provider"
@@ -603,9 +657,7 @@ onMounted(load);
 
             <div class="flex flex-col gap-1">
               <span class="text-sm text-n-slate-12">
-                {{
-                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER')
-                }}
+                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.TTS_PROVIDER') }}
               </span>
               <Select
                 v-model="form.tts_provider"
@@ -641,10 +693,7 @@ onMounted(load);
                   v-model="form.voice_language"
                   :options="ttsLanguageOptions"
                 />
-                <span
-                  v-if="languageIgnored"
-                  class="text-xs text-n-amber-11"
-                >
+                <span v-if="languageIgnored" class="text-xs text-n-amber-11">
                   {{
                     $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.LANG_IGNORED', {
                       model: form.tts_model,
@@ -661,7 +710,9 @@ onMounted(load);
               step="0.05"
               min="0.5"
               max="0.95"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EOT_THRESHOLD')"
+              :label="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EOT_THRESHOLD')
+              "
               :message="
                 $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.EOT_THRESHOLD_HELP')
               "
@@ -705,7 +756,9 @@ onMounted(load);
                 <Switch v-model="form.voice_wait_for_complete_turn" />
               </div>
               <span class="text-xs text-n-slate-11">
-                {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN_HELP') }}
+                {{
+                  $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.WAIT_TURN_HELP')
+                }}
               </span>
             </div>
             <Input
@@ -715,7 +768,9 @@ onMounted(load);
               min="0"
               max="5"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MIN_WORDS')"
-              :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MIN_WORDS_HELP')"
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MIN_WORDS_HELP')
+              "
             />
           </section>
 

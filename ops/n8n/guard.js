@@ -91,7 +91,7 @@ if (!botAccessToken) throw new Error('sem access_token de bot gravado para conta
 // com 401"). Token fixo de uma unica conta quebraria toda conta que nao
 // fosse essa (mesma classe de bug do secret acima); resolve por conta aqui
 // e passa adiante, em vez de credential fixo no proprio no Historico.
-const tokenUrl = supabaseUrl + '/bot_account_settings?chatwoot_account_id=eq.' + accountId + '&select=chat_user_token';
+const tokenUrl = supabaseUrl + '/bot_account_settings?chatwoot_account_id=eq.' + accountId + '&select=chat_user_token,jev_api_key,jev';
 const tokenResponse = await getJson(tokenUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
 if (tokenResponse.statusCode < 200 || tokenResponse.statusCode >= 300) {
   throw new Error('falha ao consultar bot_account_settings: HTTP ' + tokenResponse.statusCode);
@@ -99,6 +99,22 @@ if (tokenResponse.statusCode < 200 || tokenResponse.statusCode >= 300) {
 const tokenRows = JSON.parse(tokenResponse.body);
 const chatUserToken = tokenRows[0] && tokenRows[0].chat_user_token;
 if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + accountId + ' — salve o canal em Bot Personas > Channels para gravar');
+
+// Jev (TypeSafe): chave e atividades da conta, ligadas no cartao em AI
+// Providers. Sem chave, sem consentimento ou desligado, os nos JevEntrada e
+// JevRevisao nao perguntam nada e o fluxo segue como antes. Atividade sem
+// estado gravado comeca observando, como mostra a tela.
+const JEV_ACTIVITIES = ['knowledge', 'model_routing', 'no_reply', 'human_request', 'mood', 'opt_out', 'manipulation', 'reply_review'];
+const jevConfig = tokenRows[0].jev || {};
+let jev = null;
+if (tokenRows[0].jev_api_key && jevConfig.enabled === true && jevConfig.consent) {
+  const activities = {};
+  for (const id of JEV_ACTIVITIES) {
+    const state = (jevConfig.activities || {})[id] || 'observing';
+    if (state === 'observing' || state === 'deciding') activities[id] = state;
+  }
+  jev = { key: tokenRows[0].jev_api_key, activities: activities, reviewRules: jevConfig.review_rules || [] };
+}
 
 const esperado = 'sha256=' + crypto
   .createHmac('sha256', segredo)
@@ -142,4 +158,5 @@ return [{ json: {
   startedAt: Date.now(),
   chatUserToken: chatUserToken,
   botAccessToken: botAccessToken,
+  jev: jev,
 } }];

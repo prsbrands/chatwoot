@@ -141,6 +141,10 @@ en:
       not_configured: 'Bot layer is not configured. Set the Supabase REST URL and service role key in Super Admin → Settings → Bot Layer.'
       no_models: 'The provider returned no models.'
       voice_inbox_not_allowed: 'This inbox belongs to a Twilio voice route. Voice calls are answered by the calling persona directly, not through this channel route — attaching a text bot here makes it reply to the call transcript as if it were a live chat.'
+      jev_key_rejected: 'TypeSafe rejected this key. Copy it again from your TypeSafe account and paste it here.'
+      jev_key_check_failed: 'Could not reach TypeSafe to check the key (HTTP %{status}). Try again in a minute.'
+      jev_needs_key: 'Add a TypeSafe key that passed the check before turning Jev on.'
+      jev_needs_consent: 'Confirm that customer messages may be sent to TypeSafe before turning Jev on.'
     twilio:
       not_connected: 'Connect a Twilio account first in Settings → Integrations → Twilio.'
     openwa:

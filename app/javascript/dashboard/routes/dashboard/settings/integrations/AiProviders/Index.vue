@@ -11,6 +11,7 @@ import Select from 'dashboard/components-next/select/Select.vue';
 import Switch from 'dashboard/components-next/switch/Switch.vue';
 import SettingsLayout from '../../SettingsLayout.vue';
 import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
+import JevCard from './JevCard.vue';
 
 const { t } = useI18n();
 
@@ -34,14 +35,62 @@ const STYLES_WITH_OWN_ENDPOINT = ['deepgram', 'elevenlabs'];
 // Atalhos para os fornecedores mais comuns: preenchem URL, formato e para que
 // servem, restando só a chave. Base URLs conforme a documentação de cada API.
 const PRESETS = [
-  { slug: 'openrouter', label: 'OpenRouter', base_url: 'https://openrouter.ai/api/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
-  { slug: 'elevenlabs', label: 'ElevenLabs', base_url: 'https://api.elevenlabs.io/v1', api_style: 'elevenlabs', kinds: ['tts'] },
-  { slug: 'deepgram', label: 'Deepgram', base_url: 'https://api.deepgram.com/v1', api_style: 'deepgram', kinds: ['stt'] },
-  { slug: 'anthropic', label: 'Anthropic', base_url: 'https://api.anthropic.com/v1', api_style: 'anthropic', kinds: ['llm'] },
-  { slug: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1', api_style: 'openai', kinds: ['llm', 'stt', 'tts'] },
-  { slug: 'groq', label: 'Groq', base_url: 'https://api.groq.com/openai/v1', api_style: 'openai', kinds: ['llm', 'stt'] },
-  { slug: 'deepseek', label: 'DeepSeek', base_url: 'https://api.deepseek.com/v1', api_style: 'openai', kinds: ['llm'] },
-  { slug: 'mistral', label: 'Mistral', base_url: 'https://api.mistral.ai/v1', api_style: 'openai', kinds: ['llm'] },
+  {
+    slug: 'openrouter',
+    label: 'OpenRouter',
+    base_url: 'https://openrouter.ai/api/v1',
+    api_style: 'openai',
+    kinds: ['llm', 'stt'],
+  },
+  {
+    slug: 'elevenlabs',
+    label: 'ElevenLabs',
+    base_url: 'https://api.elevenlabs.io/v1',
+    api_style: 'elevenlabs',
+    kinds: ['tts'],
+  },
+  {
+    slug: 'deepgram',
+    label: 'Deepgram',
+    base_url: 'https://api.deepgram.com/v1',
+    api_style: 'deepgram',
+    kinds: ['stt'],
+  },
+  {
+    slug: 'anthropic',
+    label: 'Anthropic',
+    base_url: 'https://api.anthropic.com/v1',
+    api_style: 'anthropic',
+    kinds: ['llm'],
+  },
+  {
+    slug: 'openai',
+    label: 'OpenAI',
+    base_url: 'https://api.openai.com/v1',
+    api_style: 'openai',
+    kinds: ['llm', 'stt', 'tts'],
+  },
+  {
+    slug: 'groq',
+    label: 'Groq',
+    base_url: 'https://api.groq.com/openai/v1',
+    api_style: 'openai',
+    kinds: ['llm', 'stt'],
+  },
+  {
+    slug: 'deepseek',
+    label: 'DeepSeek',
+    base_url: 'https://api.deepseek.com/v1',
+    api_style: 'openai',
+    kinds: ['llm'],
+  },
+  {
+    slug: 'mistral',
+    label: 'Mistral',
+    base_url: 'https://api.mistral.ai/v1',
+    api_style: 'openai',
+    kinds: ['llm'],
+  },
 ];
 
 const providers = ref([]);
@@ -128,7 +177,8 @@ const needsBaseUrl = computed(
 const missing = computed(() => {
   const gaps = [];
   const data = form.value;
-  if (!data.label) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL'));
+  if (!data.label)
+    gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.LABEL'));
   if (!data.slug) gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SLUG'));
   if (needsBaseUrl.value && !data.base_url) {
     gaps.push(t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.BASE_URL'));
@@ -323,6 +373,8 @@ onMounted(fetchProviders);
           </div>
         </div>
 
+        <JevCard />
+
         <p class="text-xs text-n-slate-11">
           {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.CHANNELS_NOTE') }}
         </p>
@@ -367,7 +419,9 @@ onMounted(fetchProviders);
                 ? $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.KEY_KEEP')
                 : 'sk-...'
             "
-            :message="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY_HELP')"
+            :message="
+              $t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS.API_KEY_HELP')
+            "
           />
 
           <button
@@ -461,7 +515,9 @@ onMounted(fetchProviders);
             name: toDelete?.label,
           })
         "
-        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.CONFIRM')"
+        :confirm-button-label="
+          $t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.CONFIRM')
+        "
         @confirm="confirmDelete"
       />
     </template>

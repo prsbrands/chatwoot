@@ -410,6 +410,10 @@ Rails.application.routes.draw do
                   post :sync_models
                 end
               end
+              resource :jev, only: [:show, :update], controller: 'jev' do
+                put :key
+                delete :key, action: :destroy_key
+              end
             end
             resource :slack, only: [:create, :update, :destroy], controller: 'slack' do
               member do
