@@ -20,6 +20,8 @@
 - Backup antes das migrations: `/opt/cortexgen-chat/backups/pre-merge-4.18-20260930-195841.dump`. Imagens: `:v1` = merge, `:test` = versão Jev pré-merge (rollback), `:v1-prev` = anterior ao Jev.
 - Dívida antiga: `db/schema.rb` nunca teve as tabelas de voz (`twilio_*`, `voice_call_requests`).
 
+**Fase 2 (c0b0b3192):** o `Captain::JevClient` do upstream passou a usar a chave **da conta** (a do cartão), direto na TypeSafe, sem e-mail/telefone/CPF no state, e registra em `bot_jev_calls` (fase `team`). Liga a flag `captain_classifier` pelo bloco "In your team's inbox" do cartão: botão **"Suggest with CortexGen AI"** (até 3 etiquetas + prioridade) e condição **CortexGen AI** nas automações. Desligar o Jev ou remover a chave desliga a flag. Etiqueta só é sugerida se a conta tiver etiquetas com descrição — a conta 1 tem uma só (`do-outbound`).
+
 ---
 
 ## ✅ O widget da conta 1 está ligado ao n8n — e toda resposta do bot deixava uma execução vermelha (17/08)
