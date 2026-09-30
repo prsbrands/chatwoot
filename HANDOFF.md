@@ -20,7 +20,7 @@
 - **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. Rode antes de recriar os containers e leia a saída. O teste de fumaça precisa ler `/api/v1/accounts/1/conversations`.
 - **Conversa de teste:** 131 da conta 1, contato "Teste Jev", inbox 10 (widget). Injete com `rails runner` + `c.messages.create!(... message_type: :incoming ...)`.
 
-### Bloco 1 → 0.9.0: no ar (n8n) em 30/09, Rails pendente
+### Bloco 1 → 0.9.0: no ar em 30/09 (n8n e Rails)
 
 O que foi feito, e onde:
 - `ops/n8n/patch_bloco1.py` aplica tudo no workflow. Só roda se Guard, JevEntrada e JevRevisao ao vivo forem os do `25e1472f0`.
@@ -37,7 +37,15 @@ O que foi feito, e onde:
 2. Import do workflow patchado e Publish. Testar na conversa 131:
    - o widget responde em bolha única;
    - uma keyword de handoff deixa a nota com briefing.
-3. Push e imagem do Rails (provision + campanhas). Não tem pressa: sem ela, só a rota de um OpenWA **novo** nasce sem `split_replies`.
+3. Push e imagem do Rails (provision + campanhas).
+
+Tudo feito em 30/09:
+- no widget, testado na conversa 131: bolha única e nota com briefing por keyword;
+- imagem `:v1` = `ebf31207e1f9` (`5d8a9e50f`, clone `src-b1`), rollback `:v1-pre-b1`.
+
+**Falta testar no WhatsApp real:** as bolhas e o `stop` num número OpenWA.
+
+**Push:** a chave SSH do Mac não está no GitHub. Use `git push https://github.com/prsbrands/chatwoot.git ...`, porque o `gh` está logado por HTTPS.
 
 Pendente: conferir se o bridge do OpenWA repassa `conversation_typing_on` ao WhatsApp. Se não repassar, o "digitando" só aparece no painel, mas a espera entre as bolhas vale do mesmo jeito.
 
