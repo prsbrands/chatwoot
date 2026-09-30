@@ -1,7 +1,8 @@
 const g = $('Guard').first().json;
 const rota = $('Persona').first().json;
 // O que o Jev decidiu (JevEntrada): secoes da base que importam para esta
-// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da persona).
+// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da
+// persona); knowledge '' = a mensagem nao precisa da base, vai so a persona.
 const jev = $('JevEntrada').first().json.jev || {};
 if (!rota || !rota.persona_id) return [];
 
@@ -28,9 +29,9 @@ if (!messages.length) return [];
 
 // Merge fields herdados do GHL -> dados reais do contato no Chatwoot.
 const firstName = String(g.contactName || '').split(' ')[0] || '';
-const composto = jev.knowledge
-  ? rota.system_prompt + '\n\n---\n\n# BASE DE CONOCIMIENTO\n\n' + jev.knowledge
-  : rota.composed_prompt;
+let composto = rota.composed_prompt;
+if (jev.knowledge === '') composto = rota.system_prompt;
+else if (jev.knowledge) composto = rota.system_prompt + '\n\n---\n\n# BASE DE CONOCIMIENTO\n\n' + jev.knowledge;
 const systemText = String(composto || '')
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')

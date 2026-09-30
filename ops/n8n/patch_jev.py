@@ -63,11 +63,20 @@ if mp != code('monta_prompt.js'):
          "// O que o Jev decidiu (JevEntrada): secoes da base que importam para esta\n"
          "// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da persona).\n"
          "const jev = $('JevEntrada').first().json.jev || {};\n"),
+        ("// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da persona).\n",
+         "// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da\n"
+         "// persona); knowledge '' = a mensagem nao precisa da base, vai so a persona.\n"),
         ("const systemText = String(rota.composed_prompt || '')",
          "const composto = jev.knowledge\n"
          "  ? rota.system_prompt + '\\n\\n---\\n\\n# BASE DE CONOCIMIENTO\\n\\n' + jev.knowledge\n"
          "  : rota.composed_prompt;\n"
          "const systemText = String(composto || '')"),
+        ("const composto = jev.knowledge\n"
+         "  ? rota.system_prompt + '\\n\\n---\\n\\n# BASE DE CONOCIMIENTO\\n\\n' + jev.knowledge\n"
+         "  : rota.composed_prompt;\n",
+         "let composto = rota.composed_prompt;\n"
+         "if (jev.knowledge === '') composto = rota.system_prompt;\n"
+         "else if (jev.knowledge) composto = rota.system_prompt + '\\n\\n---\\n\\n# BASE DE CONOCIMIENTO\\n\\n' + jev.knowledge;\n"),
         ("  rota.model, nativeOpenRouterFallback", "  jev.model || rota.model, nativeOpenRouterFallback"),
         ("const payload = $input.first().json.payload || [];", "const payload = $('Historico').first().json.payload || [];"),
     ]

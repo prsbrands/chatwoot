@@ -25,8 +25,10 @@ const DEADLINE_MS = 1500;
 const HANDOFF_NOUL = 0.7;
 const NO_REPLY_NOUL = 0.85;
 // Nota do clima vai de 0 (irritado) a 4 (entusiasmado); abaixo disto e
-// "cliente irritado". Mesmo corte do CRM (0,3 na escala 0–1).
-const UPSET_SCORE = 1.2;
+// "cliente irritado". O corte do CRM (1,2) pegava tambem o "insatisfeito":
+// medido em 30/09, um pedido educado de atendente saiu com nota 1 e virava
+// alerta. 0,75 exige a maior parte da probabilidade no nivel "irritado".
+const UPSET_SCORE = 0.75;
 const MIN_CONFIDENCE = 0.5;
 const KNOWLEDGE_KEEP_NOUL = 0.3;
 const MAX_SECTIONS = 80;
@@ -296,20 +298,22 @@ if (a.model_routing && a.model_routing.choice) {
   };
 }
 
-// Secoes marcadas; nenhuma marcada vira a base inteira — melhor pagar tokens
-// do que o bot dizer que nao sabe algo que esta na base.
+// Secoes marcadas. Nenhuma marcada = a mensagem nao precisa da base ("ok,
+// gracias", "hola"), e o LLM recebe so a persona: medido em 30/09, e o caso
+// que mais economiza. `base` null (Jev falhou, demorou ou so observa) = base
+// inteira, como sempre foi.
 let base = null;
 if (respostaDaBase && respostaDaBase.answers) {
   const ab = respostaDaBase.answers;
   const mantidas = partes.filter((_, i) => ab['s' + i] && ab['s' + i].noul >= KNOWLEDGE_KEEP_NOUL);
   const inteira = partes.join('\n\n');
-  const corte = mantidas.length ? mantidas.join('\n\n') : null;
-  const tokensSaved = corte ? Math.round((inteira.length - corte.length) / 4) : 0;
+  const corte = mantidas.join('\n\n');
+  const tokensSaved = Math.round((inteira.length - corte.length) / 4);
   decisions.knowledge = {
     state: act.knowledge, value: mantidas.length + '/' + partes.length,
     signal: tokensSaved > 0, acted: false, tokens_saved: tokensSaved,
   };
-  if (decide('knowledge') && corte) {
+  if (decide('knowledge') && tokensSaved > 0) {
     base = corte;
     decisions.knowledge.acted = true;
   }
