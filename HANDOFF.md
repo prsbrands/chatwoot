@@ -1,6 +1,24 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-08-17 · Instância: https://prs.cortexgen.cloud
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud
+
+---
+
+## ✅ Jev (TypeSafe) por conta + merge do upstream 4.18 (30/09)
+
+**Jev** — modelo "System One" da TypeSafe: decisões tipadas baratas (US$ 0,042/Mtok, ~0,3 s), não gera texto. Cartão em **Settings → Integrations → AI Providers**: chave **da conta** (conferida com `GET /v1/models`), consentimento na primeira vez, e cada atividade em Observing / Deciding / Paused. Código: `JevController`, `JevCard.vue`, `db/botlayer/bot_jev.sql` (colunas em `bot_account_settings`, tabela `bot_jev_calls`, RPC `bot_jev_summary`), e no n8n `ops/n8n/jev_entrada.js` (antes do LLM: base sob medida, modelo por mensagem, pular "ok/gracias", handoff por pedido de pessoa / irritado / opt-out / manipulação) e `ops/n8n/jev_revisao.js` (confere a resposta antes de enviar). Aplicar no workflow com `ops/n8n/patch_jev.py` (export → patch → import → **publicar**; o import desativa o workflow).
+
+- O Jev nunca derruba o bot: falha, chave recusada ou > 1,5 s ⇒ fluxo antigo. Disjuntor por conta em `$getWorkflowStaticData`.
+- Hoje só a **conta 1** tem chave e está ligada, tudo em Observing. Primeiras medições: pedido de pessoa 0,98–0,99 (as keywords de handoff **não pegaram** "prefiero hablar con una persona"); "ok, gracias" marcou 0/76 seções da base (~15 mil tokens a menos se decidir).
+- `JevEntrada` não repassa o histórico (lê `$('Historico')`): repassar custava ~0,5 s por mensagem mesmo com o Jev desligado.
+
+**Merge do upstream** `chatwoot/develop` (4.18.0 + 13 dias, 318 commits) em `0cd41f70c` + `3d767afbe`. Traz os 2 GHSA (headers de credencial no login, autorização de macro), XSS, rate-limit do login, Instagram business login, e as features MIT de Jev do upstream (`captain_classifier`: sugestão de etiqueta/prioridade e condições por IA nas automações — usam chave **global** `CAPTAIN_OPENROUTER_API_KEY`; ainda não ligadas nem adaptadas à chave por conta).
+
+- **Queda de ~3 min no deploy**: migration do upstream `20260811000001` colidia com a nossa de mesma versão; `db:migrate` abortava e a imagem subiu sem `ai_assignee_type` ⇒ `/conversations` 500. Renumerada para `20260811000003`. Checklist de merge na memória (`merge-upstream-migrations`).
+- `features.yml`: nossas 4 flags mantêm as posições de bit em `feature_flags_ext_1`; as 4 novas do upstream vêm depois.
+- CSS do widget saiu de `sdk.js` para `sdk.css` no upstream — o verde da marca foi junto.
+- Backup antes das migrations: `/opt/cortexgen-chat/backups/pre-merge-4.18-20260930-195841.dump`. Imagens: `:v1` = merge, `:test` = versão Jev pré-merge (rollback), `:v1-prev` = anterior ao Jev.
+- Dívida antiga: `db/schema.rb` nunca teve as tabelas de voz (`twilio_*`, `voice_call_requests`).
 
 ---
 
