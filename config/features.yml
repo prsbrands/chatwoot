@@ -149,6 +149,7 @@
   enabled: false
   premium: true
   chatwoot_internal: true
+  deprecated: true
 - name: contact_chatwoot_support_team
   display_name: Contact Chatwoot Support Team
   enabled: true
@@ -178,6 +179,7 @@
   enabled: false
   premium: true
   chatwoot_internal: true
+  deprecated: true
 - name: whatsapp_embedded_signup
   display_name: WhatsApp Embedded Signup
   enabled: false
@@ -185,6 +187,7 @@
 - name: whatsapp_campaign
   display_name: WhatsApp Campaign
   enabled: false
+  deprecated: true
 - name: crm_v2
   display_name: CRM V2
   enabled: false
@@ -223,9 +226,7 @@
   chatwoot_internal: true
 - name: companies
   display_name: Companies
-  enabled: false
-  premium: true
-  chatwoot_internal: true
+  enabled: true
 - name: channel_tiktok
   display_name: TikTok Channel
   enabled: true
@@ -269,6 +270,7 @@
 - name: whatsapp_reconfigure
   display_name: WhatsApp Reconfigure
   enabled: false
+  deprecated: true
   column: feature_flags_ext_1
 - name: whatsapp_embedded_signup_inbox_creation
   display_name: WhatsApp Embedded Signup Flow
@@ -278,6 +280,8 @@
   display_name: Delayed Automations
   enabled: false
   column: feature_flags_ext_1
+# As quatro abaixo sao do CortexGen e ja tem bits gravados em producao: a
+# posicao delas nao pode mudar. Flags novas do upstream vem depois.
 - name: whatsapp_sessions
   display_name: WhatsApp Sessions
   enabled: false
@@ -293,4 +297,27 @@
 - name: twilio_integration
   display_name: Twilio
   enabled: false
+  column: feature_flags_ext_1
+- name: audit_log_ip_address
+  display_name: Audit Log IP Address
+  help_url: https://chwt.app/hc/audit-logs
+  enabled: false
+  premium: true
+  chatwoot_internal: true
+  column: feature_flags_ext_1
+- name: captain_classifier
+  display_name: Captain Classifier
+  enabled: false
+  column: feature_flags_ext_1
+- name: conversation_monitors
+  display_name: Conversation Monitors
+  enabled: false
+  premium: true
+  chatwoot_internal: true
+  column: feature_flags_ext_1
+- name: campaign_analytics
+  display_name: Campaign Analytics
+  enabled: false
+  premium: true
+  chatwoot_internal: true
   column: feature_flags_ext_1

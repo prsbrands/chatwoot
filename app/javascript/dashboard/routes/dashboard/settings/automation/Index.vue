@@ -1,13 +1,20 @@
 <script setup>
-import { useAlert } from 'dashboard/composables';
+import { useAlert, useTrack } from 'dashboard/composables';
+import { CAPTAIN_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
+import { getCaptainConditionUsage } from 'dashboard/helper/automationHelper';
 import AddAutomationRule from './AddAutomationRule.vue';
 import EditAutomationRule from './EditAutomationRule.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { until } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
-import { useStoreGetters, useStore } from 'dashboard/composables/store';
-import { picoSearch } from '@scmmishra/pico-search';
+import {
+  useMapGetter,
+  useStoreGetters,
+  useStore,
+} from 'dashboard/composables/store';
+import { picoSearch } from '@chatwoot/pico-search';
 import AutomationRuleRow from './AutomationRuleRow.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
@@ -40,6 +47,7 @@ const filteredRecords = computed(() => {
 
 const uiFlags = computed(() => getters['automations/getUIFlags'].value);
 const accountId = computed(() => getters.getCurrentAccountId.value);
+const accountUiFlags = useMapGetter('accounts/getUIFlags');
 
 const isDelayedAutomationsEnabled = computed(() =>
   getters['accounts/isFeatureEnabledonAccount'].value(
@@ -113,6 +121,20 @@ const isSLAEnabled = computed(() =>
   getters['accounts/isFeatureEnabledonAccount'].value(accountId.value, 'sla')
 );
 
+let slaFetchPromise;
+
+// Account feature flags may load after this page mounts, so watch the SLA flag
+// to ensure its options are fetched after a hard refresh.
+watch(
+  isSLAEnabled,
+  isEnabled => {
+    if (isEnabled) {
+      slaFetchPromise = store.dispatch('sla/get');
+    }
+  },
+  { immediate: true }
+);
+
 const showDelayDisabledBanner = computed(
   () =>
     !isDelayedAutomationsEnabled.value &&
@@ -127,9 +149,6 @@ onMounted(() => {
   store.dispatch('labels/get');
   store.dispatch('campaigns/get');
   store.dispatch('automations/get');
-  if (isSLAEnabled.value) {
-    store.dispatch('sla/get');
-  }
 });
 
 const openAddPopup = () => {
@@ -141,8 +160,13 @@ const hideAddPopup = () => {
   addDialogRef.value?.close();
 };
 
-const openEditPopup = response => {
+const openEditPopup = async response => {
   selectedAutomation.value = { ...response };
+  await until(() => accountUiFlags.value.isFetchingItem).toBe(false);
+  if (isSLAEnabled.value) {
+    slaFetchPromise ||= store.dispatch('sla/get');
+    await slaFetchPromise;
+  }
   editDialogRef.value?.open(response);
 };
 const hideEditPopup = () => {
@@ -193,6 +217,13 @@ const submitAutomation = async (payload, mode) => {
         ? t('AUTOMATION.EDIT.API.SUCCESS_MESSAGE')
         : t('AUTOMATION.ADD.API.SUCCESS_MESSAGE');
     await store.dispatch(action, payload);
+    const captainUsage = getCaptainConditionUsage(payload);
+    if (captainUsage) {
+      useTrack(CAPTAIN_EVENTS.AUTOMATION_CONDITION_SAVED, {
+        mode,
+        ...captainUsage,
+      });
+    }
     useAlert(successMessage);
     hideAddPopup();
     hideEditPopup();

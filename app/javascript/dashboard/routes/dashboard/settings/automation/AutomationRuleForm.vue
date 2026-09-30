@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, h, useTemplateRef, watch } from 'vue';
+import { ref, computed, h, shallowRef, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useOperators } from 'dashboard/components-next/filter/operators';
@@ -7,14 +7,18 @@ import NextButton from 'dashboard/components-next/button/Button.vue';
 import SidePanel from 'dashboard/components-next/side-panel/SidePanel.vue';
 import {
   generateAutomationPayload,
+  getActionIcon,
   getAttributes,
 } from 'dashboard/helper/automationHelper';
-import { validateAutomation } from 'dashboard/helper/validations';
+import { getAttributeIcon } from 'dashboard/components-next/filter/helper/filterAttributeIcons';
+import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
+import { isEmptyValue, validateAutomation } from 'dashboard/helper/validations';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { DURATION_UNITS } from 'dashboard/components-next/input/constants';
 import {
   AUTOMATION_RULE_EVENTS,
   AUTOMATION_ACTION_TYPES,
+  CAPTAIN_CONDITION,
   DEFAULT_DELAY_MINUTES,
 } from './constants';
 import AutomationRunTypeSelector from './components/AutomationRunTypeSelector.vue';
@@ -73,7 +77,8 @@ const INPUT_TYPE_MAP = {
   multi_select: 'multiSelect',
   search_select: 'searchSelect',
   plain_text: 'plainText',
-  comma_separated_plain_text: 'plainText',
+  long_text: 'longText',
+  multi_text: 'multiText',
   date: 'date',
 };
 
@@ -81,14 +86,20 @@ const { t } = useI18n();
 const { isCloudFeatureEnabled } = useAccount();
 const { operators } = useOperators();
 
+provideDropdownTeleport();
+
 const panelRef = ref(null);
 const instantTriggerRef = useTemplateRef('instantTriggerRef');
+const waitConditionRef = useTemplateRef('waitConditionRef');
 const errors = ref({});
 
 const isEditMode = computed(() => props.mode === 'edit');
 
 const allowsDelayedExecution = computed(() =>
   isCloudFeatureEnabled(FEATURE_FLAGS.DELAYED_AUTOMATIONS)
+);
+const allowsCaptainConditions = computed(() =>
+  isCloudFeatureEnabled(FEATURE_FLAGS.CAPTAIN_CLASSIFIER)
 );
 
 // The wait lives here rather than in the wait section so that switching between the two run
@@ -97,6 +108,9 @@ const isDelayed = ref(false);
 const isSavedWait = ref(false);
 const delayMinutes = ref(DEFAULT_DELAY_MINUTES);
 const delayUnit = ref(DURATION_UNITS.HOURS);
+const instantTriggerDraft = shallowRef(null);
+const waitTriggerDraft = shallowRef(null);
+const isSyncingDelayState = ref(false);
 // Bumped on every open() so the wait section remounts and re-reads the rule it is given.
 const waitSectionKey = ref(0);
 
@@ -114,10 +128,30 @@ const inboxOptions = computed(
   () => props.getConditionDropdownValues('inbox_id') || []
 );
 
+const cloneConditions = conditions => JSON.parse(JSON.stringify(conditions));
+
+const captureTriggerDraft = () => {
+  if (!automation.value) return null;
+
+  return {
+    eventName: automation.value.event_name,
+    conditions: cloneConditions(automation.value.conditions),
+  };
+};
+
+const restoreTriggerDraft = draft => {
+  if (!automation.value || !draft) return;
+
+  automation.value.event_name = draft.eventName;
+  automation.value.conditions = cloneConditions(draft.conditions);
+};
+
 // Show the wait in the largest whole unit (240 min → 4 hours). The delay is passed in by open()
 // rather than read from `automation`, whose model prop only settles a tick later.
 const syncDelayState = executionDelay => {
+  isSyncingDelayState.value = true;
   isDelayed.value = Boolean(executionDelay);
+  isSyncingDelayState.value = false;
   isSavedWait.value = isEditMode.value && Boolean(executionDelay);
   const minutes = executionDelay || DEFAULT_DELAY_MINUTES;
   if (minutes % 1440 === 0) delayUnit.value = DURATION_UNITS.DAYS;
@@ -125,12 +159,33 @@ const syncDelayState = executionDelay => {
   else delayUnit.value = DURATION_UNITS.MINUTES;
   delayMinutes.value = minutes;
   waitSectionKey.value += 1;
+
+  // Drafts are captured when the run type actually changes, so they start empty: seeding them
+  // here would read `automation` before its model prop settles and keep the previous rule.
+  instantTriggerDraft.value = null;
+  waitTriggerDraft.value = null;
 };
 
-watch([isDelayed, delayMinutes], () => {
-  // Switching to "run instantly" hands the conditions back to the instant editor.
-  if (!isDelayed.value) isSavedWait.value = false;
+watch(
+  isDelayed,
+  (nextIsDelayed, previousIsDelayed) => {
+    if (isSyncingDelayState.value) return;
 
+    const currentDraft = captureTriggerDraft();
+    if (previousIsDelayed) waitTriggerDraft.value = currentDraft;
+    else instantTriggerDraft.value = currentDraft;
+
+    const nextDraft = nextIsDelayed
+      ? waitTriggerDraft.value
+      : instantTriggerDraft.value;
+    restoreTriggerDraft(nextDraft);
+    // A restored in-form wait draft must hydrate like a saved wait instead of being reset on mount.
+    isSavedWait.value = nextIsDelayed && Boolean(nextDraft);
+  },
+  { flush: 'sync' }
+);
+
+watch([isDelayed, delayMinutes], () => {
   if (!automation.value || !allowsDelayedExecution.value) return;
   automation.value.execution_delay = isDelayed.value
     ? delayMinutes.value
@@ -166,12 +221,24 @@ const getTranslatedAttributes = (type, event) => {
 };
 
 const eventName = computed(() => automation.value?.event_name);
+const usesCaptainCondition = computed(() =>
+  automation.value.conditions.some(
+    condition => condition.attribute_key === CAPTAIN_CONDITION.key
+  )
+);
 
 const filterTypes = computed(() => {
   const event = eventName.value;
   if (!event || !props.automationTypes[event]) return [];
 
-  const attributes = getTranslatedAttributes(props.automationTypes, event);
+  // A type the account can no longer use stays while the rule still has it, so the saved row
+  // renders, but it cannot be picked again.
+  const isUnavailable = attr =>
+    attr.key === CAPTAIN_CONDITION.key && !allowsCaptainConditions.value;
+  const attributes = getTranslatedAttributes(
+    props.automationTypes,
+    event
+  ).filter(attr => !isUnavailable(attr) || usesCaptainCondition.value);
 
   return attributes.map(attr => {
     if (attr.disabled) {
@@ -198,11 +265,20 @@ const filterTypes = computed(() => {
       value: attr.key,
       attributeName: attr.name,
       label: attr.name,
+      icon: getAttributeIcon({
+        attributeKey: attr.key,
+        attributeDisplayType: attr.attributeDisplayType,
+      }),
       inputType: mappedInputType,
+      placeholder: attr.placeholder
+        ? t(`AUTOMATION.CONDITION.PLACEHOLDERS.${attr.placeholder}`)
+        : undefined,
+      maxLength: attr.maxLength,
       options,
       filterOperators,
       dataType: 'text',
       attributeModel: attr.customAttributeType || 'standard',
+      disabled: isUnavailable(attr),
     };
   });
 });
@@ -216,7 +292,7 @@ const automationRuleEvents = computed(() =>
 
 const hasAutomationMutated = computed(() => {
   return Boolean(
-    automation.value?.conditions[0]?.values ||
+    !isEmptyValue(automation.value?.conditions[0]?.values) ||
       automation.value?.actions[0]?.action_params?.length
   );
 });
@@ -229,6 +305,7 @@ const automationActionTypes = computed(() => {
   return actionTypes.map(action => ({
     ...action,
     label: t(`AUTOMATION.ACTIONS.${action.label}`),
+    icon: getActionIcon(action.key),
   }));
 });
 
@@ -242,11 +319,14 @@ watch(
   { deep: true }
 );
 
-const isConditionsValid = () => instantTriggerRef.value?.validate() ?? true;
+const isConditionsValid = () =>
+  (isDelayed.value ? waitConditionRef : instantTriggerRef).value?.validate() ??
+  true;
 
 const resetValidation = () => {
   errors.value = {};
   instantTriggerRef.value?.resetValidation();
+  waitConditionRef.value?.resetValidation();
 };
 
 const syncCustomAttributeTypes = () => {
@@ -320,12 +400,15 @@ defineExpose({ open, close });
       <AutomationWaitCondition
         v-if="isDelayed"
         :key="waitSectionKey"
+        ref="waitConditionRef"
         v-model:event-name="automation.event_name"
         v-model:conditions="automation.conditions"
         v-model:delay="delayMinutes"
         v-model:unit="delayUnit"
         :status-options="statusOptions"
         :inbox-options="inboxOptions"
+        :filter-types="filterTypes"
+        :remove-filter="removeFilter"
         :is-saved-wait="isSavedWait"
         :has-error="Boolean(errors.execution_delay)"
       />
