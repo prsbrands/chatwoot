@@ -20,7 +20,28 @@
 - **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. Rode antes de recriar os containers e leia a saída. O teste de fumaça precisa ler `/api/v1/accounts/1/conversations`.
 - **Conversa de teste:** 131 da conta 1, contato "Teste Jev", inbox 10 (widget). Injete com `rails runner` + `c.messages.create!(... message_type: :incoming ...)`.
 
-### Bloco 1 → 0.9.0 (rápidos, ~1–2 dias)
+### Bloco 1 → 0.9.0: código pronto em `a8e4ef567`, falta ir ao ar
+
+O que foi feito, e onde:
+- `ops/n8n/patch_bloco1.py` aplica tudo no workflow. Só roda se Guard, JevEntrada e JevRevisao ao vivo forem os do `25e1472f0`.
+- Nós novos:
+  - `OptOut`: regra do DeskComm, 198/198 no corpus dele, fora do widget e do e-mail;
+  - `PassaEntrada` e `PassaRevisao`: dois IF;
+  - `PreparaBriefing` → `EscolheProviderBriefing` → `LLMBriefing`/`LLMBriefingCustom` → `Passagem`.
+- O `Handoff` (HTTP) saiu. Os 4 caminhos de passagem terminam na `Passagem`, e o `Responde` virou Code node.
+- `bot_channel_routes.split_replies`: nula = decide pelo tipo do canal; o OpenWA grava true.
+- Guard para em `meta.sender.blocked`. As campanhas de WhatsApp, SMS e Twilio pulam contato bloqueado.
+
+**Ordem do deploy. A ordem importa: o Guard lê `split_replies`, e sem a coluna o PostgREST devolve 400 e o bot inteiro para.**
+1. SQL `db/botlayer/bot_split_replies.sql` no `supabase-db`.
+2. Import do workflow patchado e Publish. Testar na conversa 131:
+   - o widget responde em bolha única;
+   - uma keyword de handoff deixa a nota com briefing.
+3. Push e imagem do Rails (provision + campanhas). Não tem pressa: sem ela, só a rota de um OpenWA **novo** nasce sem `split_replies`.
+
+Pendente: conferir se o bridge do OpenWA repassa `conversation_typing_on` ao WhatsApp. Se não repassar, o "digitando" só aparece no painel, mas a espera entre as bolhas vale do mesmo jeito.
+
+#### O pedido original
 
 **1a. Passagem para humano com resumo.** Hoje o handoff só faz `toggle_status: open` e, no Jev, deixa uma nota de uma linha. O pedido é uma **nota privada com briefing** antes de abrir a conversa:
 - por que o bot passou;
