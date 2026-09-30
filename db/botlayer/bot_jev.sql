@@ -184,3 +184,10 @@ from bot_channel_routes r
   left join bot_providers prov_fb
     on prov_fb.slug = coalesce(p.fallback_provider, coalesce(r.overrides ->> 'provider', p.provider))
    and prov_fb.chatwoot_account_id = r.chatwoot_account_id and prov_fb.is_active;
+
+-- Fase `team`: chamadas feitas pelo Rails (sugestao de etiqueta e prioridade,
+-- condicoes por IA nas automacoes — Captain::JevClient), no mesmo log para o
+-- cartao somar o custo inteiro da conta.
+alter table bot_jev_calls drop constraint if exists bot_jev_calls_phase_check;
+alter table bot_jev_calls add constraint bot_jev_calls_phase_check
+  check (phase in ('input', 'review', 'team'));

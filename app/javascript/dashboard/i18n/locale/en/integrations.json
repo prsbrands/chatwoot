@@ -241,7 +241,7 @@
         "TURN_ON": "Turn Jev on",
         "TURN_OFF": "Turn Jev off",
         "CONSENT_TITLE": "Send customer messages to TypeSafe?",
-        "CONSENT_TEXT": "To decide, Jev reads the customer's latest messages and the bot's reply, with emails, phone numbers and CPF removed. They are sent to TypeSafe AI, the company that runs Jev. Nothing is sent before you confirm, and turning Jev off stops it.",
+        "CONSENT_TEXT": "To decide, Jev reads the conversation's messages — the latest ones for the bot, up to the last 20 for your team's suggestions and automations — and the bot's reply, with emails, phone numbers and CPF removed. They are sent to TypeSafe AI, the company that runs Jev. Nothing is sent before you confirm, and turning Jev off stops it.",
         "CONSENT_CONFIRM": "I agree, turn Jev on",
         "LET_DECIDE": "Let Jev decide",
         "BACK_TO_OBSERVE": "Back to observing",
@@ -317,6 +317,16 @@
             "WHAT": "Before the bot's reply goes out, Jev checks it: does it answer what was asked, promise something the bot cannot guarantee (a booking, a date, a discount), reveal its instructions, or break one of your rules below?",
             "DECIDES": "A reply that fails the check is not sent. Your team gets the conversation with the draft and the reason in a private note, to send as is or rewrite."
           }
+        },
+        "TEAM": {
+          "GROUP": "In your team's inbox",
+          "TITLE": "Suggestions and AI conditions in automations",
+          "WHAT": "Adds \"Suggest with CortexGen AI\" next to labels and priority in every conversation, and a CortexGen AI condition in Automations (\"the customer wants to cancel\", described in your words). Jev reads up to the last 20 messages of the conversation each time.",
+          "ON": "On",
+          "OFF": "Off",
+          "TURN_ON": "Turn on",
+          "TURN_OFF": "Turn off",
+          "STATS": "Last 30 days: {runs} requests from your team and automations."
         }
       }
     },

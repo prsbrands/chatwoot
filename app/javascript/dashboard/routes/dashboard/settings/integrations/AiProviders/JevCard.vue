@@ -163,6 +163,16 @@ const saveRules = async () => {
   if (saved) useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
 };
 
+// Sugestões e condições por IA rodam no Rails, a pedido do atendente ou de uma
+// automação: não há "observar", só ligado ou desligado.
+const setTeam = team => run(() => BotlayerAPI.updateJev({ team }));
+
+const teamLine = computed(() => {
+  const runs = summary.value.activities?.captain_classifier?.runs;
+  if (!runs) return t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.NO_DATA');
+  return t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.STATS', { runs });
+});
+
 const stateBadgeClass = state =>
   ({
     deciding: 'bg-n-teal-3 text-n-teal-11',
@@ -361,6 +371,52 @@ onMounted(fetchCard);
             />
           </div>
         </div>
+      </div>
+
+      <div
+        class="flex flex-col gap-2 rounded-lg px-4 py-3 outline outline-1 outline-n-container"
+      >
+        <p
+          class="text-xs font-semibold uppercase tracking-wide text-n-slate-10"
+        >
+          {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.GROUP') }}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-medium text-n-slate-12">
+            {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.TITLE') }}
+          </span>
+          <span
+            class="rounded-md px-2 py-0.5 text-xs"
+            :class="
+              card.team
+                ? 'bg-n-teal-3 text-n-teal-11'
+                : 'bg-n-amber-3 text-n-amber-11'
+            "
+          >
+            {{
+              card.team
+                ? $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.ON')
+                : $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.OFF')
+            }}
+          </span>
+        </div>
+        <p class="text-sm text-n-slate-11">
+          {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.WHAT') }}
+        </p>
+        <p v-if="card.team" class="text-sm text-n-slate-12">{{ teamLine }}</p>
+        <Button
+          sm
+          :color="card.team ? 'slate' : 'blue'"
+          :variant="card.team ? 'outline' : 'solid'"
+          class="self-start"
+          :label="
+            card.team
+              ? $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.TURN_OFF')
+              : $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.TEAM.TURN_ON')
+          "
+          :disabled="isSaving"
+          @click="setTeam(!card.team)"
+        />
       </div>
 
       <div class="flex flex-col gap-2">

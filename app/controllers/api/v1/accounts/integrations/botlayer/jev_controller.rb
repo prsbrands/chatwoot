@@ -9,6 +9,10 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
   ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review].freeze
   STATES = %w[observing deciding off].freeze
   MAX_REVIEW_RULES = 10
+  # Sugestao de etiqueta e prioridade e condicoes por IA nas automacoes (codigo
+  # do upstream, Captain::JevClient) ficam atras desta flag da conta. Quem liga
+  # e desliga e o cartao, para ela nunca ficar ligada sem chave e consentimento.
+  TEAM_FEATURE = 'captain_classifier'.freeze
 
   def show
     render_card
@@ -22,6 +26,7 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
     config['enabled'] = enable!(config) if params.key?(:enabled)
 
     client.upsert_account_settings(account_id, { jev: config })
+    toggle_team_feature(config)
     render_card
   end
 
@@ -39,6 +44,7 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
   def destroy_key
     config = (settings['jev'] || {}).merge('enabled' => false)
     client.upsert_account_settings(account_id, { jev_api_key: nil, jev_key_checked_at: nil, jev: config })
+    Current.account.disable_features!(TEAM_FEATURE)
     render_card
   end
 
@@ -66,6 +72,7 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
       consent: config['consent'],
       activities: ACTIVITIES.index_with { |id| config.dig('activities', id) || 'observing' },
       review_rules: config['review_rules'] || [],
+      team: Current.account.feature_enabled?(TEAM_FEATURE),
       summary: client.jev_summary(account_id)
     }
   end
@@ -77,6 +84,15 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
     raise Integrations::Botlayer::Client::ApiError, I18n.t('errors.botlayer.jev_needs_consent') if config['consent'].blank?
 
     true
+  end
+
+  def toggle_team_feature(config)
+    if config['enabled'] == false
+      Current.account.disable_features!(TEAM_FEATURE)
+    elsif params.key?(:team)
+      team = ActiveModel::Type::Boolean.new.cast(params[:team]) && config['enabled']
+      team ? Current.account.enable_features!(TEAM_FEATURE) : Current.account.disable_features!(TEAM_FEATURE)
+    end
   end
 
   def consent

@@ -134,6 +134,10 @@ class Integrations::Botlayer::Client
     get("bot_account_settings?chatwoot_account_id=eq.#{account_id.to_i}&select=*").first || {}
   end
 
+  def record_jev_call(attributes)
+    post('bot_jev_calls', attributes, prefer: 'return=minimal')
+  end
+
   def jev_summary(account_id)
     post('rpc/bot_jev_summary', { p_account: account_id.to_i })
   end
