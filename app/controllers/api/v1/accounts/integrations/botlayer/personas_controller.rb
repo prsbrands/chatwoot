@@ -21,6 +21,7 @@ class Api::V1::Accounts::Integrations::Botlayer::PersonasController < Api::V1::A
   def persona_params
     permitted = params.permit(:slug, :display_name, :description, :system_prompt, :provider, :model,
                               :fallback_provider, :fallback_model, :light_model, :strong_model, :temperature, :max_tokens, :is_active,
+                              :followup_after_hours, :max_followups,
                               :stt_provider, :stt_model, :tts_provider, :tts_voice_id, :tts_model,
                               :voice_language, :stt_language, :voice_first_message, :voice_greeting_delay_ms,
                               :voice_endpoint_ms, :voice_interruptible, :voice_wait_for_complete_turn,

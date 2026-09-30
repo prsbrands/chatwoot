@@ -19,6 +19,7 @@ const GROUPS = [
     activities: ['human_request', 'mood', 'opt_out', 'manipulation'],
   },
   { id: 'REVIEW', activities: ['reply_review'] },
+  { id: 'FOLLOWUP', activities: ['followup'] },
 ];
 
 const card = ref(null);

@@ -79,6 +79,46 @@ O ideal é um nó ou função única chamada pelos três. Modelo de resumo do De
 
 ### Bloco 2 → 0.10.0: follow-up por silêncio + anti-ban
 
+**Código pronto; nada foi ao ar.** Decisões do Paulo em 30/09:
+- só no OpenWA (nos canais Meta, depois de 24 h, só template; no widget o visitante já saiu);
+- janela no fuso da inbox;
+- configuração na persona, com tela;
+- o Jev decide se vale retomar, e o LLM decide quando não há Jev.
+
+Onde está:
+- Workflow novo **CortexGen Follow-up**, gerado por `ops/n8n/build_followup.py` a partir do export do bot: `A cada 15 min → Candidatos → JevFollowup → MontaRetomada → EscolheProvider → LLMRetomada|LLMRetomadaCustom → Envia`. Os nós são os `followup_*.js`.
+- SQL `db/botlayer/bot_followups.sql`:
+  - `bot_personas`: `followup_after_hours` (nula = desligado) e `max_followups` (2);
+  - `bot_channel_routes.number_activated_at`, com backfill a partir das datas dos canais;
+  - tabelas `bot_followups` (uma série por **silêncio**, ancorada na última mensagem do cliente; um vivo por contato) e `bot_followup_sends`;
+  - fase `followup` no `bot_jev_calls`;
+  - 4 colunas no fim da view.
+- Rails/Vue:
+  - campos no PersonaEditor;
+  - atividade `followup` no cartão do Jev;
+  - o provision grava `number_activated_at`.
+
+Regras. Portadas do DeskComm, exceto o "vale retomar?", que lá não existe:
+- pendente com o bot;
+- a última mensagem é do bot, há ≥ N h;
+- o cliente escreveu nos últimos 7 dias;
+- 8h–20h no fuso da inbox (inbox em UTC fica sem follow-up);
+- teto diário pela idade do número: 20/50/100/200 (≤3, ≤7, ≤14 dias, depois);
+- no máximo 3 por inbox a cada varredura;
+- 20–45 s entre envios do mesmo número;
+- veto quando o texto é igual ou tem Jaccard ≥ 0,8 com 2 dos últimos 20 envios do número. Com 3 vetos, a série para.
+
+**Ordem do deploy:** SQL → push + imagem do Rails → fusos das inboxes na tela → import + Publish do workflow → ligar numa persona de WhatsApp.
+
+O SQL vem antes da imagem porque o PersonaEditor manda os campos novos, e o PostgREST recusa coluna que não existe.
+
+Fusos a acertar:
+- inboxes 2, 14 e 30: `America/Panama`;
+- inbox 31: `America/Sao_Paulo`.
+
+#### O pedido original
+
+
 - **Varredura:** workflow agendado no n8n, a cada 15 min, por conta com o recurso ligado. Pega conversas pendentes com o bot, cuja última mensagem é do bot, sem resposta há X horas.
 - **Configuração** na persona ou na rota: `followup_after_hours` e `max_followups`.
 - **Regras** (as do DeskComm, `lib/followup/reactivity.ts`):

@@ -251,7 +251,8 @@
         "GROUP": {
           "SAVE": "Spend fewer AI tokens",
           "HANDOFF": "Hand off to a person",
-          "REVIEW": "Check before sending"
+          "REVIEW": "Check before sending",
+          "FOLLOWUP": "Follow up when the customer goes quiet"
         },
         "WEEK": "Last 7 days",
         "METRIC": {
@@ -274,7 +275,8 @@
           "mood": "Last 30 days: Jev saw an upset customer in {signals} of {runs} messages.",
           "opt_out": "Last 30 days: Jev saw an opt-out in {signals} of {runs} messages.",
           "manipulation": "Last 30 days: Jev saw a clear manipulation attempt in {signals} of {runs} messages.",
-          "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies."
+          "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies.",
+          "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -316,6 +318,11 @@
             "TITLE": "Check the reply before sending",
             "WHAT": "Before the bot's reply goes out, Jev checks it: does it answer what was asked, promise something the bot cannot guarantee (a booking, a date, a discount), reveal its instructions, or break one of your rules below?",
             "DECIDES": "A reply that fails the check is not sent. Your team gets the conversation with the draft and the reason in a private note, to send as is or rewrite."
+          },
+          "followup": {
+            "TITLE": "Decide if a quiet conversation is worth resuming",
+            "WHAT": "When a persona has follow-up turned on, Jev reads how the conversation stopped: \"I'll think about it\" is worth a follow-up, \"thanks, that's all\" is not.",
+            "DECIDES": "Jev's verdict decides if the follow-up goes out. While observing, the AI that writes the follow-up decides on its own, as it does without Jev."
           }
         },
         "TEAM": {
@@ -359,6 +366,10 @@
         "KEYWORDS": "Handoff keywords",
         "KEYWORDS_HELP": "Comma-separated. When the customer message contains one of these, the conversation is handed to a human.",
         "MAX_TURNS": "Handoff after N customer turns",
+        "SECTION_FOLLOWUP": "Follow-up when the customer goes quiet",
+        "FOLLOWUP_AFTER_HOURS": "Follow up after N hours of silence",
+        "FOLLOWUP_HELP": "Only on WhatsApp numbers connected by QR, between 8:00 and 20:00 in the inbox time zone (Inboxes → Business hours). The bot writes the follow-up only when the conversation is worth resuming. Leave empty to turn it off.",
+        "MAX_FOLLOWUPS": "Follow-ups per silence (max)",
         "DOCS_COUNT": "{count} knowledge docs",
         "MODEL_HELP": "Pick from the {count} models synced from this provider, or type any other model id.",
         "MODEL_EMPTY": "No models synced for this provider yet — type the model id, or use Sync models in the Providers tab.",

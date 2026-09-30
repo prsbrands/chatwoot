@@ -42,6 +42,8 @@ const emptyForm = () => ({
   keywords: '',
   max_turns: null,
   handoff_rules: {},
+  followup_after_hours: null,
+  max_followups: 2,
   stt_provider: '',
   stt_model: '',
   tts_provider: '',
@@ -324,6 +326,10 @@ const save = async () => {
     temperature: Number(data.temperature),
     max_tokens: Number(data.max_tokens),
     is_active: data.is_active,
+    followup_after_hours: data.followup_after_hours
+      ? Number(data.followup_after_hours)
+      : null,
+    max_followups: Number(data.max_followups) || 2,
     stt_provider: data.stt_provider || null,
     stt_model: data.stt_model || null,
     tts_provider: data.tts_provider || null,
@@ -577,6 +583,29 @@ onMounted(load);
               v-model="form.max_turns"
               type="number"
               :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_TURNS')"
+            />
+          </section>
+
+          <section class="flex flex-col gap-3">
+            <h2
+              class="text-xs font-semibold uppercase tracking-wide text-n-slate-10"
+            >
+              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_FOLLOWUP') }}
+            </h2>
+            <Input
+              v-model="form.followup_after_hours"
+              type="number"
+              :label="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FOLLOWUP_AFTER_HOURS')
+              "
+              :message="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FOLLOWUP_HELP')
+              "
+            />
+            <Input
+              v-model="form.max_followups"
+              type="number"
+              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_FOLLOWUPS')"
             />
           </section>
 

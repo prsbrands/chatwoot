@@ -103,6 +103,9 @@ class Integrations::Openwa::ProvisionService
         # WhatsApp responde em bolhas com "digitando"; o tipo do canal (API) nao
         # diz ao Guard que isto e WhatsApp — ver db/botlayer/bot_split_replies.sql.
         split_replies: true,
+        # Idade do numero: o teto diario de follow-ups sobe com ela — ver
+        # db/botlayer/bot_followups.sql.
+        number_activated_at: Date.current.iso8601,
         is_active: true
       }.to_json
     )
