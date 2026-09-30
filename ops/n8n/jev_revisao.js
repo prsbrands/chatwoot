@@ -3,8 +3,8 @@
 // Confere a resposta que o LLM escreveu antes de ela sair: responde ao que o
 // cliente disse? promete o que o bot nao garante? revela as instrucoes? quebra
 // alguma regra que a conta escreveu no cartao do Jev? Em `deciding`, resposta
-// reprovada nao e enviada: vira nota privada com o rascunho e o motivo, e a
-// conversa vai para a equipe.
+// reprovada nao e enviada: segue para o no Passagem com o rascunho e o motivo,
+// que deixa a nota com o briefing e abre a conversa para a equipe.
 //
 // Como o JevEntrada, nunca derruba o bot: falha ou mais de 1,5 s e a resposta
 // segue como seguia. Os helpers se repetem la (Code nodes sao isolados).
@@ -92,14 +92,6 @@ async function gravar(row) {
   }
 }
 
-async function postarNoChatwoot(path, body) {
-  const url = 'https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/conversations/' + g.conversationId + path;
-  const res = await postJson(url, { api_access_token: g.botAccessToken }, body, 15000);
-  if (res.statusCode < 200 || res.statusCode >= 300) {
-    throw new Error('Jev: falha ao ' + path + ' no Chatwoot: HTTP ' + res.statusCode + ' ' + String(res.body || res.error).slice(0, 200));
-  }
-}
-
 // ---- perguntas ---------------------------------------------------------------
 
 const perguntas = {
@@ -179,13 +171,9 @@ const row = {
 if (decision.signal && state === 'deciding') {
   decision.acted = true;
   await gravar(row);
-  await postarNoChatwoot('/messages', {
-    content: 'Jev held the bot\'s reply: it ' + motivos.join('; ') + '. Draft below — send it as is or rewrite it.\n\n' + i.reply,
-    message_type: 'outgoing',
-    private: true,
-  });
-  await postarNoChatwoot('/toggle_status', { status: 'open' });
-  return [];
+  return [{ json: Object.assign({}, i, {
+    passagem: { motivo: 'reply_review', fonte: 'jev', detalhe: motivos.join('; '), rascunho: i.reply },
+  }) }];
 }
 
 await gravar(row);

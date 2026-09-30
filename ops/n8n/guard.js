@@ -69,7 +69,7 @@ const supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseKey) throw new Error('SUPABASE_REST_URL/SUPABASE_SERVICE_ROLE_KEY ausente no ambiente do n8n');
 
 const lookupUrl = supabaseUrl + '/bot_channel_routes?chatwoot_account_id=eq.' + accountId +
-  '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret,chatwoot_agent_bot_access_token';
+  '&chatwoot_inbox_id=eq.' + inboxId + '&select=chatwoot_agent_bot_secret,chatwoot_agent_bot_access_token,split_replies';
 const lookupResponse = await getJson(lookupUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
 if (lookupResponse.statusCode < 200 || lookupResponse.statusCode >= 300) {
   throw new Error('falha ao consultar bot_channel_routes: HTTP ' + lookupResponse.statusCode);
@@ -145,12 +145,27 @@ if (meta.assignee_type === 'User') return [];
 const content = String(b.content || '').trim();
 if (!content) return [];
 const sender = meta.sender || {};
+// Contato bloqueado (opt-out, ou bloqueio manual na tela do contato). O
+// Chatwoot so descarta a mensagem de quem esta bloqueado no WhatsApp Cloud; no
+// OpenWA (canal API) ela entra normalmente, e sem esta linha o bot responderia
+// a quem pediu para nao receber mais nada.
+if (sender.blocked === true) return [];
+
+// Resposta em bolhas com "digitando" (no Responde). A rota decide; sem valor
+// gravado, liga nos canais de mensageria pelo tipo. O OpenWA e canal API, o
+// mesmo tipo da voz e do site da DaGente, entao ele liga pela rota
+// (bot_split_replies.sql e o provision do OpenWA gravam true).
+const BOLHAS_POR_TIPO = ['Channel::Whatsapp', 'Channel::Instagram', 'Channel::FacebookPage', 'Channel::TwilioSms', 'Channel::Sms', 'Channel::Telegram', 'Channel::Line'];
+const splitReplies = typeof rows[0].split_replies === 'boolean' ? rows[0].split_replies : BOLHAS_POR_TIPO.includes(conv.channel);
+
 return [{ json: {
   accountId: accountId,
   inboxId: inboxId,
   conversationId: conv.id,
   messageId: b.id,
   content: content,
+  channel: conv.channel || null,
+  splitReplies: splitReplies,
   contactId: sender.id || null,
   contactName: sender.name || '',
   contactEmail: sender.email || '',

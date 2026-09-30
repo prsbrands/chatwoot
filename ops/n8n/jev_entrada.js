@@ -40,6 +40,10 @@ const rota = $('Persona').first().json;
 // Jev desligado — cada Code node paga para trafegar o que recebe e devolve.
 const segue = jev => [{ json: { jev: jev } }];
 
+// O OptOut ja decidiu pela regra: a conversa vai para a Passagem sem o Jev.
+const doOptOut = $input.first().json.passagem;
+if (doOptOut) return [{ json: { passagem: doOptOut } }];
+
 if (!g.jev || !rota || !rota.persona_id) return segue(null);
 const act = g.jev.activities;
 
@@ -123,14 +127,6 @@ async function gravar(row) {
     }, row), 5000);
   } catch (e) {
     // O registro e para o cartao; perder uma linha nao pode calar o bot.
-  }
-}
-
-async function postarNoChatwoot(path, body) {
-  const url = 'https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/conversations/' + g.conversationId + path;
-  const res = await postJson(url, { api_access_token: g.botAccessToken }, body, 15000);
-  if (res.statusCode < 200 || res.statusCode >= 300) {
-    throw new Error('Jev: falha ao ' + path + ' no Chatwoot: HTTP ' + res.statusCode + ' ' + String(res.body || res.error).slice(0, 200));
   }
 }
 
@@ -322,12 +318,6 @@ if (decide('model_routing') && modelo && modelo !== rota.model) decisions.model_
 
 // ---- agir --------------------------------------------------------------------
 
-const MOTIVOS = {
-  opt_out: 'the customer asked to stop receiving messages',
-  human_request: 'the customer asked for a person',
-  manipulation: 'the message tried to manipulate the bot',
-  mood: 'the customer seems upset',
-};
 const handoff = ['opt_out', 'human_request', 'manipulation', 'mood']
   .find(id => decisions[id] && decisions[id].signal && decide(id));
 
@@ -347,13 +337,9 @@ if (handoff) {
   if (decisions.knowledge) decisions.knowledge.acted = false;
   if (decisions.model_routing) decisions.model_routing.acted = false;
   await gravar(row);
-  await postarNoChatwoot('/messages', {
-    content: 'Jev: ' + MOTIVOS[handoff] + '. The bot stopped before answering — please take over.',
-    message_type: 'outgoing',
-    private: true,
-  });
-  await postarNoChatwoot('/toggle_status', { status: 'open' });
-  return [];
+  // Nota com briefing, etiqueta, bloqueio (opt_out) e abrir a conversa ficam
+  // no no Passagem, o mesmo dos outros caminhos de handoff.
+  return [{ json: { passagem: { motivo: handoff, fonte: 'jev' } } }];
 }
 
 if (decisions.no_reply && decisions.no_reply.signal && decide('no_reply')) {

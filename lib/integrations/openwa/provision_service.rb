@@ -100,6 +100,9 @@ class Integrations::Openwa::ProvisionService
         # RoutesController#resolved_agent_bot.
         chatwoot_agent_bot_secret: agent_bot.secret,
         chatwoot_agent_bot_access_token: agent_bot.access_token&.token,
+        # WhatsApp responde em bolhas com "digitando"; o tipo do canal (API) nao
+        # diz ao Guard que isto e WhatsApp — ver db/botlayer/bot_split_replies.sql.
+        split_replies: true,
         is_active: true
       }.to_json
     )

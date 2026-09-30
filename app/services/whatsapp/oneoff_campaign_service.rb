@@ -72,7 +72,7 @@ class Whatsapp::OneoffCampaignService
   end
 
   def audience_contacts
-    campaign.account.contacts.tagged_with(extract_audience_labels, any: true)
+    campaign.account.contacts.where(blocked: false).tagged_with(extract_audience_labels, any: true)
   end
 
   def process_contacts(contacts)
