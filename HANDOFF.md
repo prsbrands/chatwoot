@@ -1,6 +1,100 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.8.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+
+---
+
+## ▶️ PRÓXIMA SESSÃO — comece aqui
+
+**Contexto em uma linha:** comparamos o CortexGen Chat com o DeskComm CRM (`/Volumes/KINGSTON/projetos_ia/crm`, site deskcomm.com.br) e escolhemos trazer o que falta, fazendo melhor com o Jev. A ordem é: bloco 1 (0.9.0) → bloco 2 (0.10.0) → bloco 3, o funil de vendas (1.0.0).
+
+### Regras de operação que esta sessão ensinou (leia antes de mexer)
+
+- **Deploy e publicação são do Paulo.** O classificador de permissões bloqueia, para o Claude, `db:migrate` em produção, `docker tag` + `--force-recreate` e `publish_workflow` do n8n, mesmo com o Paulo autorizando no chat. O fluxo que funciona:
+  - o Claude faz build (`:test-*` num clone `src-<nome>`), teste de fumaça na porta 3099, verificação só de leitura e rollback planejado;
+  - o Claude **passa os comandos** e o Paulo roda um por vez, mandando a saída.
+
+  Mande **um comando por vez**. Na lista de três, ele rodou o rollback no lugar do deploy.
+- **n8n:** mudança no workflow do bot é `export` → `ops/n8n/patch_jev.py` (ou equivalente) → `import`. O import **desativa** o workflow, então combine a hora com o Paulo, que clica em Publish logo depois. Depois de publicar, mande uma mensagem real e confira execução verde, resposta do bot e `bot_jev_calls`.
+- **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e tag `cg-vX.Y.Z`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. Rode antes de recriar os containers e leia a saída. O teste de fumaça precisa ler `/api/v1/accounts/1/conversations`.
+- **Conversa de teste:** 131 da conta 1, contato "Teste Jev", inbox 10 (widget). Injete com `rails runner` + `c.messages.create!(... message_type: :incoming ...)`.
+
+### Bloco 1 → 0.9.0 (rápidos, ~1–2 dias)
+
+**1a. Passagem para humano com resumo.** Hoje o handoff só faz `toggle_status: open` e, no Jev, deixa uma nota de uma linha. O pedido é uma **nota privada com briefing** antes de abrir a conversa:
+- por que o bot passou;
+- o que o cliente quer;
+- o que o bot já respondeu ou tentou;
+- compromissos e pendências;
+- as últimas 3 mensagens literais do cliente.
+
+Uma chamada de LLM com o modelo da persona sobre as últimas 20 mensagens, em saída estruturada, no idioma da conversa. São três caminhos no workflow `pd5V9pdaldRLUu4C`:
+1. `PrecisaHandoff` → `Handoff` (keyword, max_turns, content_filter);
+2. o handoff do `JevEntrada`;
+3. a resposta retida pelo `JevRevisao`.
+
+O ideal é um nó ou função única chamada pelos três. Modelo de resumo do DeskComm: `lib/escalacao/briefing-da-passagem.ts` no repo do CRM.
+
+**1b. Bolhas e atraso de digitação.** No `Responde`, quebrar a resposta por parágrafo, com no máximo 4 bolhas e sem partir listas nem blocos. Antes de cada bolha, `toggle_typing_status` (permitido ao token do bot) e espera de 900 ms + 22 ms por caractere, entre 1,2 e 7,5 s. Ligado por padrão em WhatsApp, Instagram e Messenger, e desligado no widget, onde bolha única é melhor. A decidir: campo da persona ou regra por `channel_kind`.
+
+**1c. Opt-out que bloqueia de verdade.** Hoje o opt-out do Jev só passa para humano. Proposta:
+- **O que dispara o bloqueio:** a atividade `opt_out` decidindo com noul ≥ 0,7, **ou** uma regex inequívoca antes do LLM. A regra do DeskComm, em `lib/opt-out/deteccao.ts`, é: palavra sozinha (stop, parar, sair, cancelar, descadastrar, remover, baja, salir…) ou verbo de cessação + objeto de comunicação.
+- **Como bloquear:** o contato vira `blocked=true`.
+  - Usar o `chat_user_token`, porque o token do bot não alcança `contacts`.
+  - Deixar nota privada e etiqueta `opt-out`.
+- **Onde bloqueado precisa ser respeitado:**
+  - No Chatwoot, `blocked` só descarta mensagens do **WhatsApp Cloud** e silencia notificações. **No OpenWA (canal API) a mensagem continua entrando**, então o Guard tem que parar quando `meta.sender.blocked` for true.
+  - O follow-up (bloco 2) e as campanhas também têm que pular contato bloqueado. Conferir as campanhas do OpenWA.
+- **Desfazer:** pela tela do contato (desbloquear).
+
+### Bloco 2 → 0.10.0: follow-up por silêncio + anti-ban
+
+- **Varredura:** workflow agendado no n8n, a cada 15 min, por conta com o recurso ligado. Pega conversas pendentes com o bot, cuja última mensagem é do bot, sem resposta há X horas.
+- **Configuração** na persona ou na rota: `followup_after_hours` e `max_followups`.
+- **Regras** (as do DeskComm, `lib/followup/reactivity.ts`):
+  - um follow-up vivo por contato;
+  - cancela se o cliente responder ou pedir opt-out;
+  - pausa se a conversa foi para um humano;
+  - nunca para contato `blocked`.
+- **Onde o Jev entra:** ele decide **se vale** retomar. "Obrigado, era só isso" não vale; "vou pensar" vale. Em seguida, o LLM escreve a retomada com o contexto de reentrada ("passaram N dias, você ia ver o orçamento").
+- **Anti-ban para o OpenWA** (é WhatsApp por QR, o tipo que a Meta bane):
+  - janela de horário (8h–20h local);
+  - jitter entre envios;
+  - teto diário pela idade do número (20 → 50 → 100 → 200);
+  - veto a texto quase idêntico às últimas 20 mensagens da inbox (Jaccard ≥ 0,8).
+
+  Referência: `pacing/` e `spinning/` em `lib/agent-engine/guardrails/` no CRM.
+- **Tabela nova** no Supabase: `bot_followups`, com estado, tentativas e próximo envio.
+- Avaliar ligar a flag `delayed_automations` (automações com atraso, MIT, `automation_rule_pending_execution`), que hoje está desligada.
+
+### Bloco 3 → 1.0.0: funil de vendas
+
+O Chatwoot não tem funil nem negócios, e esta é a maior lacuna diante do DeskComm.
+- **Módulo MIT nosso no Rails:**
+  - `pipelines` e `stages` (duração esperada, campos exigidos, `requires_human`);
+  - `deals` (contato, conversa, etapa, valor, chance, motivo de perda);
+  - transições com **motivo e autor** (ia ou usuário);
+  - tela Kanban em `components-next`.
+- **O Jev move a etapa:** um `choice` entre as etapas da conta (+ `none`) a cada mensagem do cliente.
+  - Confiança ≥ 0,8 e só para frente: move sozinho.
+  - Entre 0,5 e 0,8: vira sugestão para o atendente.
+  - Tudo registrado na timeline.
+- **Radar de risco:** regras de `lib/leads/risk-radar.ts` no CRM. O "frio" é a duração esperada da etapa (padrão 24 h), e o crítico é 3× isso.
+- **Score com evidência:** fórmula, não LLM (`score-formula.ts`). Compromissos e objeções vêm de nouls do Jev.
+- **Flag nova** `sales_pipeline`: **no fim** de `feature_flags_ext_1`, depois das do upstream (as posições de bit não podem mudar).
+
+### Pendências soltas
+
+- **Recomendado deixar o Jev decidir** em "Notice a request for a person" e "Check the reply before sending". Os dois já mostraram acerto real:
+  - o bot prometeu "te conecto con una persona" sem ninguém ser chamado;
+  - o bot respondeu fora do assunto.
+
+  "Measure the customer's mood" decidindo fecha a janela em que o bot ainda responde à reclamação antes de a automação atribuir.
+- **Monitorar:** base sob medida (a conta 1 tem 76 seções, e o Jev mantém 71–72 nas perguntas reais) e o corte de "não precisa de resposta" (0,85; um "ok, gracias" saiu 0,80).
+- **LLM lento:** 7–13 s no `LLMCustom` da persona `nathan-website`. É do fornecedor, mas é o que o cliente sente.
+- **Dívida antiga:** `db/schema.rb` sem as tabelas de voz.
+- O **clone `src-merge` e o `src-f2`** na VPS podem ser apagados. O de deploy é `src`.
 
 ---
 
