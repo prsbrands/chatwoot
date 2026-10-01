@@ -1,24 +1,82 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-01 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
 ## ▶️ PRÓXIMA SESSÃO — comece aqui
 
-**Contexto em uma linha:** comparamos o CortexGen Chat com o DeskComm CRM (`/Volumes/KINGSTON/projetos_ia/crm`, site deskcomm.com.br) e escolhemos trazer o que falta, fazendo melhor com o Jev. A ordem é: bloco 1 (0.9.0) → bloco 2 (0.10.0) → bloco 3, o funil de vendas (1.0.0).
+**Estado em uma linha:** os blocos 1, 2 e 3 estão em produção (**1.0.2**). O CortexGen Chat tem bot com passagem para humano e briefing, follow-up por silêncio com anti-ban, vigilância das sessões de WhatsApp por QR e funil de vendas completo: Kanban, vários funis, o Jev movendo etapa, radar de risco e score. Falta terminar a **revisão cosmética** e conferir em uso real o que só foi testado em banco descartável.
 
-### Regras de operação que esta sessão ensinou (leia antes de mexer)
+### O que está no ar (conta 1, PRS Global Business)
 
-- **Deploy e publicação são do Paulo.** O classificador de permissões bloqueia, para o Claude, `db:migrate` em produção, `docker tag` + `--force-recreate` e `publish_workflow` do n8n, mesmo com o Paulo autorizando no chat. O fluxo que funciona:
-  - o Claude faz build (`:test-*` num clone `src-<nome>`), teste de fumaça na porta 3099, verificação só de leitura e rollback planejado;
-  - o Claude **passa os comandos** e o Paulo roda um por vez, mandando a saída.
+| Versão | O quê | Ligado? |
+|---|---|---|
+| 0.9.0 | Briefing na passagem, bolhas, opt-out que bloqueia | Sim |
+| 0.10.0 | Follow-up por silêncio (workflow `1aloIF0zKm8pjpeK`) | `nathan-whatsapp` com **24 h** |
+| 0.11.x | Vigilância das sessões de WhatsApp + reconectar pelo Pair | Sim |
+| 0.12–0.13 | Funil de vendas, Kanban, vários funis (flag `sales_pipeline`) | Só na conta 1 |
+| 0.14.0 | O Jev move o negócio (atividade `deal_stage`) | **Observing** |
+| 1.0.0 | Radar de risco e score | Sim (score só com o Jev lendo) |
+| 1.0.1 | "Failed to send" falso no WhatsApp (timeout de 30 s no canal API) | Sim |
+| 1.0.2 | Revisão de código: rubocop e eslint zerados; seletor de etapa do card Deal | Sim |
 
-  Mande **um comando por vez**. Na lista de três, ele rodou o rollback no lugar do deploy.
-- **n8n:** mudança no workflow do bot é `export` → `ops/n8n/patch_jev.py` (ou equivalente) → `import`. O import **desativa** o workflow, então combine a hora com o Paulo, que clica em Publish logo depois. Depois de publicar, mande uma mensagem real e confira execução verde, resposta do bot e `bot_jev_calls`.
-- **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. Rode antes de recriar os containers e leia a saída. O teste de fumaça precisa ler `/api/v1/accounts/1/conversations`.
-- **Conversa de teste:** 131 da conta 1, contato "Teste Jev", inbox 10 (widget). Injete com `rails runner` + `c.messages.create!(... message_type: :incoming ...)`.
+Imagem `:v1` = `3b4162ebc0bc` (commit `11c4a7d7a`), rollback em `:v1-pre-b10`. Todas as tags `cg-v*` estão no GitHub até a `cg-v1.0.1`. A `cg-v1.0.2` e o commit `dd64864fc` dependem do push do Paulo.
+
+### Regras de operação (leia antes de mexer)
+
+- **Deploy e publicação são do Paulo.** O classificador bloqueia para o Claude:
+  - `db:migrate` em produção, `docker tag` + `--force-recreate`, publicar workflow no n8n e rodar workflow pelo MCP;
+  - escrever no `/tmp` da VPS, às vezes;
+  - ler o Supabase por `psql`. A API do próprio Chatwoot (com o token do admin) funciona para leitura.
+
+  O fluxo que funciona: o Claude builda (`:test-bN`), roda os testes e o boot na 3099 e passa **um comando por vez**. O Paulo roda e manda a saída. Na ordem: migration → tag de rollback (`v1-pre-bN`) → troca da imagem.
+- **Push:** o Mac não tem chave SSH no GitHub. Use `git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel <tags>`; o `gh` está logado por HTTPS. Quem roda o push é o Paulo.
+- **Clone de build:** o **`/opt/cortexgen-chat/src` está parado em `25e1472f0` (30/09)**. Desde então os builds saem dos clones `src-b1` a `src-b5`, e o `src-b5` está em `11c4a7d7a`. Buildar do `src` sem `git pull` **volta a produção para a 0.8.0**.
+  - O `src-b5` tem `node_modules` do lint. Por isso a imagem da 1.0.2 tem 3,38 GB, contra 2,72 GB.
+  - Daqui pra frente: build num clone limpo e lint num clone separado.
+- **Testar antes de subir:** Postgres e Redis **descartáveis** na rede `cortexgen-chat_default`, schema carregado e cenários num `rails runner`. Os scripts ficam em **`ops/smoke/`**: `sales_pipeline.rb` (25 cenários), `sales_stage_advisor.rb` (17) e `sales_insights.rb` (18). O `run.sh` sobe o banco e o Redis descartáveis e roda os três com a imagem que vai subir.
+  - Esse teste achou dois bugs antes da produção: o `GROUP BY` com o `default_scope` do `Message` e o motivo de perda que ficava no negócio reaberto.
+  - **Nunca use o Redis da produção** nesses testes: os jobs iriam para o sidekiq real.
+- **Lint:** em container na VPS. A receita está na memória `lint-em-container`. Use `--force-exclusion` no rubocop e `--quiet` no eslint.
+- **n8n, workflow agendado:** import → **recarregar a página** → Publish → `docker restart n8n-y4jd-n8n-1` → conferir pelo MCP (`active` e `activeVersionId` = `versionId`) e no `n8nEventLog.log` que sai **uma** execução por intervalo. Pular um passo deixa o workflow desligado ou rodando em dobro (os dois aconteceram em 01/10).
+- **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, porque o Mac não roda migration.
+- **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão (Settings → Integrations → WhatsApp Sessions). Excluir e criar outra duplica o número. O WhatsApp vivo da conta 1 é a **inbox 33**, que é nova e tem teto de 20 follow-ups por dia até 04/10.
+
+### Fila, na ordem que eu seguiria
+
+1. **Conferir em uso real o que só foi testado em banco descartável.** Peça ao Paulo uma conversa nova pelo WhatsApp da inbox 33 e confira:
+   - o negócio nasce em "Nuevo contacto";
+   - o seletor de etapa do card Deal lista as etapas (era o bug da 1.0.2);
+   - depois de ~5 min, o ponto de risco aparece no Kanban;
+   - o score aparece quando o Jev ler a conversa (a atividade `deal_stage` em Observing já basta);
+   - nenhuma mensagem nova mostra "Failed to send".
+2. **2ª retomada da conversa 89.** Ela sai por volta das 8:00 de Bogotá de 02/10, pela regra das 24 h, se o Paulo não tiver respondido. É o primeiro envio com o prompt novo: confira se o texto cita a pendência concreta (proposta, perguntas sobre o negócio) e não um "¿cómo va todo?".
+3. **Revisão cosmética, a parte que falta:**
+   - **Comentários.** Parte do código do fork tem português sem acento ("nao", "negocio", "funil padrao") e parte com acento. Padronizar com acento, mexendo **só em comentário**: string, chave e texto de tela ficam como estão.
+   - **Telas.** Percorrer Pipeline, card Deal, Pipeline settings, cartão do Jev, WhatsApp Sessions e PersonaEditor, em modo claro e escuro e no celular. O Paulo faz o login no navegador embutido, ou manda prints.
+4. **Decidir o que o Jev passa a decidir.** Hoje há atividades em Observing que já mostraram acerto: "Notice a request for a person", "Check the reply before sending" e "Measure the customer's mood". Agora entra também "Move the deal along the pipeline". Leia os números do cartão do Jev antes de recomendar.
+5. **Limpeza da VPS** (disco em 66%):
+   - Clones antigos: `src-merge`, `src-f2` e `src-b1` a `src-b4`.
+   - As imagens `test-*` e `v1-pre-*` antigas são 25, de ~2,7 GB cada. Mantenha `v1`, `v1-pre-b10` e uma ou duas anteriores.
+   - Quem apaga é o Paulo; passe a lista para ele.
+6. **Atualizar o `src`** para o HEAD, ou oficializar um clone de build, para não depender de `src-bN`.
+
+### Pendências antigas que continuam valendo
+
+- **Testar no WhatsApp real:** o `stop` (opt-out que bloqueia) num número OpenWA. Conferir também se o bridge do OpenWA repassa o "digitando" ao WhatsApp. Se não repassar, o "digitando" só aparece no painel, mas a espera entre as bolhas vale do mesmo jeito.
+- **Monitorar:**
+  - a base sob medida: a conta 1 tem 76 seções, e o Jev mantém 71–72;
+  - o corte de "não precisa de resposta", hoje em 0,85 (um "ok, gracias" saiu 0,80).
+- **LLM lento:** 7–13 s no `LLMCustom` da persona `nathan-website`. A causa é do fornecedor.
+- **Dívida antiga:** o `db/schema.rb` não tem as tabelas de voz.
+- **Inbox 31 (DaGente, conta 2):** o fuso está certo (`America/Sao_Paulo`), mas a persona dela não tem follow-up e a conta 2 não tem a flag do funil.
+- **Próximo merge do upstream:** use a memória `merge-upstream-migrations`. Agora deve ter menos conflito, porque o código do fork saiu das classes do Chatwoot (ver 1.0.2).
+
+---
+
+## ✅ Blocos 1, 2 e 3 — detalhe técnico (30/09–01/10)
 
 ### Bloco 1 → 0.9.0: no ar em 30/09 (n8n e Rails)
 
@@ -242,18 +300,6 @@ O Chatwoot não tem funil nem negócios, e esta é a maior lacuna diante do Desk
 - **Radar de risco:** regras de `lib/leads/risk-radar.ts` no CRM. O "frio" é a duração esperada da etapa (padrão 24 h), e o crítico é 3× isso.
 - **Score com evidência:** fórmula, não LLM (`score-formula.ts`). Compromissos e objeções vêm de nouls do Jev.
 - **Flag nova** `sales_pipeline`: **no fim** de `feature_flags_ext_1`, depois das do upstream (as posições de bit não podem mudar).
-
-### Pendências soltas
-
-- **Recomendado deixar o Jev decidir** em "Notice a request for a person" e "Check the reply before sending". Os dois já mostraram acerto real:
-  - o bot prometeu "te conecto con una persona" sem ninguém ser chamado;
-  - o bot respondeu fora do assunto.
-
-  "Measure the customer's mood" decidindo fecha a janela em que o bot ainda responde à reclamação antes de a automação atribuir.
-- **Monitorar:** base sob medida (a conta 1 tem 76 seções, e o Jev mantém 71–72 nas perguntas reais) e o corte de "não precisa de resposta" (0,85; um "ok, gracias" saiu 0,80).
-- **LLM lento:** 7–13 s no `LLMCustom` da persona `nathan-website`. É do fornecedor, mas é o que o cliente sente.
-- **Dívida antiga:** `db/schema.rb` sem as tabelas de voz.
-- O **clone `src-merge` e o `src-f2`** na VPS podem ser apagados. O de deploy é `src`.
 
 ---
 
