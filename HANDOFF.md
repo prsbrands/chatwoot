@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.11.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.11.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -95,6 +95,8 @@ O ideal é um nó ou função única chamada pelos três. Modelo de resumo do De
 - O `qr` com status `ready` desmarca na hora.
 - Excluir a sessão desliga a rota. Excluir a inbox apaga a rota (`after_destroy_commit :remove_bot_routes`).
 - Quando a sessão cai, **reconectar na mesma sessão (QR)**. Excluir e recriar duplica o número.
+- 0.11.1 (`3eff4748e`, imagem `3dbe6b9163a4`, rollback `:v1-pre-b4`): os textos de WhatsApp Sessions mandam usar o Pair, e o New session sugere reaproveitar a inbox do mesmo número.
+- Rotas órfãs apagadas em 01/10: inbox 12 da conta 1, e 24 e 29 da conta 3.
 - Em 01/10 as inboxes mortas 2, 14 e 30 foram apagadas. O WhatsApp vivo da conta 1 é a inbox **33**, com `number_activated_at` 01/10, então teto de 20/dia até 04/10.
 
 Decisões do Paulo em 30/09:

@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.11.1] — 2026-10-01 · base Chatwoot 4.18.0
+
+- WhatsApp Sessions explica, no cartão, no cabeçalho e ao excluir, que um número caído se reconecta com **Pair** na mesma sessão, mantendo a inbox, as conversas e o bot.
+- Em **New session**, um nome que lembra uma inbox de WhatsApp sem sessão (os mesmos 6 últimos dígitos, ou o nome dentro do nome da inbox) mostra o aviso com **Reuse this inbox**, em vez de criar uma duplicada.
+
 ## [0.11.0] — 2026-10-01 · base Chatwoot 4.18.0
 
 **O Chatwoot vigia as conexões de WhatsApp por QR**
