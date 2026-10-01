@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.10.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.11.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -85,6 +85,17 @@ O ideal é um nó ou função única chamada pelos três. Modelo de resumo do De
 - Fusos: inboxes 2, 14 e 30 em `America/Bogota`, inbox 31 em `America/Sao_Paulo`.
 
 **Falta:** ligar na `nathan-whatsapp` e ver um envio real.
+
+**Sessões de WhatsApp por QR (0.11.0, `8f9777a79`, imagem `85014a894183`, rollback `:v1-pre-b3`):**
+- O `Openwa::SessionWatchJob` roda a cada 5 min, pelo `TriggerScheduledItemsJob`. Ele marca o `Channel::Api` com o `Reauthorizable`, depois de 2 checagens fora de `ready`. Efeitos:
+  - alerta na barra lateral;
+  - aviso na inbox, com link para o OpenWA;
+  - e-mail `whatsapp_disconnect`;
+  - o `Candidatos` pula a inbox.
+- O `qr` com status `ready` desmarca na hora.
+- Excluir a sessão desliga a rota. Excluir a inbox apaga a rota (`after_destroy_commit :remove_bot_routes`).
+- Quando a sessão cai, **reconectar na mesma sessão (QR)**. Excluir e recriar duplica o número.
+- Em 01/10 as inboxes mortas 2, 14 e 30 foram apagadas. O WhatsApp vivo da conta 1 é a inbox **33**, com `number_activated_at` 01/10, então teto de 20/dia até 04/10.
 
 Decisões do Paulo em 30/09:
 - só no OpenWA (nos canais Meta, depois de 24 h, só template; no widget o visitante já saiu);

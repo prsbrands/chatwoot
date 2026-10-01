@@ -14,6 +14,17 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.11.0] — 2026-10-01 · base Chatwoot 4.18.0
+
+**O Chatwoot vigia as conexões de WhatsApp por QR**
+- A cada 5 minutos confere cada conexão do OpenWA. Conexão caída por 10 minutos:
+  - a inbox ganha o alerta vermelho na barra lateral;
+  - a configuração da inbox mostra "This WhatsApp number is disconnected", com o botão **Scan the QR code**;
+  - os admins recebem e-mail;
+  - o follow-up para nessa inbox.
+- Ler o QR de novo na mesma conexão tira o alerta na hora e mantém a inbox, o histórico e a rota do bot.
+- Excluir uma conexão desliga o bot da inbox dela; excluir uma inbox apaga a rota dela em Bot Personas, sem deixar canal fantasma.
+
 ## [0.10.0] — 2026-09-30 · base Chatwoot 4.18.0
 
 **Follow-up quando o cliente some (WhatsApp por QR)**
