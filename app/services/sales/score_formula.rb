@@ -31,9 +31,12 @@ class Sales::ScoreFormula
 
   # Folga de 5 pontos para a faixa nao piscar entre duas leituras proximas.
   def self.band_for(score, previous)
-    band = if score >= HOT then 'hot'
-           elsif score >= WARM then 'warm'
-           else 'cold'
+    band = if score >= HOT
+             'hot'
+           elsif score >= WARM
+             'warm'
+           else
+             'cold'
            end
     return band if previous.nil? || previous == band
 

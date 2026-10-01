@@ -192,7 +192,9 @@ const createSession = async () => {
     useAlert(t('INTEGRATION_SETTINGS.OPENWA.API.CREATE_SUCCESS'));
     if (data.bot_route && !['created', 'skipped'].includes(data.bot_route)) {
       useAlert(
-        t(`INTEGRATION_SETTINGS.OPENWA.BOT_ROUTE.${data.bot_route.toUpperCase()}`)
+        t(
+          `INTEGRATION_SETTINGS.OPENWA.BOT_ROUTE.${data.bot_route.toUpperCase()}`
+        )
       );
     }
     await fetchSessions();
@@ -390,7 +392,9 @@ onBeforeUnmount(stopQrPolling);
           <Input
             v-model="newSessionName"
             :label="$t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_LABEL')"
-            :placeholder="$t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_PLACEHOLDER')"
+            :placeholder="
+              $t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_PLACEHOLDER')
+            "
             :message="$t('INTEGRATION_SETTINGS.OPENWA.ADD.NAME_HELP')"
           />
           <div class="flex flex-col gap-1">

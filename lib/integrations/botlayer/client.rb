@@ -69,7 +69,7 @@ class Integrations::Botlayer::Client
     delete("bot_persona_knowledge?doc_id=eq.#{uuid!(doc_id)}")
     return if persona_ids.blank?
 
-    owned = personas(account_id).map { |persona| persona['id'] }
+    owned = personas(account_id).pluck('id')
     links = persona_ids.map { |id| uuid!(id) }.select { |id| owned.include?(id) }
     return if links.blank?
 

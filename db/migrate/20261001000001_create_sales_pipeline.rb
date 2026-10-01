@@ -3,6 +3,15 @@
 # (CLAUDE.md): as associacoes e o `dependent` dos models cuidam da exclusao.
 class CreateSalesPipeline < ActiveRecord::Migration[7.1]
   def change
+    create_pipelines
+    create_stages
+    create_deals
+    create_transitions
+  end
+
+  private
+
+  def create_pipelines
     create_table :sales_pipelines do |t|
       t.references :account, null: false, index: true
       t.string :name, null: false
@@ -11,7 +20,9 @@ class CreateSalesPipeline < ActiveRecord::Migration[7.1]
       t.timestamps
     end
     add_index :sales_pipelines, :account_id, unique: true, where: 'is_default', name: 'index_sales_pipelines_one_default'
+  end
 
+  def create_stages
     create_table :sales_stages do |t|
       t.references :account, null: false, index: true
       t.references :pipeline, null: false, index: true
@@ -29,7 +40,9 @@ class CreateSalesPipeline < ActiveRecord::Migration[7.1]
     end
     add_index :sales_stages, :pipeline_id, unique: true, where: 'kind = 1', name: 'index_sales_stages_one_won'
     add_index :sales_stages, :pipeline_id, unique: true, where: 'kind = 2', name: 'index_sales_stages_one_lost'
+  end
 
+  def create_deals
     create_table :sales_deals do |t|
       t.references :account, null: false, index: true
       t.references :pipeline, null: false, index: true
@@ -47,7 +60,9 @@ class CreateSalesPipeline < ActiveRecord::Migration[7.1]
       t.timestamps
     end
     add_index :sales_deals, [:account_id, :contact_id, :status]
+  end
 
+  def create_transitions
     create_table :sales_deal_transitions do |t|
       t.references :account, null: false, index: true
       t.references :deal, null: false, index: true

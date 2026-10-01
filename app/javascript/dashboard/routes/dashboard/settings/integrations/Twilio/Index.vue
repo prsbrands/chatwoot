@@ -244,162 +244,165 @@ onMounted(fetchAll);
         <TwilioVoice v-if="activeTab === 'voice'" :numbers="numbers" />
 
         <template v-else>
-        <!-- Webhook de SMS -->
-        <div class="flex flex-col gap-2">
-          <p class="text-sm font-medium text-n-slate-12">
-            {{ $t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.TITLE') }}
-          </p>
-          <p class="text-sm text-n-slate-11">
-            {{ $t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.HELP') }}
-          </p>
-          <div class="flex items-center gap-2">
-            <code
-              class="flex-1 truncate rounded-lg bg-n-alpha-2 px-3 py-2 font-mono text-xs text-n-slate-12"
-            >
-              {{ smsWebhookUrl }}
-            </code>
-            <Button
-              sm
-              slate
-              faded
-              icon="i-lucide-copy"
-              :label="$t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.COPY')"
-              @click="copyWebhook"
-            />
-          </div>
-        </div>
-
-        <!-- Números -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-4">
+          <!-- Webhook de SMS -->
+          <div class="flex flex-col gap-2">
             <p class="text-sm font-medium text-n-slate-12">
-              {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.TITLE') }}
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.TITLE') }}
             </p>
-            <Input
-              v-model="search"
-              class="w-64"
-              :placeholder="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SEARCH')"
-            />
+            <p class="text-sm text-n-slate-11">
+              {{ $t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.HELP') }}
+            </p>
+            <div class="flex items-center gap-2">
+              <code
+                class="flex-1 truncate rounded-lg bg-n-alpha-2 px-3 py-2 font-mono text-xs text-n-slate-12"
+              >
+                {{ smsWebhookUrl }}
+              </code>
+              <Button
+                sm
+                slate
+                faded
+                icon="i-lucide-copy"
+                :label="$t('INTEGRATION_SETTINGS.TWILIO.WEBHOOK.COPY')"
+                @click="copyWebhook"
+              />
+            </div>
           </div>
 
-          <p v-if="!numbers.length" class="text-sm text-n-slate-11">
-            {{
-              search
-                ? $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NO_MATCH')
-                : $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.EMPTY')
-            }}
-          </p>
+          <!-- Números -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-4">
+              <p class="text-sm font-medium text-n-slate-12">
+                {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.TITLE') }}
+              </p>
+              <Input
+                v-model="search"
+                class="w-64"
+                :placeholder="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SEARCH')"
+              />
+            </div>
 
-          <table v-else class="min-w-full divide-y divide-n-weak">
-            <thead>
-              <tr class="text-left text-sm text-n-slate-11">
-                <th class="py-2 pr-4 font-medium">
-                  {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NUMBER') }}
-                </th>
-                <th class="py-2 pr-4 font-medium">
-                  {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CAPABILITIES') }}
-                </th>
-                <th class="py-2 pr-4 font-medium">
-                  {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.INBOX') }}
-                </th>
-                <th class="py-2 font-medium text-right">
-                  {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.ACTIONS') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-n-weak">
-              <tr v-for="number in numbers" :key="number.sid" class="text-sm">
-                <td class="py-3 pr-4">
-                  <p class="font-medium text-n-slate-12">
-                    {{ number.phone_number }}
-                  </p>
-                  <p class="text-xs text-n-slate-11">
-                    {{ number.friendly_name }}
-                  </p>
-                  <p
-                    v-if="needsA2pNotice(number)"
-                    class="mt-1 flex items-center gap-1 text-xs text-n-amber-11"
-                  >
-                    <span class="i-lucide-info size-3 shrink-0" />
-                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.A2P_NOTICE') }}
-                  </p>
-                </td>
-                <td class="py-3 pr-4 align-top">
-                  <div class="flex flex-wrap gap-1">
-                    <span
-                      v-for="capability in capabilityList(number)"
-                      :key="capability"
-                      class="rounded-md bg-n-teal-3 px-2 py-0.5 text-xs font-medium text-n-teal-11"
-                    >
-                      {{ capability }}
-                    </span>
-                    <span
-                      v-if="!capabilityList(number).length"
-                      class="text-xs text-n-slate-10"
-                    >
-                      {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NONE') }}
-                    </span>
-                  </div>
-                </td>
-                <td class="py-3 pr-4 align-top">
-                  <div class="flex flex-col items-start gap-1">
-                    <button
-                      v-if="number.inbox"
-                      class="text-n-brand hover:underline"
-                      @click="goToInbox(number.inbox)"
-                    >
-                      {{
-                        $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SMS_INBOX', {
-                          name: number.inbox.name,
-                        })
-                      }}
-                    </button>
-                    <button
-                      v-if="number.voice_inbox"
-                      class="text-n-brand hover:underline"
-                      @click="goToInbox(number.voice_inbox)"
-                    >
-                      {{
-                        $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.VOICE_INBOX', {
-                          name: number.voice_inbox.name,
-                        })
-                      }}
-                    </button>
-                    <span
-                      v-if="!number.inbox && !number.voice_inbox"
-                      class="text-n-slate-10"
-                    >
-                      {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.UNLINKED') }}
-                    </span>
-                  </div>
-                </td>
-                <td class="py-3 text-right align-top whitespace-nowrap">
-                  <Button
-                    v-if="number.capabilities.sms && !number.inbox"
-                    sm
-                    blue
-                    ghost
-                    :label="
-                      $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CONNECT_SMS')
-                    "
-                    @click="openProvisionDialog(number)"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            <p v-if="!numbers.length" class="text-sm text-n-slate-11">
+              {{
+                search
+                  ? $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NO_MATCH')
+                  : $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.EMPTY')
+              }}
+            </p>
 
-          <div v-if="nextPageUrl" class="flex justify-center pt-2">
-            <Button
-              sm
-              slate
-              faded
-              :label="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.LOAD_MORE')"
-              :is-loading="isLoadingMore"
-              @click="loadMore"
-            />
+            <table v-else class="min-w-full divide-y divide-n-weak">
+              <thead>
+                <tr class="text-left text-sm text-n-slate-11">
+                  <th class="py-2 pr-4 font-medium">
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NUMBER') }}
+                  </th>
+                  <th class="py-2 pr-4 font-medium">
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CAPABILITIES') }}
+                  </th>
+                  <th class="py-2 pr-4 font-medium">
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.INBOX') }}
+                  </th>
+                  <th class="py-2 font-medium text-right">
+                    {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.ACTIONS') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-n-weak">
+                <tr v-for="number in numbers" :key="number.sid" class="text-sm">
+                  <td class="py-3 pr-4">
+                    <p class="font-medium text-n-slate-12">
+                      {{ number.phone_number }}
+                    </p>
+                    <p class="text-xs text-n-slate-11">
+                      {{ number.friendly_name }}
+                    </p>
+                    <p
+                      v-if="needsA2pNotice(number)"
+                      class="mt-1 flex items-center gap-1 text-xs text-n-amber-11"
+                    >
+                      <span class="i-lucide-info size-3 shrink-0" />
+                      {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.A2P_NOTICE') }}
+                    </p>
+                  </td>
+                  <td class="py-3 pr-4 align-top">
+                    <div class="flex flex-wrap gap-1">
+                      <span
+                        v-for="capability in capabilityList(number)"
+                        :key="capability"
+                        class="rounded-md bg-n-teal-3 px-2 py-0.5 text-xs font-medium text-n-teal-11"
+                      >
+                        {{ capability }}
+                      </span>
+                      <span
+                        v-if="!capabilityList(number).length"
+                        class="text-xs text-n-slate-10"
+                      >
+                        {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.NONE') }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="py-3 pr-4 align-top">
+                    <div class="flex flex-col items-start gap-1">
+                      <button
+                        v-if="number.inbox"
+                        class="text-n-brand hover:underline"
+                        @click="goToInbox(number.inbox)"
+                      >
+                        {{
+                          $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.SMS_INBOX', {
+                            name: number.inbox.name,
+                          })
+                        }}
+                      </button>
+                      <button
+                        v-if="number.voice_inbox"
+                        class="text-n-brand hover:underline"
+                        @click="goToInbox(number.voice_inbox)"
+                      >
+                        {{
+                          $t(
+                            'INTEGRATION_SETTINGS.TWILIO.NUMBERS.VOICE_INBOX',
+                            {
+                              name: number.voice_inbox.name,
+                            }
+                          )
+                        }}
+                      </button>
+                      <span
+                        v-if="!number.inbox && !number.voice_inbox"
+                        class="text-n-slate-10"
+                      >
+                        {{ $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.UNLINKED') }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="py-3 text-right align-top whitespace-nowrap">
+                    <Button
+                      v-if="number.capabilities.sms && !number.inbox"
+                      sm
+                      blue
+                      ghost
+                      :label="
+                        $t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.CONNECT_SMS')
+                      "
+                      @click="openProvisionDialog(number)"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div v-if="nextPageUrl" class="flex justify-center pt-2">
+              <Button
+                sm
+                slate
+                faded
+                :label="$t('INTEGRATION_SETTINGS.TWILIO.NUMBERS.LOAD_MORE')"
+                :is-loading="isLoadingMore"
+                @click="loadMore"
+              />
+            </div>
           </div>
-        </div>
         </template>
       </div>
 

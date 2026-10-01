@@ -11,8 +11,8 @@ class Sales::Deal < ApplicationRecord
   belongs_to :assignee, class_name: 'User', optional: true
   belongs_to :suggested_stage, class_name: 'Sales::Stage', optional: true
   has_one :insight, class_name: 'Sales::DealInsight', dependent: :delete, inverse_of: :deal
-  has_many :transitions, -> { order(created_at: :desc) }, class_name: 'Sales::DealTransition', dependent: :delete_all,
-                                                           inverse_of: :deal
+  has_many :transitions, -> { order(created_at: :desc) },
+           class_name: 'Sales::DealTransition', dependent: :delete_all, inverse_of: :deal
 
   enum :status, { open: 0, won: 1, lost: 2 }
 

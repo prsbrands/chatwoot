@@ -15,16 +15,20 @@ class Openwa::SessionWatchJob < ApplicationJob
     client = Integrations::Openwa::Client.new
     status_by_session = client.sessions.to_h { |session| [session['id'], session['status']] }
 
-    client.adapter_instances.each do |instance|
-      config = instance['config'] || {}
-      inbox = Inbox.find_by(id: config['inboxId'], account_id: config['accountId'])
-      next unless inbox&.api?
+    client.adapter_instances.each { |instance| check(instance, status_by_session[instance['sessionScope']]) }
+  end
 
-      if status_by_session[instance['sessionScope']] == 'ready'
-        inbox.channel.reauthorized!
-      elsif !inbox.channel.reauthorization_required?
-        inbox.channel.authorization_error!
-      end
+  private
+
+  def check(instance, status)
+    config = instance['config'] || {}
+    inbox = Inbox.find_by(id: config['inboxId'], account_id: config['accountId'])
+    return unless inbox&.api?
+
+    if status == 'ready'
+      inbox.channel.reauthorized!
+    elsif !inbox.channel.reauthorization_required?
+      inbox.channel.authorization_error!
     end
   end
 end

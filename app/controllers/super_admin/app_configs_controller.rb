@@ -1,6 +1,6 @@
 class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
-  GENERAL_CONFIGS = %w[ENABLE_ACCOUNT_SIGNUP FIREBASE_PROJECT_ID FIREBASE_CREDENTIALS WEBHOOK_TIMEOUT API_INBOX_WEBHOOK_TIMEOUT MAXIMUM_FILE_UPLOAD_SIZE
-                       WIDGET_TOKEN_EXPIRY].freeze
+  GENERAL_CONFIGS = %w[ENABLE_ACCOUNT_SIGNUP FIREBASE_PROJECT_ID FIREBASE_CREDENTIALS WEBHOOK_TIMEOUT API_INBOX_WEBHOOK_TIMEOUT
+                       MAXIMUM_FILE_UPLOAD_SIZE WIDGET_TOKEN_EXPIRY].freeze
   META_INCIDENT_CONFIGS = %w[DISABLE_META_INBOX_CREATION DISABLE_META_MESSAGE_SENDING].freeze
   SHOPIFY_CONFIGS = %w[
     ENABLE_SHOPIFY_INTEGRATION
@@ -48,6 +48,13 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
 
   private
 
+  # Telas do CortexGen em Super Admin -> Settings.
+  CORTEXGEN_CONFIGS = {
+    'openwa' => %w[OPENWA_API_URL OPENWA_API_KEY OPENWA_BOT_PERSONA_SLUG],
+    'botlayer' => %w[SUPABASE_REST_URL SUPABASE_SERVICE_ROLE_KEY],
+    'voice' => %w[VOICE_STREAM_URL VOICE_SERVICE_TOKEN]
+  }.freeze
+
   def set_config
     @config = params[:config] || 'general'
   end
@@ -69,9 +76,7 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
       'google' => %w[GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET GOOGLE_OAUTH_REDIRECT_URI ENABLE_GOOGLE_OAUTH_LOGIN],
       'captain' => %w[CAPTAIN_OPEN_AI_API_KEY CAPTAIN_OPEN_AI_MODEL CAPTAIN_OPEN_AI_ENDPOINT
                       CAPTAIN_OPENROUTER_API_KEY CAPTAIN_OPENROUTER_DECISION_MODEL_ENDPOINT],
-      'openwa' => %w[OPENWA_API_URL OPENWA_API_KEY OPENWA_BOT_PERSONA_SLUG],
-      'botlayer' => %w[SUPABASE_REST_URL SUPABASE_SERVICE_ROLE_KEY],
-      'voice' => %w[VOICE_STREAM_URL VOICE_SERVICE_TOKEN]
+      **CORTEXGEN_CONFIGS
     }
 
     @allowed_configs = mapping.fetch(@config, general_configs)

@@ -10,15 +10,7 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
 
     ensure_persona_belongs_to_account!
     ensure_chat_user_token
-    bot = resolved_agent_bot(route_params[:chatwoot_agent_bot_id])
-    route = client.upsert_route(
-      route_params.to_h.merge(
-        chatwoot_account_id: Current.account.id,
-        channel_label: inbox.name,
-        chatwoot_agent_bot_secret: bot&.secret,
-        chatwoot_agent_bot_access_token: bot&.access_token&.token
-      )
-    )
+    route = upsert_route(inbox, resolved_agent_bot(route_params[:chatwoot_agent_bot_id]))
     sync_agent_bot(inbox, route['chatwoot_agent_bot_id'], route['is_active'])
     render json: strip_secret(route)
   end
@@ -32,6 +24,17 @@ class Api::V1::Accounts::Integrations::Botlayer::RoutesController < Api::V1::Acc
   end
 
   private
+
+  def upsert_route(inbox, bot)
+    client.upsert_route(
+      route_params.to_h.merge(
+        chatwoot_account_id: Current.account.id,
+        channel_label: inbox.name,
+        chatwoot_agent_bot_secret: bot&.secret,
+        chatwoot_agent_bot_access_token: bot&.access_token&.token
+      )
+    )
+  end
 
   # A inbox "Voz — <número>" é só o registro passivo da chamada: quem conversa
   # com quem liga é o cortexgen-voice, direto pela persona da TwilioVoiceRoute,

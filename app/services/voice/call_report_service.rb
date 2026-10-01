@@ -101,11 +101,14 @@ class Voice::CallReportService
   # celular nem isso. Ela só é gravada quando quem ligou a menciona.
   def enrich_contact
     contact = contact_inbox.contact
-    attributes = contact.additional_attributes || {}
-
     contact.name = @params[:name] if @params[:name].present? && contact.name == caller_number
     contact.email = @params[:email] if @params[:email].present? && contact.email.blank?
+    contact.additional_attributes = enriched_attributes(contact.additional_attributes || {})
+    Contacts::SyncAttributes.new(contact).perform
+    contact.save!
+  end
 
+  def enriched_attributes(attributes)
     attributes['company_name'] = @params[:company] if @params[:company].present?
     attributes['city'] = @params[:city] if @params[:city].present?
     attributes.merge!(qualification)
@@ -113,10 +116,7 @@ class Voice::CallReportService
     # Quem liga de um celular usa o mesmo número no WhatsApp, salvo quando dita
     # outro durante a conversa.
     attributes['whatsapp'] = @params[:whatsapp].presence || caller_number
-
-    contact.additional_attributes = attributes
-    Contacts::SyncAttributes.new(contact).perform
-    contact.save!
+    attributes
   end
 
   # Quanto vale este lead, na leitura da chamada inteira. Sai da mesma passada de

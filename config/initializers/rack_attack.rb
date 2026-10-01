@@ -303,7 +303,7 @@ class Rack::Attack
     next unless req.path_without_extensions == '/public/api/v1/voice_requests' && req.post?
 
     phone = ActionDispatch::Request.new(req.env).params['phone_number'].presence
-    phone.gsub(/[^\d+]/, '') if phone
+    phone&.gsub(/[^\d+]/, '')
   end
 
   ###-----------------------------------------------###

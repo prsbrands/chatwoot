@@ -56,14 +56,18 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
     instances = client.adapter_instances.select { |instance| instance['sessionScope'] == session_id }
     instances.each { |instance| client.delete_adapter_instance(instance['instanceId']) }
     client.delete_session(session_id)
-    Current.account.inboxes.where(id: instances.filter_map { |instance| instance.dig('config', 'inboxId') }).find_each do |inbox|
-      Integrations::Botlayer::Client.new.deactivate_inbox_route(Current.account.id, inbox.id)
-      inbox.agent_bot_inbox&.destroy!
-    end
+    pause_session_inboxes(instances.filter_map { |instance| instance.dig('config', 'inboxId') })
     head :ok
   end
 
   private
+
+  def pause_session_inboxes(inbox_ids)
+    Current.account.inboxes.where(id: inbox_ids).find_each do |inbox|
+      Integrations::Botlayer::Client.new.deactivate_inbox_route(Current.account.id, inbox.id)
+      inbox.agent_bot_inbox&.destroy!
+    end
+  end
 
   # O gateway OpenWA não conhece conta — ele serve todos os deployments que
   # falam com ele, inclusive sessões criadas fora deste painel (ex.: o plugin
@@ -78,7 +82,7 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
   end
 
   def owned_session_ids
-    @owned_session_ids ||= account_instances.map { |instance| instance['sessionScope'] }.to_set
+    @owned_session_ids ||= account_instances.to_set { |instance| instance['sessionScope'] }
   end
 
   def scoped_sessions

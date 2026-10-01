@@ -36,7 +36,9 @@ class SalesPipelineAPI extends ApiClient {
   }
 
   deleteStage(pipelineId, stageId) {
-    return axios.delete(`${this.url}/pipelines/${pipelineId}/stages/${stageId}`);
+    return axios.delete(
+      `${this.url}/pipelines/${pipelineId}/stages/${stageId}`
+    );
   }
 
   deals(params = {}) {

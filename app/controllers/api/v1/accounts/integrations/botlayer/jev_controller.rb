@@ -19,12 +19,7 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
   end
 
   def update
-    config = settings['jev'] || {}
-    config['activities'] = (config['activities'] || {}).merge(activity_params) if params[:activities].present?
-    config['review_rules'] = review_rules_param if params.key?(:review_rules)
-    config['consent'] ||= consent if ActiveModel::Type::Boolean.new.cast(params[:consent])
-    config['enabled'] = enable!(config) if params.key?(:enabled)
-
+    config = updated_config(settings['jev'] || {})
     client.upsert_account_settings(account_id, { jev: config })
     toggle_team_feature(config)
     render_card
@@ -49,6 +44,14 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
   end
 
   private
+
+  def updated_config(config)
+    config['activities'] = (config['activities'] || {}).merge(activity_params) if params[:activities].present?
+    config['review_rules'] = review_rules_param if params.key?(:review_rules)
+    config['consent'] ||= consent if ActiveModel::Type::Boolean.new.cast(params[:consent])
+    config['enabled'] = enable!(config) if params.key?(:enabled)
+    config
+  end
 
   def required_feature
     'ai_providers'

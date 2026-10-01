@@ -7,7 +7,6 @@ import { useAlert } from 'dashboard/composables';
 import BotlayerAPI from 'dashboard/api/integrations/botlayer';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Switch from 'dashboard/components-next/switch/Switch.vue';
 import SettingsLayout from '../../SettingsLayout.vue';
@@ -44,11 +43,6 @@ const personaOptions = computed(() =>
   }))
 );
 
-const providerOptions = computed(() =>
-  providers.value
-    .filter(provider => provider.is_active)
-    .map(provider => ({ value: provider.slug, label: provider.label }))
-);
 
 const personaName = id =>
   personas.value.find(persona => persona.id === id)?.display_name;
@@ -230,9 +224,7 @@ onMounted(() => {
             sm
             icon="i-lucide-key-round"
             :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PROVIDERS_LINK')"
-            @click="
-              router.push({ name: 'settings_integrations_ai_providers' })
-            "
+            @click="router.push({ name: 'settings_integrations_ai_providers' })"
           />
         </template>
       </BaseSettingsHeader>
@@ -316,8 +308,13 @@ onMounted(() => {
                       count: docCountFor(persona),
                     })
                   }}
-                  · temp {{ persona.temperature }} ·
-                  {{ persona.max_tokens }} tokens
+                  ·
+                  {{
+                    $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MODEL_SUMMARY', {
+                      temperature: persona.temperature,
+                      tokens: persona.max_tokens,
+                    })
+                  }}
                 </span>
                 <div class="flex gap-1">
                   <Button
@@ -493,7 +490,6 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-
       </div>
 
       <!-- Delete confirmation -->
@@ -509,7 +505,9 @@ onMounted(() => {
               deleteTarget?.record?.label,
           })
         "
-        :confirm-button-label="$t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.CONFIRM')"
+        :confirm-button-label="
+          $t('INTEGRATION_SETTINGS.BOTLAYER.DELETE.CONFIRM')
+        "
         @confirm="confirmDelete"
       />
     </template>

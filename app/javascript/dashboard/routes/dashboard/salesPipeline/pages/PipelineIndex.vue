@@ -22,8 +22,14 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const { isAdmin } = useAdmin();
-const { formatMoney, sinceStageChange, riskClass, bandClass, isAtRisk, idleTime } =
-  useDealFormat();
+const {
+  formatMoney,
+  sinceStageChange,
+  riskClass,
+  bandClass,
+  isAtRisk,
+  idleTime,
+} = useDealFormat();
 
 const pipelines = ref([]);
 const onlyAtRisk = ref(false);
@@ -255,10 +261,7 @@ onMounted(load);
             class="text-label-small text-n-slate-11"
           >
             {{
-              formatMoney(
-                columnTotal(stage.id),
-                columns[stage.id][0]?.currency
-              )
+              formatMoney(columnTotal(stage.id), columns[stage.id][0]?.currency)
             }}
           </span>
         </div>
@@ -286,10 +289,15 @@ onMounted(load);
                   {{ deal.title }}
                 </span>
                 <span
-                  v-if="deal.insight?.score !== null && deal.insight?.score !== undefined"
+                  v-if="
+                    deal.insight?.score !== null &&
+                    deal.insight?.score !== undefined
+                  "
                   class="px-1.5 rounded-md text-label-small shrink-0"
                   :class="bandClass(deal)"
-                  :title="$t(`SALES_PIPELINE.SCORE.BAND.${deal.insight.score_band}`)"
+                  :title="
+                    $t(`SALES_PIPELINE.SCORE.BAND.${deal.insight.score_band}`)
+                  "
                 >
                   {{ deal.insight.score }}
                 </span>

@@ -61,11 +61,11 @@ const load = async () => {
   if (!props.contactId) return;
   isLoading.value = true;
   try {
-    const [{ data: pipelines }, { data: deals }] = await Promise.all([
+    const [{ data: pipelineList }, { data: deals }] = await Promise.all([
       SalesPipelineAPI.pipelines(),
       SalesPipelineAPI.deals({ contact_id: props.contactId }),
     ]);
-    pipelines.value = pipelines.payload;
+    pipelines.value = pipelineList.payload;
     const current =
       deals.payload.find(item => item.status === 'open') || deals.payload[0];
     if (current) await show(current.id);

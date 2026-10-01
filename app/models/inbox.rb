@@ -47,6 +47,7 @@ class Inbox < ApplicationRecord
   include InboxAgentAvailability
   include InboxBrandedEmailLayoutable
   include InboxBotStatus
+  include InboxBotRoutes
 
   # Not allowing characters:
   validates :name, presence: true
@@ -86,7 +87,6 @@ class Inbox < ApplicationRecord
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
-  after_destroy_commit :remove_bot_routes
 
   scope :order_by_name, -> { order('lower(name) ASC') }
 
@@ -266,13 +266,6 @@ class Inbox < ApplicationRecord
     return if account.blank?
 
     @filtered_unread_count_user_ids = (inbox_members.pluck(:user_id) + account.account_users.administrator.pluck(:user_id)).uniq
-  end
-
-  # Rota da camada de bots (Bot Personas -> Channels) desta inbox, no Supabase.
-  def remove_bot_routes
-    return unless Integrations::Botlayer::Client.configured?
-
-    Integrations::Botlayer::Client.new.delete_inbox_routes(account_id, id)
   end
 
   def invalidate_filtered_unread_counts_after_destroy

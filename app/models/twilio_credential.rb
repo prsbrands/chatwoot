@@ -22,7 +22,7 @@ class TwilioCredential < ApplicationRecord
 
   encrypts :auth_token if Chatwoot.encryption_configured?
 
-  validates :account_sid, presence: true, format: { with: /\AAC[0-9a-fA-F]{32}\z/, message: 'must be a Twilio Account SID (AC…)' }
+  validates :account_sid, presence: true, format: { with: /\AAC[0-9a-fA-F]{32}\z/, message: :twilio_account_sid }
   validates :auth_token, presence: true
   validates :account_id, uniqueness: true
 end

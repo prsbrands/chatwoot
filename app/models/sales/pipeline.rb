@@ -12,6 +12,8 @@ class Sales::Pipeline < ApplicationRecord
   }.freeze
   DEFAULT_NAMES = { 'pt' => 'Vendas', 'es' => 'Ventas', 'en' => 'Sales' }.freeze
   AGENT_STEPS = %w[new contacted qualifying qualified negotiating].freeze
+  # Posicao das etapas de ganho e perda no modelo; as outras sao abertas.
+  TEMPLATE_KINDS = { 5 => :won, 6 => :lost }.freeze
 
   belongs_to :account
   # Negocios antes das etapas: a etapa recusa ser apagada com negocio dentro.
@@ -39,7 +41,7 @@ class Sales::Pipeline < ApplicationRecord
       position = account.sales_pipelines.maximum(:position).to_i + 1
       pipeline = account.sales_pipelines.create!(name: name, is_default: is_default, position: position)
       DEFAULT_STAGES[language_of(account)].each_with_index do |stage_name, index|
-        kind = { 5 => :won, 6 => :lost }.fetch(index, :open)
+        kind = TEMPLATE_KINDS.fetch(index, :open)
         pipeline.stages.create!(account: account, name: stage_name, position: index, kind: kind, agent_step: AGENT_STEPS[index])
       end
       pipeline
@@ -54,7 +56,7 @@ class Sales::Pipeline < ApplicationRecord
   # O indice unico aceita um padrao por conta: desmarca o anterior antes.
   def make_default!
     transaction do
-      account.sales_pipelines.where.not(id: id).update_all(is_default: false)
+      account.sales_pipelines.where(is_default: true).where.not(id: id).find_each { |other| other.update!(is_default: false) }
       update!(is_default: true)
     end
   end

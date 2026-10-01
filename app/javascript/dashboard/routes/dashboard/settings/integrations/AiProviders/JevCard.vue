@@ -457,7 +457,11 @@ onMounted(fetchCard);
               {{ $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.METRIC.LATENCY') }}
             </span>
             <span class="text-lg text-n-slate-12">
-              {{ ((week.avg_latency_ms || 0) / 1000).toFixed(1) }} s
+              {{
+                $t('INTEGRATION_SETTINGS.AI_PROVIDERS.JEV.METRIC.SECONDS', {
+                  seconds: ((week.avg_latency_ms || 0) / 1000).toFixed(1),
+                })
+              }}
             </span>
           </div>
         </div>

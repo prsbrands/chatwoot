@@ -56,7 +56,13 @@ class Integrations::App
     end
   end
 
+  # Apps do CortexGen ficam fora do case do upstream: mantem o metodo dele
+  # intacto e o merge sem conflito.
+  CORTEXGEN_APPS = %w[openwa botlayer ai_providers twilio].freeze
+
   def active?(account)
+    return cortexgen_app_active?(account) if CORTEXGEN_APPS.include?(params[:id])
+
     case params[:id]
     when 'slack'
       GlobalConfigService.load('SLACK_CLIENT_SECRET', nil).present?
@@ -68,14 +74,16 @@ class Integrations::App
       account.feature_enabled?('crm_integration')
     when 'notion'
       notion_enabled?(account)
-    when 'openwa'
-      openwa_enabled?(account)
-    when 'botlayer', 'ai_providers'
-      botlayer_enabled?(account)
-    when 'twilio'
-      account.feature_enabled?('twilio_integration')
     else
       true
+    end
+  end
+
+  def cortexgen_app_active?(account)
+    case params[:id]
+    when 'openwa' then openwa_enabled?(account)
+    when 'twilio' then account.feature_enabled?('twilio_integration')
+    else botlayer_enabled?(account)
     end
   end
 

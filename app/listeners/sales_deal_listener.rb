@@ -5,9 +5,7 @@
 class SalesDealListener < BaseListener
   def message_created(event)
     message, account = extract_message_and_account(event)
-    return unless message.incoming? && !message.private?
-    return unless account.feature_enabled?('sales_pipeline')
-    return unless message.inbox.active_bot?
+    return unless sales_message?(message, account)
 
     contact = message.conversation.contact
     return if contact.blank? || contact.blocked?
@@ -15,5 +13,11 @@ class SalesDealListener < BaseListener
     deal = account.sales_deals.open.find_by(contact: contact) || Sales::Deal.open_for_contact!(contact, conversation: message.conversation)
     # Bloco 3b: o Jev avalia a etapa (com espera, uma vez por rajada).
     Sales::StageAdvisorJob.schedule(deal, message)
+  end
+
+  private
+
+  def sales_message?(message, account)
+    message.incoming? && !message.private? && account.feature_enabled?('sales_pipeline') && message.inbox.active_bot?
   end
 end

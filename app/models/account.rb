@@ -32,6 +32,7 @@ class Account < ApplicationRecord
   include CaptainFeaturable
   include AccountEmailRateLimitable
   include AccountSettingsSchema
+  include CortexgenAccount
 
   DEFAULT_QUERY_SETTING = {
     flag_query_mode: :bit_operator,
@@ -104,11 +105,6 @@ class Account < ApplicationRecord
   has_many :users, through: :account_users
   has_many :web_widgets, dependent: :destroy_async, class_name: '::Channel::WebWidget'
   has_many :webhooks, dependent: :destroy_async
-  has_one :twilio_credential, dependent: :destroy_async
-  has_many :twilio_voice_routes, dependent: :destroy_async
-  has_many :twilio_voice_calls, dependent: :destroy_async
-  has_many :sales_pipelines, class_name: 'Sales::Pipeline', dependent: :destroy_async
-  has_many :sales_deals, class_name: 'Sales::Deal', dependent: :destroy_async
   has_many :whatsapp_channels, dependent: :destroy_async, class_name: '::Channel::Whatsapp'
   has_many :working_hours, dependent: :destroy_async
 

@@ -200,13 +200,6 @@ const voiceGaps = computed(() => {
 
 const voiceReady = computed(() => voiceGaps.value.length === 0);
 
-// Prompt longo pesa na conversa, não no relógio: medimos 23,9 KB contra 11 KB
-// no mesmo modelo e o tempo até o primeiro byte não mudou (a OpenAI cacheia o
-// prefixo). O que ele custa é adesão — num prompt grande só a lista final é
-// obedecida de verdade — e risco de retry.
-const promptIsHeavyForVoice = computed(
-  () => voiceReady.value && totalChars.value > 8000
-);
 
 const fallbackProviderOptions = computed(() => [
   {
@@ -234,6 +227,14 @@ const knowledgeChars = computed(
 );
 
 const totalChars = computed(() => promptChars.value + knowledgeChars.value);
+
+// Prompt longo pesa na conversa, não no relógio: medimos 23,9 KB contra 11 KB
+// no mesmo modelo e o tempo até o primeiro byte não mudou (a OpenAI cacheia o
+// prefixo). O que ele custa é adesão — num prompt grande só a lista final é
+// obedecida de verdade — e risco de retry.
+const promptIsHeavyForVoice = computed(
+  () => voiceReady.value && totalChars.value > 8000
+);
 
 const alertError = error =>
   useAlert(
@@ -590,13 +591,17 @@ onMounted(load);
             <h2
               class="text-xs font-semibold uppercase tracking-wide text-n-slate-10"
             >
-              {{ $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_FOLLOWUP') }}
+              {{
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.SECTION_FOLLOWUP')
+              }}
             </h2>
             <Input
               v-model="form.followup_after_hours"
               type="number"
               :label="
-                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FOLLOWUP_AFTER_HOURS')
+                $t(
+                  'INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FOLLOWUP_AFTER_HOURS'
+                )
               "
               :message="
                 $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.FOLLOWUP_HELP')
@@ -605,7 +610,9 @@ onMounted(load);
             <Input
               v-model="form.max_followups"
               type="number"
-              :label="$t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_FOLLOWUPS')"
+              :label="
+                $t('INTEGRATION_SETTINGS.BOTLAYER.PERSONAS.MAX_FOLLOWUPS')
+              "
             />
           </section>
 

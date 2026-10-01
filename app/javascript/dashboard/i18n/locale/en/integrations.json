@@ -263,7 +263,8 @@
           "AVOIDED": "AI calls avoided",
           "UPSET": "Upset customers",
           "COST": "Cost",
-          "LATENCY": "Average time"
+          "LATENCY": "Average time",
+          "SECONDS": "{seconds} s"
         },
         "NO_DATA": "No messages checked in the last 30 days yet.",
         "AGREEMENT": "Last 30 days: Jev and your handoff keywords agreed on {agreed} of {compared} messages.",
@@ -430,7 +431,8 @@
         "TOTAL_CHARS": "Prompt {prompt} + knowledge {knowledge} = {total} characters sent to the model",
         "LIGHT_MODEL": "Light model (simple messages)",
         "STRONG_MODEL": "Strong model (delicate messages)",
-        "JEV_MODELS_HELP": "Used only when Jev's \"Pick the model per message\" is deciding (Settings → Integrations → AI Providers). Same provider as the main model; leave empty to always use the main model."
+        "JEV_MODELS_HELP": "Used only when Jev's \"Pick the model per message\" is deciding (Settings → Integrations → AI Providers). Same provider as the main model; leave empty to always use the main model.",
+        "MODEL_SUMMARY": "temperature {temperature} · {tokens} tokens"
       },
       "KNOWLEDGE": {
         "NEW": "New document",
@@ -883,7 +885,8 @@
         "CALLS_TITLE": "Recent calls",
         "TURNS": "{count} turns",
         "LATENCY": "{median}ms typical · {worst}ms worst",
-        "USAGE": "{tokens} tokens · {chars} spoken chars · {seconds}s transcribed"
+        "USAGE": "{tokens} tokens · {chars} spoken chars · {seconds}s transcribed",
+        "SECONDS": "{seconds} s"
       }
     }
   },

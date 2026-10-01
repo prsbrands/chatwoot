@@ -17,17 +17,7 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
 
   def create
     contact = Current.account.contacts.find(params.require(:contact_id))
-    pipeline = default_pipeline
-    @deal = Current.account.sales_deals.create!(
-      deal_params.merge(
-        pipeline: pipeline,
-        stage: params[:stage_id].present? ? pipeline.stages.find(params[:stage_id]) : pipeline.first_open_stage,
-        contact: contact,
-        currency: deal_params[:currency].presence || ::Sales::Pipeline.currency_for(Current.account),
-        conversation: params[:conversation_id].present? ? Current.account.conversations.find_by!(display_id: params[:conversation_id]) : nil,
-        title: deal_params[:title].presence || contact.name.presence || contact.phone_number
-      )
-    )
+    @deal = Current.account.sales_deals.create!(new_deal_attributes(contact))
   end
 
   def update
@@ -48,6 +38,25 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
 
   private
 
+  def new_deal_attributes(contact)
+    pipeline = default_pipeline
+    deal_params.merge(
+      pipeline: pipeline,
+      stage: params[:stage_id].present? ? pipeline.stages.find(params[:stage_id]) : pipeline.first_open_stage,
+      contact: contact,
+      conversation: requested_conversation,
+      title: deal_params[:title].presence || contact.name.presence || contact.phone_number,
+      currency: deal_params[:currency].presence || ::Sales::Pipeline.currency_for(Current.account)
+    )
+  end
+
+  # O painel manda o display_id, o mesmo da URL da conversa.
+  def requested_conversation
+    return if params[:conversation_id].blank?
+
+    Current.account.conversations.find_by!(display_id: params[:conversation_id])
+  end
+
   def fetch_deal
     @deal = Current.account.sales_deals.find(params[:id])
   end
@@ -55,8 +64,8 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
   # O responsavel tem que ser da conta: find levanta 404 em vez de gravar um
   # usuario de outra conta.
   def deal_params
-    permitted = params.permit(:title, :value_cents, :currency, :assignee_id)
-    Current.account.users.find(permitted[:assignee_id]) if permitted[:assignee_id].present?
-    permitted
+    @deal_params ||= params.permit(:title, :value_cents, :currency, :assignee_id).tap do |permitted|
+      Current.account.users.find(permitted[:assignee_id]) if permitted[:assignee_id].present?
+    end
   end
 end

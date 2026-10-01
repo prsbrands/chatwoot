@@ -65,7 +65,7 @@ class Voice::PublicCallRequestService
 
   def called_recently?
     VoiceCallRequest.where(normalized_phone_number: normalized_phone, status: 'dispatched')
-                     .where(created_at: REPEAT_CALL_WINDOW.ago..).exists?
+                    .exists?(created_at: REPEAT_CALL_WINDOW.ago..)
   end
 
   # Mesma checagem do `Voice::OutboundCallService` — se passar aqui e falhar
@@ -95,8 +95,8 @@ class Voice::PublicCallRequestService
 
   def configured_dial_codes
     TwilioVoiceRoute.where.not(public_demo_dial_code: nil)
-                     .order(Arel.sql('length(public_demo_dial_code) DESC'))
-                     .pluck(:public_demo_dial_code)
+                    .order(Arel.sql('length(public_demo_dial_code) DESC'))
+                    .pluck(:public_demo_dial_code)
   end
 
   # Não vem de nenhuma rota específica — é preciso ter uma conta pra gravar
@@ -105,7 +105,7 @@ class Voice::PublicCallRequestService
   # `first!` falha alto em vez de atribuir o pedido à conta errada.
   def account
     @account ||= Account.joins(:twilio_voice_routes)
-                         .where.not(twilio_voice_routes: { public_demo_dial_code: nil })
-                         .first!
+                        .where.not(twilio_voice_routes: { public_demo_dial_code: nil })
+                        .first!
   end
 end

@@ -49,7 +49,9 @@ const load = async () => {
       return;
     }
 
-    const doc = docsRes.data.docs.find(candidate => candidate.id === docId.value);
+    const doc = docsRes.data.docs.find(
+      candidate => candidate.id === docId.value
+    );
     if (!doc) {
       router.replace({ name: 'settings_integrations_botlayer' });
       return;
@@ -106,7 +108,9 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1">
+  <div
+    class="flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-n-surface-1"
+  >
     <div v-if="isLoading" class="flex flex-1 items-center justify-center">
       <Spinner />
     </div>

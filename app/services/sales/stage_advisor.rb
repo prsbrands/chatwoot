@@ -111,12 +111,16 @@ class Sales::StageAdvisor
     target = target_for(choice)
     return if target.nil? || confidence < SUGGEST || @state != 'deciding'
 
-    if target.open? && confidence >= AUTO_MOVE && !deal.recently_moved_by_human?(HUMAN_GRACE)
+    if auto_move?(target, confidence)
       deal.move_to!(target, actor: 'ai', reason: "Jev #{(confidence * 100).round}%")
       hand_off(target) if target.requires_human?
     else
       deal.suggest!(target, confidence)
     end
+  end
+
+  def auto_move?(target, confidence)
+    target.open? && confidence >= AUTO_MOVE && !deal.recently_moved_by_human?(HUMAN_GRACE)
   end
 
   def hand_off(stage)

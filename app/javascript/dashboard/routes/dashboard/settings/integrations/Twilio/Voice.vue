@@ -23,7 +23,6 @@ const calls = ref([]);
 const alerts = ref([]);
 const isCalling = ref(false);
 const outboundForm = ref({ phone_number: '', to: '', persona_slug: '' });
-const selectedDomain = ref(null);
 const isBusy = ref(false);
 const newSubdomain = ref('');
 const newUsername = ref('');
@@ -119,6 +118,18 @@ const alertError = error =>
     error.response?.data?.error || t('INTEGRATION_SETTINGS.TWILIO.API.ERROR')
   );
 
+const sipAddress = credential =>
+  `${credential.username}@${managedDomain.value.domain_name}`;
+
+const fetchCredentials = async () => {
+  try {
+    const { data } = await TwilioAPI.sipCredentials(managedDomain.value.sid);
+    credentials.value = data.credentials;
+  } catch (error) {
+    alertError(error);
+  }
+};
+
 const fetchAll = async () => {
   try {
     const [domainsRes, routesRes] = await Promise.all([
@@ -160,14 +171,6 @@ const fetchPersonas = async () => {
   }
 };
 
-const fetchCredentials = async () => {
-  try {
-    const { data } = await TwilioAPI.sipCredentials(managedDomain.value.sid);
-    credentials.value = data.credentials;
-  } catch (error) {
-    alertError(error);
-  }
-};
 
 const createDomain = async () => {
   if (!newSubdomain.value.trim()) return;
@@ -372,7 +375,7 @@ onMounted(() => {
         class="flex items-center justify-between rounded-lg bg-n-alpha-1 px-3 py-2"
       >
         <span class="font-mono text-sm text-n-slate-12">
-          {{ credential.username }}@{{ managedDomain.domain_name }}
+          {{ sipAddress(credential) }}
         </span>
         <Button
           sm
@@ -470,7 +473,8 @@ onMounted(() => {
         class="flex items-center justify-between rounded-lg bg-n-alpha-1 px-3 py-2 text-sm"
       >
         <span class="text-n-slate-12">
-          {{ route.phone_number }} →
+          {{ route.phone_number }}
+          <span class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10" />
           <template v-if="route.answer_mode === 'bot'">
             <span class="font-mono">{{ route.bot_persona_slug }}</span>
             <span class="text-n-slate-10">
@@ -481,7 +485,12 @@ onMounted(() => {
             <span class="font-mono">{{ route.destination }}</span>
             <span class="text-n-slate-10">
               ({{ route.destination_type.toUpperCase() }},
-              {{ route.ring_timeout }}s →
+              {{
+                $t('INTEGRATION_SETTINGS.TWILIO.VOICE.SECONDS', {
+                  seconds: route.ring_timeout,
+                })
+              }}
+              <span class="inline-block align-middle i-lucide-arrow-right size-3 text-n-slate-10" />
               {{
                 route.no_answer_action === 'bot'
                   ? route.bot_persona_slug
@@ -607,11 +616,18 @@ onMounted(() => {
       >
         <div class="flex items-center justify-between gap-2">
           <span class="text-n-slate-12">
-            {{ call.from_number }} → {{ call.phone_number }}
+            {{ call.from_number }}
+            <span class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10" />
+            {{ call.phone_number }}
           </span>
           <span class="text-xs text-n-slate-11">
             <template v-if="call.duration_seconds">
-              {{ call.duration_seconds }}s ·
+              {{
+                $t('INTEGRATION_SETTINGS.TWILIO.VOICE.SECONDS', {
+                  seconds: call.duration_seconds,
+                })
+              }}
+              ·
             </template>
             {{ call.status }}
           </span>

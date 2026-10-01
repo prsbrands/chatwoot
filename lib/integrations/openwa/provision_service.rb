@@ -88,28 +88,32 @@ class Integrations::Openwa::ProvisionService
     response = HTTParty.post(
       "#{supabase_rest_url}/bot_channel_routes?on_conflict=chatwoot_account_id,chatwoot_inbox_id",
       headers: supabase_headers.merge('Prefer' => 'return=minimal,resolution=merge-duplicates'),
-      body: {
-        chatwoot_account_id: account.id,
-        chatwoot_inbox_id: @inbox.id,
-        channel_label: @inbox.name,
-        persona_id: persona_id,
-        chatwoot_agent_bot_id: agent_bot_id.to_i,
-        # O Guard verifica a assinatura do webhook contra o secret, e
-        # Responde/Handoff autenticam como o bot com o access_token — os dois
-        # por conta+inbox, não uma env/credential fixa — ver
-        # RoutesController#resolved_agent_bot.
-        chatwoot_agent_bot_secret: agent_bot.secret,
-        chatwoot_agent_bot_access_token: agent_bot.access_token&.token,
-        # WhatsApp responde em bolhas com "digitando"; o tipo do canal (API) nao
-        # diz ao Guard que isto e WhatsApp — ver db/botlayer/bot_split_replies.sql.
-        split_replies: true,
-        # Idade do numero: o teto diario de follow-ups sobe com ela — ver
-        # db/botlayer/bot_followups.sql.
-        number_activated_at: Date.current.iso8601,
-        is_active: true
-      }.to_json
+      body: route_payload(persona_id).to_json
     )
     response.success? ? 'created' : 'failed'
+  end
+
+  def route_payload(persona_id)
+    {
+      chatwoot_account_id: account.id,
+      chatwoot_inbox_id: @inbox.id,
+      channel_label: @inbox.name,
+      persona_id: persona_id,
+      chatwoot_agent_bot_id: agent_bot_id.to_i,
+      # O Guard verifica a assinatura do webhook contra o secret, e
+      # Responde/Handoff autenticam como o bot com o access_token — os dois
+      # por conta+inbox, não uma env/credential fixa — ver
+      # RoutesController#resolved_agent_bot.
+      chatwoot_agent_bot_secret: agent_bot.secret,
+      chatwoot_agent_bot_access_token: agent_bot.access_token&.token,
+      # WhatsApp responde em bolhas com "digitando"; o tipo do canal (API) nao
+      # diz ao Guard que isto e WhatsApp — ver db/botlayer/bot_split_replies.sql.
+      split_replies: true,
+      # Idade do numero: o teto diario de follow-ups sobe com ela — ver
+      # db/botlayer/bot_followups.sql.
+      number_activated_at: Date.current.iso8601,
+      is_active: true
+    }
   end
 
   # Dentro da conta: o slug é único por conta desde `bot_layer_per_account.sql`,

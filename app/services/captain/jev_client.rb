@@ -157,12 +157,13 @@ class Captain::JevClient
 
   # Custo e falhas no mesmo log do bot (bot_jev_calls), para o cartao do Jev
   # somar tudo o que a conta gasta com ele.
-  def record_call(started_at, status:, model: nil, input_tokens: nil, error: nil, decisions: nil)
+  # details: model, input_tokens, error, decisions (todos opcionais).
+  def record_call(started_at, status:, **details)
     botlayer.record_jev_call(
       chatwoot_account_id: @account_id, chatwoot_conversation_id: @conversation_id, phase: 'team',
-      model: model, input_tokens: input_tokens, status: status, error: error,
+      model: details[:model], input_tokens: details[:input_tokens], status: status, error: details[:error],
       latency_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round,
-      decisions: decisions || { @feature => { state: 'on' } }
+      decisions: details[:decisions] || { @feature => { state: 'on' } }
     )
   end
 end
