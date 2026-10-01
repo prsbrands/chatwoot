@@ -33,9 +33,10 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
   def update
     ActiveRecord::Base.transaction do
       @deal.update!(deal_params)
+      @deal.dismiss_suggestion! if ActiveModel::Type::Boolean.new.cast(params[:dismiss_suggestion])
       if params[:stage_id].present?
         stage = ::Sales::Stage.where(account_id: Current.account.id).find(params[:stage_id])
-        @deal.move_to!(stage, actor: Current.user, lost_reason: params[:lost_reason])
+        @deal.move_to!(stage, actor: Current.user, lost_reason: params[:lost_reason], reason: params[:reason])
       end
     end
   end

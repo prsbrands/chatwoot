@@ -9,6 +9,7 @@ class Sales::Deal < ApplicationRecord
   belongs_to :contact
   belongs_to :conversation, optional: true
   belongs_to :assignee, class_name: 'User', optional: true
+  belongs_to :suggested_stage, class_name: 'Sales::Stage', optional: true
   has_many :transitions, -> { order(created_at: :desc) }, class_name: 'Sales::DealTransition', dependent: :delete_all,
                                                            inverse_of: :deal
 
@@ -44,12 +45,27 @@ class Sales::Deal < ApplicationRecord
 
     from_stage_id = stage_id
     transaction do
-      update!(pipeline_id: new_stage.pipeline_id, stage: new_stage, lost_reason: new_stage.lost? ? lost_reason : nil)
+      # Qualquer movimento invalida a sugestao do Jev.
+      update!(pipeline_id: new_stage.pipeline_id, stage: new_stage, lost_reason: new_stage.lost? ? lost_reason : nil,
+              suggested_stage_id: nil, suggested_confidence: nil, suggested_at: nil)
       # O motivo da perda fica no historico: reabrir limpa o do negocio.
       record_transition(from_stage_id, actor_type: actor.is_a?(User) ? 'user' : actor.to_s, actor_id: actor.try(:id),
                                        reason: reason.presence || (new_stage.lost? ? lost_reason : nil))
     end
     self
+  end
+
+  def suggest!(stage, confidence)
+    update!(suggested_stage: stage, suggested_confidence: confidence, suggested_at: Time.current)
+  end
+
+  def dismiss_suggestion!
+    update!(suggested_stage_id: nil, suggested_confidence: nil, suggested_at: nil)
+  end
+
+  # O humano vence: depois de uma pessoa mexer no negocio, a IA so sugere.
+  def recently_moved_by_human?(within)
+    transitions.where(actor_type: 'user').exists?(['created_at > ?', within.ago])
   end
 
   private

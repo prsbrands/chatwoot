@@ -11,8 +11,9 @@ class SalesDealListener < BaseListener
 
     contact = message.conversation.contact
     return if contact.blank? || contact.blocked?
-    return if account.sales_deals.open.exists?(contact: contact)
 
-    Sales::Deal.open_for_contact!(contact, conversation: message.conversation)
+    deal = account.sales_deals.open.find_by(contact: contact) || Sales::Deal.open_for_contact!(contact, conversation: message.conversation)
+    # Bloco 3b: o Jev avalia a etapa (com espera, uma vez por rajada).
+    Sales::StageAdvisorJob.schedule(deal, message)
   end
 end

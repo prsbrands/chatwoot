@@ -6,7 +6,7 @@
 # que escreve essas colunas.
 class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accounts::Integrations::Botlayer::BaseController
   MODELS_URL = 'https://api.typesafe.ai/v1/models'.freeze
-  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup].freeze
+  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup deal_stage].freeze
   STATES = %w[observing deciding off].freeze
   MAX_REVIEW_RULES = 10
   # Sugestao de etiqueta e prioridade e condicoes por IA nas automacoes (codigo

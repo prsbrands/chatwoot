@@ -48,7 +48,9 @@ class Captain::JevClient
     "#{base_url.chomp('/')}#{SYSTEM_ONE_PATH}"
   end
 
-  def call(body:)
+  # `decisions` recebe a resposta e devolve o que foi decidido, para o cartao
+  # do Jev contar ("moveria N de M"); sem ele, so registra que a feature rodou.
+  def call(body:, decisions: nil)
     body = redacted(body)
     trace_jev_call(body) do
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -59,7 +61,8 @@ class Captain::JevClient
       end
 
       data = JSON.parse(response.body)
-      record_call(started_at, status: 'ok', model: data['model'], input_tokens: data.dig('usage', 'input_tokens'))
+      record_call(started_at, status: 'ok', model: data['model'], input_tokens: data.dig('usage', 'input_tokens'),
+                              decisions: decisions&.call(data))
       yield(data) if block_given?
       data
     end
@@ -154,12 +157,12 @@ class Captain::JevClient
 
   # Custo e falhas no mesmo log do bot (bot_jev_calls), para o cartao do Jev
   # somar tudo o que a conta gasta com ele.
-  def record_call(started_at, status:, model: nil, input_tokens: nil, error: nil)
+  def record_call(started_at, status:, model: nil, input_tokens: nil, error: nil, decisions: nil)
     botlayer.record_jev_call(
       chatwoot_account_id: @account_id, chatwoot_conversation_id: @conversation_id, phase: 'team',
       model: model, input_tokens: input_tokens, status: status, error: error,
       latency_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round,
-      decisions: { @feature => { state: 'on' } }
+      decisions: decisions || { @feature => { state: 'on' } }
     )
   end
 end

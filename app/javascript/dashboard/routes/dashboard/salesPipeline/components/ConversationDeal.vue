@@ -100,6 +100,13 @@ const update = async changes => {
   }
 };
 
+// Sugestao do Jev (bloco 3b): aceitar move e registra; descartar so limpa.
+const acceptSuggestion = () =>
+  update({
+    stage_id: deal.value.suggested_stage_id,
+    reason: t('SALES_PIPELINE.SUGGESTION.ACCEPTED_REASON'),
+  });
+
 // Outro funil: o negocio vai para a primeira etapa aberta dele.
 const changePipeline = pipelineId => {
   const target = pipelines.value.find(pipeline => pipeline.id === pipelineId);
@@ -139,6 +146,35 @@ watch(() => props.contactId, load, { immediate: true });
         >
           {{ $t(`SALES_PIPELINE.STATUS.${deal.status}`) }}
         </span>
+      </div>
+      <div
+        v-if="deal.suggested_stage_id"
+        class="flex flex-col gap-2 p-2 rounded-lg bg-n-amber-2 text-label-small text-n-amber-11"
+      >
+        <span>
+          {{
+            $t('SALES_PIPELINE.SUGGESTION.TEXT', {
+              stage: stageName(deal.suggested_stage_id),
+              confidence: Math.round(deal.suggested_confidence * 100),
+            })
+          }}
+        </span>
+        <div class="flex gap-2">
+          <Button
+            xs
+            faded
+            amber
+            :label="$t('SALES_PIPELINE.SUGGESTION.ACCEPT')"
+            @click="acceptSuggestion"
+          />
+          <Button
+            xs
+            ghost
+            slate
+            :label="$t('SALES_PIPELINE.SUGGESTION.DISMISS')"
+            @click="update({ dismiss_suggestion: true })"
+          />
+        </div>
       </div>
       <label
         v-if="pipelines.length > 1"

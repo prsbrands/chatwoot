@@ -254,7 +254,8 @@
           "SAVE": "Spend fewer AI tokens",
           "HANDOFF": "Hand off to a person",
           "REVIEW": "Check before sending",
-          "FOLLOWUP": "Follow up when the customer goes quiet"
+          "FOLLOWUP": "Follow up when the customer goes quiet",
+          "SALES": "Sales pipeline"
         },
         "WEEK": "Last 7 days",
         "METRIC": {
@@ -278,7 +279,8 @@
           "opt_out": "Last 30 days: Jev saw an opt-out in {signals} of {runs} messages.",
           "manipulation": "Last 30 days: Jev saw a clear manipulation attempt in {signals} of {runs} messages.",
           "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies.",
-          "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups."
+          "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups.",
+          "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -325,6 +327,11 @@
             "TITLE": "Decide if a quiet conversation is worth resuming",
             "WHAT": "When a persona has follow-up turned on, Jev reads how the conversation stopped: \"I'll think about it\" is worth a follow-up, \"thanks, that's all\" is not.",
             "DECIDES": "Jev's verdict decides if the follow-up goes out. While observing, the AI that writes the follow-up decides on its own, as it does without Jev."
+          },
+          "deal_stage": {
+            "TITLE": "Move the deal along the pipeline",
+            "WHAT": "On every customer message, Jev reads the conversation and says where the deal is now: the stages ahead that have an agent step, \"won\", or stay. It never moves a deal back and never marks it as lost.",
+            "DECIDES": "With 80% confidence or more Jev moves the deal forward on its own, recorded as the AI in the deal history. Between 50% and 80%, and always for \"won\", it leaves a suggestion on the deal for your team to accept. After a person moves a deal, Jev only suggests for 24 hours."
           }
         },
         "TEAM": {

@@ -9,6 +9,8 @@ json.lost_reason resource.lost_reason
 json.stage_changed_at resource.stage_changed_at.to_i
 json.closed_at resource.closed_at&.to_i
 json.created_at resource.created_at.to_i
+json.suggested_stage_id resource.suggested_stage_id
+json.suggested_confidence resource.suggested_confidence
 json.contact do
   json.id resource.contact.id
   json.name resource.contact.name

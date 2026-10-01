@@ -31,6 +31,8 @@
 
 en:
   hello: 'Hello world'
+  sales:
+    stage_needs_human: 'The deal reached "%{stage}", which needs a person. The conversation was opened for the team.'
   inbox:
     reauthorization:
       success: 'Channel reauthorized successfully'

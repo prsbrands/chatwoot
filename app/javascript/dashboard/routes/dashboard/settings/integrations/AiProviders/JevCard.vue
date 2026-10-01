@@ -20,6 +20,7 @@ const GROUPS = [
   },
   { id: 'REVIEW', activities: ['reply_review'] },
   { id: 'FOLLOWUP', activities: ['followup'] },
+  { id: 'SALES', activities: ['deal_stage'] },
 ];
 
 const card = ref(null);

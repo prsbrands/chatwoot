@@ -137,6 +137,30 @@ const onPipelineDeleted = async () => {
   await load();
 };
 
+const stageName = id => stages.value.find(stage => stage.id === id)?.name;
+
+// Sugestao do Jev (bloco 3b) no card: aceitar move e registra no historico.
+const acceptSuggestion = async deal => {
+  try {
+    await SalesPipelineAPI.updateDeal(deal.id, {
+      stage_id: deal.suggested_stage_id,
+      reason: t('SALES_PIPELINE.SUGGESTION.ACCEPTED_REASON'),
+    });
+    await load();
+  } catch (error) {
+    alertError(error);
+  }
+};
+
+const dismissSuggestion = async deal => {
+  try {
+    await SalesPipelineAPI.updateDeal(deal.id, { dismiss_suggestion: true });
+    deal.suggested_stage_id = null;
+  } catch (error) {
+    alertError(error);
+  }
+};
+
 // Cancelou o motivo: o card volta para onde estava.
 const cancelLost = () => {
   pendingLost = null;
@@ -244,6 +268,35 @@ onMounted(load);
                 <span class="text-label-small text-n-slate-10">
                   {{ sinceStageChange(deal) }}
                 </span>
+              </div>
+              <div
+                v-if="deal.suggested_stage_id"
+                class="flex flex-col gap-1 p-2 mt-1 rounded-md bg-n-amber-2 text-label-small text-n-amber-11"
+              >
+                <span>
+                  {{
+                    $t('SALES_PIPELINE.SUGGESTION.TEXT', {
+                      stage: stageName(deal.suggested_stage_id),
+                      confidence: Math.round(deal.suggested_confidence * 100),
+                    })
+                  }}
+                </span>
+                <div class="flex gap-2">
+                  <Button
+                    xs
+                    faded
+                    amber
+                    :label="$t('SALES_PIPELINE.SUGGESTION.ACCEPT')"
+                    @click="acceptSuggestion(deal)"
+                  />
+                  <Button
+                    xs
+                    ghost
+                    slate
+                    :label="$t('SALES_PIPELINE.SUGGESTION.DISMISS')"
+                    @click="dismissSuggestion(deal)"
+                  />
+                </div>
               </div>
               <router-link
                 v-if="deal.conversation_id"

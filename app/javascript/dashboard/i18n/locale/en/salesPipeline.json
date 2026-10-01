@@ -71,6 +71,12 @@
       "NAME": "Name",
       "CREATE": "Create"
     },
-    "PIPELINE_SELECT": "Pipeline"
+    "PIPELINE_SELECT": "Pipeline",
+    "SUGGESTION": {
+      "TEXT": "Jev suggests moving to {stage} ({confidence}%)",
+      "ACCEPT": "Accept",
+      "DISMISS": "Dismiss",
+      "ACCEPTED_REASON": "Accepted Jev suggestion"
+    }
   }
 }
