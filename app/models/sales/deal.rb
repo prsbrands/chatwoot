@@ -43,8 +43,10 @@ class Sales::Deal < ApplicationRecord
 
     from_stage_id = stage_id
     transaction do
-      update!(stage: new_stage, lost_reason: new_stage.lost? ? lost_reason.presence || self.lost_reason : self.lost_reason)
-      record_transition(from_stage_id, actor_type: actor.is_a?(User) ? 'user' : actor.to_s, actor_id: actor.try(:id), reason: reason)
+      update!(stage: new_stage, lost_reason: new_stage.lost? ? lost_reason : nil)
+      # O motivo da perda fica no historico: reabrir limpa o do negocio.
+      record_transition(from_stage_id, actor_type: actor.is_a?(User) ? 'user' : actor.to_s, actor_id: actor.try(:id),
+                                       reason: reason.presence || (new_stage.lost? ? lost_reason : nil))
     end
     self
   end
