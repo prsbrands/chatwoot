@@ -77,6 +77,39 @@
       "ACCEPT": "Accept",
       "DISMISS": "Dismiss",
       "ACCEPTED_REASON": "Accepted Jev suggestion"
+    },
+    "RISK": {
+      "on_track": "On track",
+      "at_risk": "Going cold",
+      "critical": "Critical",
+      "IDLE": "No interaction {time}",
+      "EXPECTED": "This stage expects a move within {hours} h",
+      "FILTER": "Only at risk",
+      "FILTER_EMPTY": "No deals at risk in this pipeline."
+    },
+    "SCORE": {
+      "TITLE": "Score",
+      "BAND": {
+        "hot": "Hot",
+        "warm": "Warm",
+        "cold": "Cold"
+      },
+      "NONE": "No score yet: Jev needs at least two signals from the conversation.",
+      "FACTORS": {
+        "next_step": "agreed to a next step",
+        "asked_proposal": "asked for a price or proposal",
+        "buying_intent": "wants to buy or start",
+        "price_objection": "price objection",
+        "timing_objection": "not the right moment",
+        "competitor_or_doubt": "comparing or in doubt",
+        "need": "described the need",
+        "budget": "mentioned a budget",
+        "timeline": "mentioned a timeline",
+        "authority": "decides or named who decides",
+        "recency_on_track": "recent interaction",
+        "recency_at_risk": "going cold",
+        "recency_critical": "no interaction for a long time"
+      }
     }
   }
 }

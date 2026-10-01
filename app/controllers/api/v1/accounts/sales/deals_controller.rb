@@ -5,7 +5,7 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
   # Sem filtro: os negocios do funil (o Kanban). Com contact_id: os do contato
   # (o card na conversa).
   def index
-    deals = Current.account.sales_deals.includes(:contact, :conversation, :assignee)
+    deals = Current.account.sales_deals.includes(:contact, :conversation, :assignee, :insight)
     @deals = if params[:contact_id].present?
                deals.where(contact_id: params[:contact_id]).order(created_at: :desc)
              else

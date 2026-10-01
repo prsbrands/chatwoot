@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_01_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_01_000003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1522,6 +1522,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_01_000002) do
     t.index ["account_id", "date", "dimension_type", "dimension_id", "metric"], name: "index_rollup_unique_key", unique: true
     t.index ["account_id", "dimension_type", "date"], name: "index_rollup_summary"
     t.index ["account_id", "metric", "date"], name: "index_rollup_timeseries"
+  end
+
+  create_table "sales_deal_insights", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "deal_id", null: false
+    t.datetime "last_activity_at"
+    t.integer "risk", default: 0, null: false
+    t.datetime "risk_since"
+    t.jsonb "facts", default: {}, null: false
+    t.bigint "facts_message_id"
+    t.datetime "facts_at"
+    t.integer "score"
+    t.string "score_band"
+    t.jsonb "score_factors", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_sales_deal_insights_on_account_id"
+    t.index ["deal_id"], name: "index_sales_deal_insights_on_deal_id", unique: true
   end
 
   create_table "sales_deal_transitions", force: :cascade do |t|

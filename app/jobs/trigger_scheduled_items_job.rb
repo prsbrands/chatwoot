@@ -23,6 +23,9 @@ class TriggerScheduledItemsJob < ApplicationJob
     # Job to trigger pending executions
     AutomationRules::TriggerPendingExecutionsJob.perform_later
 
+    # Radar de risco e score dos negocios do funil de vendas
+    Sales::RiskSweepJob.perform_later
+
     # Sessões de WhatsApp por QR (OpenWA) que caíram
     Openwa::SessionWatchJob.perform_later if Integrations::Openwa::Client.configured?
   end

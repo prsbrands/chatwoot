@@ -20,18 +20,34 @@ class Sales::StageAdvisor
     'negotiating' => 'They are discussing terms, price, objections or the details to close.'
   }.freeze
 
+  # Bloco 3c: os sinais do score, na mesma chamada. Probabilidade de "sim";
+  # Sales::ScoreFormula conta os que passam de 0,7.
+  FACT_QUESTIONS = {
+    'next_step' => 'Did the customer agree to a concrete next step, such as a meeting, a call, a visit or sending documents?',
+    'asked_proposal' => 'Did the customer ask for a price, a quote or a proposal for their own case?',
+    'buying_intent' => 'Did the customer say they want to buy, hire or start?',
+    'price_objection' => 'Did the customer object to the price or say it is too expensive?',
+    'timing_objection' => 'Did the customer say it is not the right moment or that they will decide much later?',
+    'competitor_or_doubt' => 'Did the customer compare with a competitor or doubt the results, the trust or the quality?',
+    'need' => 'Did the customer describe the need or problem they want to solve?',
+    'budget' => 'Did the customer mention a budget or a price range they can pay?',
+    'timeline' => 'Did the customer say when they want it done or when they will decide?',
+    'authority' => 'Is the customer the one who decides, or did they say who decides?'
+  }.freeze
+
   pattr_initialize [:deal!, :conversation!]
 
   def perform
     state = activity_state
     return unless %w[observing deciding].include?(state)
 
-    options = criteria
-    return if options.size <= 1
-
     @state = state
-    answer = ask(options)
-    act(answer['choice'], answer['confidence'].to_f) if answer
+    options = criteria
+    answers = ask(options.size > 1 ? options : nil)
+    return if answers.nil?
+
+    record_facts(answers)
+    act(answers['stage']['choice'], answers['stage']['confidence'].to_f) if answers['stage']
   end
 
   private
@@ -51,18 +67,31 @@ class Sales::StageAdvisor
     options
   end
 
+  # Sem etapa a frente, so os sinais do score.
   def ask(options)
+    questions = FACT_QUESTIONS.transform_values do |question|
+      { type: 'noul', instructions: question, criteria: { 'true' => 'Yes, the conversation shows it.', 'false' => 'No, or it is not clear.' } }
+    end
+    if options
+      questions['stage'] = { type: 'choice', instructions: 'Where is this sales conversation now, from the customer point of view?',
+                             criteria: options }
+    end
     body = Captain::JevClient.request_body(
       model: MODEL,
       state: { conversation: { messages: Captain::ConversationTranscript.new(conversation: conversation).messages } },
-      questions: { stage: { type: 'choice', instructions: 'Where is this sales conversation now, from the customer point of view?',
-                            criteria: options } }
+      questions: questions
     )
     Captain::JevClient.new(account_id: deal.account_id, conversation_id: conversation.display_id, feature: ACTIVITY)
-                      .call(body: body, decisions: ->(data) { decisions_for(data.dig('answers', 'stage')) })
-                      .dig('answers', 'stage')
+                      .call(body: body, decisions: ->(data) { decisions_for(data.dig('answers', 'stage')) })['answers']
   rescue Captain::JevClient::HTTPError, Captain::JevClient::NotConfigured
     nil
+  end
+
+  def record_facts(answers)
+    facts = FACT_QUESTIONS.keys.index_with { |key| answers.dig(key, 'noul').to_f.round(2) }
+    message_id = conversation.messages.incoming.reorder(id: :desc).pick(:id)
+    insight = deal.insight || deal.build_insight(account_id: deal.account_id, last_activity_at: Time.current)
+    insight.record_facts!(facts, message_id)
   end
 
   def target_for(choice)

@@ -18,7 +18,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const { formatMoney } = useDealFormat();
+const { formatMoney, riskClass, bandClass, idleTime } = useDealFormat();
 
 const deal = ref(null);
 const pipelines = ref([]);
@@ -201,6 +201,55 @@ watch(() => props.contactId, load, { immediate: true });
         :label="`${$t('SALES_PIPELINE.CARD.VALUE')} (${deal.currency})`"
         @blur="saveValue"
       />
+      <div v-if="deal.insight" class="flex flex-col gap-1">
+        <div class="flex items-center gap-2 text-label-small text-n-slate-11">
+          <span
+            v-if="riskClass(deal)"
+            class="size-2 rounded-full shrink-0"
+            :class="riskClass(deal)"
+          />
+          <span>
+            {{ $t(`SALES_PIPELINE.RISK.${deal.insight.risk}`) }} ·
+            {{ $t('SALES_PIPELINE.RISK.IDLE', { time: idleTime(deal) }) }}
+          </span>
+        </div>
+        <span class="text-label-small text-n-slate-10">
+          {{
+            $t('SALES_PIPELINE.RISK.EXPECTED', {
+              hours: deal.insight.expected_hours,
+            })
+          }}
+        </span>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-label-small text-n-slate-11">
+            {{ $t('SALES_PIPELINE.SCORE.TITLE') }}
+          </span>
+          <span
+            v-if="deal.insight.score !== null"
+            class="px-1.5 rounded-md text-label-small"
+            :class="bandClass(deal)"
+          >
+            {{ deal.insight.score }} ·
+            {{ $t(`SALES_PIPELINE.SCORE.BAND.${deal.insight.score_band}`) }}
+          </span>
+        </div>
+        <ul
+          v-if="deal.insight.score !== null"
+          class="flex flex-col gap-0.5 text-label-small text-n-slate-12"
+        >
+          <li v-for="factor in deal.insight.score_factors" :key="factor.key">
+            <span
+              :class="factor.points > 0 ? 'text-n-teal-11' : 'text-n-ruby-11'"
+            >
+              {{ factor.points > 0 ? `+${factor.points}` : factor.points }}
+            </span>
+            {{ $t(`SALES_PIPELINE.SCORE.FACTORS.${factor.key}`) }}
+          </li>
+        </ul>
+        <span v-else class="text-label-small text-n-slate-10">
+          {{ $t('SALES_PIPELINE.SCORE.NONE') }}
+        </span>
+      </div>
       <p v-if="deal.lost_reason" class="text-label-small text-n-ruby-11">
         {{ deal.lost_reason }}
       </p>

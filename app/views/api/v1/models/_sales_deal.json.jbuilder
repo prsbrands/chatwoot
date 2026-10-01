@@ -25,3 +25,15 @@ if resource.assignee
     json.name resource.assignee.available_name
   end
 end
+# Bloco 3c: risco e score (Sales::DealInsight), quando ja calculados.
+if (insight = resource.insight)
+  json.insight do
+    json.risk insight.risk
+    json.risk_since insight.risk_since&.to_i
+    json.last_activity_at insight.last_activity_at&.to_i
+    json.expected_hours resource.stage.expected_hours
+    json.score insight.score
+    json.score_band insight.score_band
+    json.score_factors insight.score_factors
+  end
+end

@@ -22,9 +22,11 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const { isAdmin } = useAdmin();
-const { formatMoney, sinceStageChange } = useDealFormat();
+const { formatMoney, sinceStageChange, riskClass, bandClass, isAtRisk, idleTime } =
+  useDealFormat();
 
 const pipelines = ref([]);
+const onlyAtRisk = ref(false);
 const pipeline = ref(null);
 const newPipelineDialogRef = ref(null);
 const newPipelineName = ref('');
@@ -67,6 +69,13 @@ const load = async () => {
     isLoading.value = false;
   }
 };
+
+// Filtro "so em risco": esconde os demais sem tira-los da coluna (o arrastar
+// continua valendo para os que aparecem).
+const visibleDeals = stageId =>
+  (columns.value[stageId] || []).filter(
+    deal => !onlyAtRisk.value || isAtRisk(deal)
+  );
 
 const columnTotal = stageId =>
   (columns.value[stageId] || []).reduce(
@@ -187,6 +196,18 @@ onMounted(load);
           @update:model-value="selectPipeline"
         />
       </div>
+      <div class="flex items-center gap-2">
+        <Button
+          v-if="pipeline"
+          sm
+          :faded="!onlyAtRisk"
+          :amber="onlyAtRisk"
+          :slate="!onlyAtRisk"
+          icon="i-lucide-flame"
+          :label="$t('SALES_PIPELINE.RISK.FILTER')"
+          @click="onlyAtRisk = !onlyAtRisk"
+        />
+      </div>
       <div v-if="isAdmin && pipeline" class="flex items-center gap-2">
         <Button
           sm
@@ -242,19 +263,37 @@ onMounted(load);
           </span>
         </div>
         <Draggable
-          v-model="columns[stage.id]"
+          :model-value="onlyAtRisk ? visibleDeals(stage.id) : columns[stage.id]"
+          :disabled="onlyAtRisk"
           group="deals"
           item-key="id"
           class="flex flex-col flex-1 gap-2 px-2 pb-2 overflow-y-auto min-h-24"
+          @update:model-value="list => (columns[stage.id] = list)"
           @change="event => onDrop(stage, event)"
         >
           <template #item="{ element: deal }">
             <article
               class="flex flex-col gap-1 p-3 rounded-lg cursor-grab bg-n-solid-1 outline outline-1 outline-n-weak"
             >
-              <span class="truncate text-body-main text-n-slate-12">
-                {{ deal.title }}
-              </span>
+              <div class="flex items-center gap-2">
+                <span
+                  v-if="riskClass(deal)"
+                  class="size-2 rounded-full shrink-0"
+                  :class="riskClass(deal)"
+                  :title="`${$t(`SALES_PIPELINE.RISK.${deal.insight.risk}`)} · ${$t('SALES_PIPELINE.RISK.IDLE', { time: idleTime(deal) })}`"
+                />
+                <span class="flex-1 truncate text-body-main text-n-slate-12">
+                  {{ deal.title }}
+                </span>
+                <span
+                  v-if="deal.insight?.score !== null && deal.insight?.score !== undefined"
+                  class="px-1.5 rounded-md text-label-small shrink-0"
+                  :class="bandClass(deal)"
+                  :title="$t(`SALES_PIPELINE.SCORE.BAND.${deal.insight.score_band}`)"
+                >
+                  {{ deal.insight.score }}
+                </span>
+              </div>
               <span
                 v-if="deal.contact.name !== deal.title"
                 class="truncate text-label-small text-n-slate-11"
