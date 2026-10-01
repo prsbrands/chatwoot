@@ -34,7 +34,8 @@ class Api::V1::Accounts::Sales::DealsController < Api::V1::Accounts::Sales::Base
     ActiveRecord::Base.transaction do
       @deal.update!(deal_params)
       if params[:stage_id].present?
-        @deal.move_to!(@deal.pipeline.stages.find(params[:stage_id]), actor: Current.user, lost_reason: params[:lost_reason])
+        stage = ::Sales::Stage.where(account_id: Current.account.id).find(params[:stage_id])
+        @deal.move_to!(stage, actor: Current.user, lost_reason: params[:lost_reason])
       end
     end
   end

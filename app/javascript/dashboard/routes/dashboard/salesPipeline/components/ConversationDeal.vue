@@ -21,16 +21,31 @@ const { t } = useI18n();
 const { formatMoney } = useDealFormat();
 
 const deal = ref(null);
-const stages = ref([]);
+const pipelines = ref([]);
 const value = ref('');
 const isLoading = ref(false);
 const lostDialogRef = ref(null);
 let pendingStage = null;
 
+const allStages = computed(() =>
+  pipelines.value.flatMap(pipeline => pipeline.stages)
+);
+// As etapas mostradas sao as do funil do negocio.
+const stages = computed(
+  () =>
+    pipelines.value.find(pipeline => pipeline.id === deal.value?.pipeline_id)
+      ?.stages || []
+);
 const stageOptions = computed(() =>
   stages.value.map(stage => ({ value: stage.id, label: stage.name }))
 );
-const stageName = id => stages.value.find(stage => stage.id === id)?.name;
+const pipelineOptions = computed(() =>
+  pipelines.value.map(pipeline => ({
+    value: pipeline.id,
+    label: pipeline.name,
+  }))
+);
+const stageName = id => allStages.value.find(stage => stage.id === id)?.name;
 
 const alertError = error =>
   useAlert(error.response?.data?.error || t('SALES_PIPELINE.API.ERROR'));
@@ -50,9 +65,7 @@ const load = async () => {
       SalesPipelineAPI.pipelines(),
       SalesPipelineAPI.deals({ contact_id: props.contactId }),
     ]);
-    const pipeline =
-      pipelines.payload.find(item => item.is_default) || pipelines.payload[0];
-    stages.value = pipeline?.stages || [];
+    pipelines.value = pipelines.payload;
     const current =
       deals.payload.find(item => item.status === 'open') || deals.payload[0];
     if (current) await show(current.id);
@@ -85,6 +98,13 @@ const update = async changes => {
     alertError(error);
     await show(deal.value.id);
   }
+};
+
+// Outro funil: o negocio vai para a primeira etapa aberta dele.
+const changePipeline = pipelineId => {
+  const target = pipelines.value.find(pipeline => pipeline.id === pipelineId);
+  const first = target.stages.find(stage => stage.kind === 'open');
+  update({ stage_id: first.id });
 };
 
 const changeStage = stageId => {
@@ -120,6 +140,17 @@ watch(() => props.contactId, load, { immediate: true });
           {{ $t(`SALES_PIPELINE.STATUS.${deal.status}`) }}
         </span>
       </div>
+      <label
+        v-if="pipelines.length > 1"
+        class="flex flex-col gap-1 text-label-small text-n-slate-11"
+      >
+        {{ $t('SALES_PIPELINE.CARD.PIPELINE') }}
+        <Select
+          :model-value="deal.pipeline_id"
+          :options="pipelineOptions"
+          @update:model-value="changePipeline"
+        />
+      </label>
       <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
         {{ $t('SALES_PIPELINE.CARD.STAGE') }}
         <Select

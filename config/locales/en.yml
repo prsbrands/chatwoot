@@ -155,6 +155,8 @@ en:
       invalid_name: 'Session name must be 3-50 characters, lowercase letters, numbers and hyphens only.'
       invalid_inbox: 'The selected inbox must be an API channel inbox.'
       session_not_found: 'Session not found for this account.'
+    sales:
+      pipeline_not_empty: 'Only an empty pipeline that is not the default can be deleted. Move its deals or pick another default first.'
     dyte:
       invalid_message_type: 'Invalid message type. Action not permitted'
       realtimekit_credentials_required: 'Cloudflare RealtimeKit credentials are required. Delete the existing Dyte integration and create it again with Cloudflare RealtimeKit credentials.'

@@ -2,7 +2,7 @@
   "SALES_PIPELINE": {
     "HEADER": "Pipeline",
     "LOADING": "Loading the pipeline",
-    "MANAGE_STAGES": "Manage stages",
+    "MANAGE_STAGES": "Pipeline settings",
     "EMPTY_STAGE": "No deals here",
     "DEALS_COUNT": "{count} deals",
     "IN_STAGE_FOR": "{time} in this stage",
@@ -36,7 +36,12 @@
       "MOVE_UP": "Move up",
       "MOVE_DOWN": "Move down",
       "SAVE": "Save",
-      "DONE": "Done"
+      "DONE": "Done",
+      "PIPELINE_NAME": "Pipeline name",
+      "DEFAULT": "Default pipeline",
+      "DEFAULT_HELP": "Deals opened automatically by a customer message go to the default pipeline.",
+      "MAKE_DEFAULT": "Make default",
+      "DELETE_PIPELINE": "Delete pipeline"
     },
     "CARD": {
       "TITLE": "Deal",
@@ -52,11 +57,20 @@
         "user": "{name} moved it to {stage}",
         "ai": "The AI moved it to {stage}",
         "system": "Created in {stage}"
-      }
+      },
+      "PIPELINE": "Pipeline"
     },
     "API": {
       "ERROR": "Could not update the pipeline",
       "MOVED": "Deal moved to {stage}"
-    }
+    },
+    "NEW_PIPELINE": {
+      "BUTTON": "New pipeline",
+      "TITLE": "New pipeline",
+      "DESCRIPTION": "It starts with the template stages, which you can rename or delete. Automatic deals keep opening in the default pipeline.",
+      "NAME": "Name",
+      "CREATE": "Create"
+    },
+    "PIPELINE_SELECT": "Pipeline"
   }
 }

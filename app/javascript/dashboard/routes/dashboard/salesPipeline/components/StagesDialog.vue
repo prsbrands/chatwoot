@@ -8,23 +8,45 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Switch from 'dashboard/components-next/switch/Switch.vue';
 
-// Editor das etapas do funil (so admin). Cada campo salva sozinho ao sair dele;
-// a ordem troca nas setas. Ganho e perda sao fixos: um de cada por funil.
+// Configuracao do funil (so admin): nome, padrao, apagar e as etapas. Cada
+// campo salva sozinho ao sair dele; a ordem troca nas setas. Ganho e perda
+// sao fixos: um de cada por funil.
 const props = defineProps({
   pipeline: { type: Object, required: true },
 });
-const emit = defineEmits(['changed']);
+const emit = defineEmits(['changed', 'deleted']);
 
 const { t } = useI18n();
 const dialogRef = ref(null);
 const stages = ref([]);
+const pipelineName = ref('');
 
 const alertError = error =>
   useAlert(error.response?.data?.error || t('SALES_PIPELINE.API.ERROR'));
 
 const open = () => {
   stages.value = props.pipeline.stages.map(stage => ({ ...stage }));
+  pipelineName.value = props.pipeline.name;
   dialogRef.value.open();
+};
+
+const updatePipeline = async changes => {
+  try {
+    await SalesPipelineAPI.updatePipeline(props.pipeline.id, changes);
+    emit('changed');
+  } catch (error) {
+    alertError(error);
+  }
+};
+
+const deletePipeline = async () => {
+  try {
+    await SalesPipelineAPI.deletePipeline(props.pipeline.id);
+    dialogRef.value.close();
+    emit('deleted');
+  } catch (error) {
+    alertError(error);
+  }
 };
 
 const save = async (stage, changes) => {
@@ -97,6 +119,41 @@ defineExpose({ open });
     @confirm="dialogRef.close()"
   >
     <div class="flex flex-col gap-2">
+      <div
+        class="flex flex-wrap items-end gap-2 pb-3 mb-1 border-b border-n-weak"
+      >
+        <Input
+          v-model="pipelineName"
+          class="flex-1 min-w-48"
+          :label="$t('SALES_PIPELINE.STAGES.PIPELINE_NAME')"
+          @blur="updatePipeline({ name: pipelineName })"
+        />
+        <span
+          v-if="pipeline.is_default"
+          class="px-2 py-1 mb-1 text-xs rounded-md bg-n-alpha-2 text-n-slate-11"
+          :title="$t('SALES_PIPELINE.STAGES.DEFAULT_HELP')"
+        >
+          {{ $t('SALES_PIPELINE.STAGES.DEFAULT') }}
+        </span>
+        <template v-else>
+          <Button
+            sm
+            faded
+            slate
+            :label="$t('SALES_PIPELINE.STAGES.MAKE_DEFAULT')"
+            :title="$t('SALES_PIPELINE.STAGES.DEFAULT_HELP')"
+            @click="updatePipeline({ is_default: true })"
+          />
+          <Button
+            sm
+            faded
+            ruby
+            icon="i-lucide-trash-2"
+            :label="$t('SALES_PIPELINE.STAGES.DELETE_PIPELINE')"
+            @click="deletePipeline"
+          />
+        </template>
+      </div>
       <div
         v-for="(stage, index) in stages"
         :key="stage.id"

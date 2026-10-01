@@ -38,12 +38,13 @@ class Sales::Deal < ApplicationRecord
     end
   end
 
+  # Etapa de outro funil leva o negocio junto para esse funil.
   def move_to!(new_stage, actor:, reason: nil, lost_reason: nil)
     return self if new_stage.id == stage_id
 
     from_stage_id = stage_id
     transaction do
-      update!(stage: new_stage, lost_reason: new_stage.lost? ? lost_reason : nil)
+      update!(pipeline_id: new_stage.pipeline_id, stage: new_stage, lost_reason: new_stage.lost? ? lost_reason : nil)
       # O motivo da perda fica no historico: reabrir limpa o do negocio.
       record_transition(from_stage_id, actor_type: actor.is_a?(User) ? 'user' : actor.to_s, actor_id: actor.try(:id),
                                        reason: reason.presence || (new_stage.lost? ? lost_reason : nil))

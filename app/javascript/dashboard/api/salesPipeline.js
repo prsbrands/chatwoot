@@ -1,8 +1,8 @@
 /* global axios */
 import ApiClient from './ApiClient';
 
-// Funil de vendas (flag sales_pipeline): um funil por conta, com etapas e
-// negocios. O backend cria o funil padrao na primeira leitura.
+// Funil de vendas (flag sales_pipeline): funis da conta, etapas e negocios.
+// O backend cria o funil padrao na primeira leitura.
 class SalesPipelineAPI extends ApiClient {
   constructor() {
     super('sales', { accountScoped: true });
@@ -10,6 +10,18 @@ class SalesPipelineAPI extends ApiClient {
 
   pipelines() {
     return axios.get(`${this.url}/pipelines`);
+  }
+
+  createPipeline(name) {
+    return axios.post(`${this.url}/pipelines`, { name });
+  }
+
+  updatePipeline(id, pipeline) {
+    return axios.patch(`${this.url}/pipelines/${id}`, pipeline);
+  }
+
+  deletePipeline(id) {
+    return axios.delete(`${this.url}/pipelines/${id}`);
   }
 
   createStage(pipelineId, stage) {

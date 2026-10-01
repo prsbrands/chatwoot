@@ -29,14 +29,34 @@ class Sales::Pipeline < ApplicationRecord
   end
 
   def self.create_default!(account)
-    language = account.locale.to_s.split('_').first
-    language = 'en' unless DEFAULT_STAGES.key?(language)
-    pipeline = account.sales_pipelines.create!(name: DEFAULT_NAMES[language], is_default: true)
-    DEFAULT_STAGES[language].each_with_index do |name, index|
-      kind = { 5 => :won, 6 => :lost }.fetch(index, :open)
-      pipeline.stages.create!(account: account, name: name, position: index, kind: kind, agent_step: AGENT_STEPS[index])
+    create_with_template!(account, name: DEFAULT_NAMES[language_of(account)], is_default: true)
+  end
+
+  # Funil novo ja nasce com as etapas-modelo no idioma da conta (e o passo do
+  # agente em cada uma); o admin renomeia ou apaga o que nao servir.
+  def self.create_with_template!(account, name:, is_default: false)
+    transaction do
+      position = account.sales_pipelines.maximum(:position).to_i + 1
+      pipeline = account.sales_pipelines.create!(name: name, is_default: is_default, position: position)
+      DEFAULT_STAGES[language_of(account)].each_with_index do |stage_name, index|
+        kind = { 5 => :won, 6 => :lost }.fetch(index, :open)
+        pipeline.stages.create!(account: account, name: stage_name, position: index, kind: kind, agent_step: AGENT_STEPS[index])
+      end
+      pipeline
     end
-    pipeline
+  end
+
+  def self.language_of(account)
+    language = account.locale.to_s.split('_').first
+    DEFAULT_STAGES.key?(language) ? language : 'en'
+  end
+
+  # O indice unico aceita um padrao por conta: desmarca o anterior antes.
+  def make_default!
+    transaction do
+      account.sales_pipelines.where.not(id: id).update_all(is_default: false)
+      update!(is_default: true)
+    end
   end
 
   # Moeda dos negocios novos: a conta em portugues vende em real.
