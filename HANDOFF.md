@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.14.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -194,6 +194,15 @@ Fusos a acertar:
 - Regras: move com ≥ 0,8 (só etapa aberta); sugere entre 0,5 e 0,8 e sempre para `won`; nunca vai para a perda; humano < 24 h, só sugere; `requires_human` deixa nota de atividade e faz `conversation.open!`.
 - Atividade `deal_stage`: começa em Observing.
 - Testado com 17 cenários (Jev e Supabase trocados por respostas fixas) e com os 25 da 3a.
+
+**3c no ar em 01/10: 1.0.0.**
+- Commits `e203075fa` e `1a8fc97f8`; imagem `de2d42c2458d`, com rollback em `:v1-pre-b8`.
+- Migration `20261001000003`: `sales_deal_insights`, uma linha por negócio, **fora** de `sales_deals`.
+- O `Sales::RiskSweepJob` roda a cada 5 min pelo `TriggerScheduledItemsJob`. Ele pega a última mensagem pública, entrada ou saída, de qualquer conversa do contato, e só grava quando algo muda.
+- O `Sales::ScoreFormula` é puro. O teto real é 96, não 100.
+- Os 10 nouls de sinais vão na mesma chamada do `StageAdvisor`, que agora pergunta os sinais mesmo sem etapa à frente.
+- **Armadilha:** o `Message` tem `default_scope order(created_at)`. Com `group` + `maximum`, o Postgres recusa, e é preciso `reorder(nil)`. Achado pelo teste antes do deploy.
+- Testes: 25 + 17 + 18 cenários contra um Postgres e um Redis descartáveis.
 
 **Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
 

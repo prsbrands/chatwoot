@@ -14,6 +14,26 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.0.0] — 2026-10-01 · base Chatwoot 4.18.0
+
+O CortexGen Chat passa a ser um CRM completo: atendimento, bot com IA, follow-up e funil de vendas no mesmo lugar.
+
+**Radar de risco e score (bloco 3c)**
+- Cada negócio aberto tem um estado de risco, recalculado a cada 5 minutos pela última interação real com o cliente:
+  - **em dia** dentro das horas esperadas da etapa;
+  - **esfriando** acima delas;
+  - **crítico** com o triplo.
+- Notas internas e mensagens de sistema não contam como interação.
+- Score de 0 a 100 por fórmula, sempre com os fatores que o compõem:
+  - +12 por compromisso (próximo passo, pediu proposta, quer comprar);
+  - −8 por objeção (preço, momento, concorrente ou dúvida);
+  - +5 por qualificação (necessidade, orçamento, prazo, quem decide);
+  - a recência entra pelo risco.
+- Faixas quente, morno e frio. Sem pelo menos dois sinais, não há score.
+- Os sinais vêm do Jev, na mesma leitura que avalia a etapa.
+- No Kanban: score e ponto de risco em cada card, e o filtro **Only at risk**.
+- No card Deal da conversa: o score com os fatores e há quanto tempo o negócio está sem interação.
+
 ## [0.14.0] — 2026-10-01 · base Chatwoot 4.18.0
 
 **O Jev move o negócio no funil (bloco 3b)**
