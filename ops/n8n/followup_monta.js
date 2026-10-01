@@ -28,8 +28,13 @@ return $input.all().map(item => {
     c.jevDecidiu === 'send'
       ? 'It was already decided that a follow-up goes out: write it.'
       : 'First decide if a follow-up is worth sending. It is not when the customer closed the conversation: thanked and said goodbye, said they are not interested, got what they needed, or asked not to be contacted.',
-    'Write ONE short WhatsApp message (1 to 3 sentences) in the language of the conversation, that picks up where it stopped: mention what was pending, make it easy to answer, never guilt-trip about the silence.',
-    'Do not repeat or paraphrase your last message. Do not invent prices, dates or promises that are not in your instructions or in the conversation.',
+    'Before writing, find in the conversation the concrete thing that was left open: what the customer asked for, the decision they said they would think about, the information you asked them for, or the next step you offered.',
+    'Write ONE short WhatsApp message (1 to 3 sentences) in the language the customer writes in, that names that open item in specific words (for example the plan, the proposal, the questions about their business) and ends with one simple question they can answer in a few words.',
+    'Never send a generic check-in such as "how is everything going?", "any questions?" or "just checking in": if you cannot name the open item, set send to false.',
+    c.tentativa > 1
+      ? 'This is not the first follow-up: do not repeat the previous one. Take a different angle: offer one useful piece of information from your instructions, or make it easy to say it is not the moment.'
+      : 'Greet briefly, using the customer name only if you know it.',
+    'Do not repeat or paraphrase your last message. Do not invent prices, dates or promises that are not in your instructions or in the conversation. Never guilt-trip about the silence.',
     'Answer ONLY with a JSON object, no markdown: {"send": true or false, "message": "..."}.',
   ].join('\n');
 
