@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.0.2] — 2026-10-01 · base Chatwoot 4.18.0
+
+- O seletor de etapa do card **Deal** na conversa voltou a listar as etapas (estava vazio).
+- A etapa de cada funil tem no máximo um "passo do agente", garantido também no banco.
+- Revisão do código do CortexGen com o rubocop e o eslint do projeto: 40 + 183 achados zerados, textos soltos levados para tradução e as setas das telas de voz trocadas por ícones. Nenhuma mudança de comportamento.
+
 ## [1.0.1] — 2026-10-01 · base Chatwoot 4.18.0
 
 - O WhatsApp por QR não mostra mais **"Failed to send"** em mensagens que chegaram ao cliente. O Chatwoot desistia depois de 5 segundos de espera pelo adaptador, que só responde depois de entregar ao WhatsApp. O canal agora espera até 30 segundos, ajustável em Super Admin → Settings ("API inbox webhook timeout"), e os outros webhooks continuam com 5.

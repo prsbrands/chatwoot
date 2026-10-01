@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -209,6 +209,14 @@ Fusos a acertar:
 - Correção: o canal API usa `API_INBOX_WEBHOOK_TIMEOUT`, 30 s por padrão também no código. O bot e as contas seguem com 5 s.
 - As 14 mensagens da inbox 33 foram corrigidas com `update_columns`, sem webhook.
 - A config entra no banco pelo `db:migrate` (`ConfigLoader`).
+
+**1.0.2: revisão de código (commits `9246b326e`, `2de7d8631`, `83c011c1f` e `11c4a7d7a`; imagem `3b4162ebc0bc`, rollback `:v1-pre-b10`).**
+- O rubocop e o eslint rodam **em container na VPS**, sobre o clone `src-b5`, porque o Mac não roda nenhum dos dois. A receita está na memória `lint-em-container`.
+- A lista de arquivos do fork vem de `git diff --name-only $(git merge-base HEAD upstream/develop) HEAD`.
+- Resultado: 40 achados do rubocop e 183 erros do eslint zerados.
+- Bug real achado pelo eslint: `no-shadow` no `ConversationDeal`, que deixava o seletor de etapa vazio.
+- As linhas do fork em classes do upstream foram para `CortexgenAccount`, `InboxBotRoutes`, `Integrations::App#cortexgen_app_active?` e `AppConfigsController::CORTEXGEN_CONFIGS`, o que diminui o conflito nos merges.
+- Migration `20261001000004`: índice único de `agent_step` por funil.
 
 **Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
 
