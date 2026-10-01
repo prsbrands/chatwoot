@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -203,6 +203,12 @@ Fusos a acertar:
 - Os 10 nouls de sinais vão na mesma chamada do `StageAdvisor`, que agora pergunta os sinais mesmo sem etapa à frente.
 - **Armadilha:** o `Message` tem `default_scope order(created_at)`. Com `group` + `maximum`, o Postgres recusa, e é preciso `reorder(nil)`. Achado pelo teste antes do deploy.
 - Testes: 25 + 17 + 18 cenários contra um Postgres e um Redis descartáveis.
+
+**1.0.1 (`d59483cfb`, imagem `016361f15cdd`, rollback `:v1-pre-b9`):** "Failed to send" falso no WhatsApp por QR.
+- Causa: o `Webhooks::Trigger` do `:api_inbox_webhook` estourava o `WEBHOOK_TIMEOUT` global de 5 s (`Net::ReadTimeout`), porque o adaptador do OpenWA só responde depois de entregar ao WhatsApp.
+- Correção: o canal API usa `API_INBOX_WEBHOOK_TIMEOUT`, 30 s por padrão também no código. O bot e as contas seguem com 5 s.
+- As 14 mensagens da inbox 33 foram corrigidas com `update_columns`, sem webhook.
+- A config entra no banco pelo `db:migrate` (`ConfigLoader`).
 
 **Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
 

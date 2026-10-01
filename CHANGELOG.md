@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.0.1] — 2026-10-01 · base Chatwoot 4.18.0
+
+- O WhatsApp por QR não mostra mais **"Failed to send"** em mensagens que chegaram ao cliente. O Chatwoot desistia depois de 5 segundos de espera pelo adaptador, que só responde depois de entregar ao WhatsApp. O canal agora espera até 30 segundos, ajustável em Super Admin → Settings ("API inbox webhook timeout"), e os outros webhooks continuam com 5.
+- As 14 mensagens da inbox 33 marcadas como falha por esse motivo foram corrigidas para "enviada".
+
 ## [1.0.0] — 2026-10-01 · base Chatwoot 4.18.0
 
 O CortexGen Chat passa a ser um CRM completo: atendimento, bot com IA, follow-up e funil de vendas no mesmo lugar.
