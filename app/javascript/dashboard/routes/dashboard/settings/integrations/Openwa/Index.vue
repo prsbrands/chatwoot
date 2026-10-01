@@ -39,6 +39,39 @@ const sessionToDelete = ref(null);
 const NEW_INBOX = 0;
 const selectedInboxId = ref(NEW_INBOX);
 
+// Reconectar um número com outra sessão duplica a inbox: visto em 30/09,
+// "WhatsApp — 50765173186" e "WhatsApp — prs65173186" eram o mesmo número.
+// Inbox que já foi de uma sessão (webhook no adapter) e hoje não tem nenhuma
+// é a candidata a reaproveitar.
+const digitsOf = text => String(text || '').replace(/\D/g, '');
+const orphanWhatsappInboxes = computed(() => {
+  const usedInboxIds = adapterInstances.value.map(
+    instance => instance.inbox_id
+  );
+  return getters['inboxes/getInboxes'].value.filter(
+    inbox =>
+      inbox.channel_type === 'Channel::Api' &&
+      String(inbox.webhook_url || '').includes('/chatwoot-adapter/') &&
+      !usedInboxIds.includes(inbox.id)
+  );
+});
+// Mesmo número: os 6 últimos dígitos do nome batem. Sem número no nome, o
+// nome da sessão aparece no da inbox.
+const similarInbox = computed(() => {
+  const name = newSessionName.value.trim().toLowerCase();
+  if (name.length < 3 || selectedInboxId.value !== NEW_INBOX) return null;
+  const digits = digitsOf(name);
+  return (
+    orphanWhatsappInboxes.value.find(inbox => {
+      const inboxDigits = digitsOf(inbox.name);
+      if (digits.length >= 6 && inboxDigits.length >= 6) {
+        return digits.slice(-6) === inboxDigits.slice(-6);
+      }
+      return inbox.name.toLowerCase().includes(name);
+    }) || null
+  );
+});
+
 const agentBots = computed(() => getters['agentBots/getBots'].value);
 const botOptions = computed(() =>
   agentBots.value.map(bot => ({ value: bot.id, label: bot.name }))
@@ -365,6 +398,25 @@ onBeforeUnmount(stopQrPolling);
               {{ $t('INTEGRATION_SETTINGS.OPENWA.ADD.INBOX_LABEL') }}
             </span>
             <Select v-model="selectedInboxId" :options="inboxOptions" />
+            <div
+              v-if="similarInbox"
+              class="flex flex-col items-start gap-2 p-3 rounded-lg bg-n-amber-2 text-sm text-n-amber-11"
+            >
+              <span>
+                {{
+                  $t('INTEGRATION_SETTINGS.OPENWA.ADD.SIMILAR', {
+                    inbox: similarInbox.name,
+                  })
+                }}
+              </span>
+              <Button
+                xs
+                faded
+                amber
+                :label="$t('INTEGRATION_SETTINGS.OPENWA.ADD.SIMILAR_USE')"
+                @click="selectedInboxId = similarInbox.id"
+              />
+            </div>
             <span class="text-xs text-n-slate-11">
               {{ $t('INTEGRATION_SETTINGS.OPENWA.ADD.INBOX_HELP') }}
             </span>

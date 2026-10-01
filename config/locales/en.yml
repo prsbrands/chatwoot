@@ -453,7 +453,7 @@ en:
     openwa:
       name: 'WhatsApp Sessions'
       short_description: 'Pair and manage WhatsApp numbers connected through the OpenWA gateway.'
-      description: 'Pair new WhatsApp numbers by QR code and manage their sessions without leaving the dashboard. Each session is provisioned with its own inbox and can be answered by an agent bot.'
+      description: 'Pair WhatsApp numbers by QR code and manage their sessions without leaving the dashboard. When a number disconnects, use Pair on its session to reconnect it with the same inbox and agent bot.'
     dyte:
       name: 'Cloudflare RealtimeKit'
       short_description: 'Start video/voice calls with customers directly from CortexGen Chat.'
