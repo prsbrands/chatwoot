@@ -14,6 +14,17 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.12.0] — 2026-10-01 · base Chatwoot 4.18.0
+
+**Funil de vendas (bloco 3a)**
+- Menu **Pipeline**: o funil da conta em colunas, com arrastar entre as etapas e o total por coluna. Ir para a etapa de perda pede o motivo.
+- Funil padrão no idioma da conta: Ventas na conta em espanhol, Vendas em português, Sales em inglês. São 5 etapas abertas, mais ganho e perda.
+- Admin edita as etapas em **Manage stages**: nome, ordem, horas esperadas na etapa e "precisa de pessoa".
+- Cada negócio tem contato, conversa de origem, valor e moeda (BRL nas contas em português), e status (aberto, ganho ou perdido) que segue a etapa.
+- Todo contato que escreve numa inbox com bot ganha um negócio na 1ª etapa; mensagens em rajada abrem um só.
+- Card **Deal** no painel da conversa: criar o negócio, trocar a etapa, pôr valor e ver o histórico de quem moveu.
+- Liga e desliga pela flag **Sales Pipeline** (Super Admin), por conta.
+
 ## [0.11.1] — 2026-10-01 · base Chatwoot 4.18.0
 
 - WhatsApp Sessions explica, no cartão, no cabeçalho e ao excluir, que um número caído se reconecta com **Pair** na mesma sessão, mantendo a inbox, as conversas e o bot.

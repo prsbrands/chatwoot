@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.11.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.12.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -169,6 +169,26 @@ Fusos a acertar:
 - Avaliar ligar a flag `delayed_automations` (automações com atraso, MIT, `automation_rule_pending_execution`), que hoje está desligada.
 
 ### Bloco 3 → 1.0.0: funil de vendas
+
+**3a no ar em 01/10 (0.12.0).**
+- Commits `f833a4fe3` e `e9f9c648d`; imagem `e4643cca2a99`, com rollback em `:v1-pre-b5`.
+- Migration `20261001000001`: tabelas `sales_pipelines`, `sales_stages`, `sales_deals` e `sales_deal_transitions`. Sem FK no banco; os models ficam em `app/models/sales/`.
+- Flag `sales_pipeline` no fim de `feature_flags_ext_1`, ligada só na conta 1. Lá o funil se chama "Ventas", id 1.
+- Um funil por conta, criado na 1ª leitura (`Sales::Pipeline.default_for`), com `agent_step` nas 5 etapas abertas.
+- O `SalesDealListener` abre o negócio na mensagem do cliente numa inbox com bot, com lock no contato.
+- O motivo da perda fica na transição; reabrir limpa o motivo do negócio.
+- Testado com 21 cenários contra um Postgres e um Redis descartáveis. A rajada de 3 mensagens simultâneas abriu um negócio só.
+
+**Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
+
+**Do DeskComm, para a 3b e a 3c:**
+- Lá não existe limiar de confiança. O nosso (≥ 0,8 move, entre 0,5 e 0,8 sugere) é novo.
+- A IA nunca move para a etapa de perda.
+- Score e risco ficam **fora** de `sales_deals`. Dentro, o quadro pisca e o salvar dá 409 falso.
+- `last_activity_at` só sobe com interação real.
+
+#### O pedido original
+
 
 O Chatwoot não tem funil nem negócios, e esta é a maior lacuna diante do DeskComm.
 - **Módulo MIT nosso no Rails:**
