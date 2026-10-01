@@ -23,6 +23,7 @@ describe Webhooks::Trigger do
     ActiveJob::Base.queue_adapter = :test
     allow(GlobalConfig).to receive(:get_value).and_call_original
     allow(GlobalConfig).to receive(:get_value).with('WEBHOOK_TIMEOUT').and_return(webhook_timeout)
+    allow(GlobalConfig).to receive(:get_value).with('API_INBOX_WEBHOOK_TIMEOUT').and_return(webhook_timeout)
     allow(GlobalConfig).to receive(:get_value).with('DEPLOYMENT_ENV').and_return(nil)
   end
 

@@ -115,11 +115,15 @@ class Webhooks::Trigger
     @payload[:id]
   end
 
+  # CortexGen: o canal API (o adaptador do WhatsApp por QR) so responde depois
+  # de entregar ao WhatsApp, e isso passa dos 5 s com frequencia. Estourar o
+  # tempo marcava "Failed to send" numa mensagem que chegou ao cliente (14 de
+  # 24 numa inbox em 01/10). Ele tem tempo proprio; o resto segue o global.
   def webhook_timeout
-    raw_timeout = GlobalConfig.get_value('WEBHOOK_TIMEOUT')
-    timeout = raw_timeout.presence&.to_i
+    name, default = @webhook_type == :api_inbox_webhook ? ['API_INBOX_WEBHOOK_TIMEOUT', 30] : ['WEBHOOK_TIMEOUT', 5]
+    timeout = GlobalConfig.get_value(name).presence&.to_i
 
-    timeout&.positive? ? timeout : 5
+    timeout&.positive? ? timeout : default
   end
 
   def retryable_agent_bot_error?(error)
