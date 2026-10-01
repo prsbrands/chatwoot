@@ -84,7 +84,9 @@ O ideal é um nó ou função única chamada pelos três. Modelo de resumo do De
 - Workflow `1aloIF0zKm8pjpeK` ativo; a 1ª varredura (exec 87319) saiu verde e vazia.
 - Fusos: inboxes 2, 14 e 30 em `America/Bogota`, inbox 31 em `America/Sao_Paulo`.
 
-**Falta:** ligar na `nathan-whatsapp` e ver um envio real.
+**Envio real provado em 01/10:** `nathan-whatsapp` com follow-up de 1 h (só para o teste). A retomada saiu na conversa 89 às 8:00 de Bogotá, na execução 88203, em 15 s: Candidatos 5,5 s, Jev 1,2 s, LLM 2,8 s, Envia 5,6 s. O `itemMatching` do Envia funciona no n8n real.
+
+**Armadilha:** o `n8n import:workflow` de um workflow **agendado** não para o relógio que já roda no processo principal. Depois do Publish, a varredura passou a rodar em dobro (`:00` e `:24`). Depois de importar um workflow com Schedule Trigger, faça `docker restart n8n-y4jd-n8n-1` e confira que sai uma execução só por intervalo.
 
 **Sessões de WhatsApp por QR (0.11.0, `8f9777a79`, imagem `85014a894183`, rollback `:v1-pre-b3`):**
 - O `Openwa::SessionWatchJob` roda a cada 5 min, pelo `TriggerScheduledItemsJob`. Ele marca o `Channel::Api` com o `Reauthorizable`, depois de 2 checagens fora de `ready`. Efeitos:
