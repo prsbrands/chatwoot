@@ -200,7 +200,6 @@ const voiceGaps = computed(() => {
 
 const voiceReady = computed(() => voiceGaps.value.length === 0);
 
-
 const fallbackProviderOptions = computed(() => [
   {
     value: '',

@@ -43,7 +43,6 @@ const personaOptions = computed(() =>
   }))
 );
 
-
 const personaName = id =>
   personas.value.find(persona => persona.id === id)?.display_name;
 

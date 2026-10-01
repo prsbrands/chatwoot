@@ -171,7 +171,6 @@ const fetchPersonas = async () => {
   }
 };
 
-
 const createDomain = async () => {
   if (!newSubdomain.value.trim()) return;
   isBusy.value = true;
@@ -474,7 +473,9 @@ onMounted(() => {
       >
         <span class="text-n-slate-12">
           {{ route.phone_number }}
-          <span class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10" />
+          <span
+            class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10"
+          />
           <template v-if="route.answer_mode === 'bot'">
             <span class="font-mono">{{ route.bot_persona_slug }}</span>
             <span class="text-n-slate-10">
@@ -490,7 +491,9 @@ onMounted(() => {
                   seconds: route.ring_timeout,
                 })
               }}
-              <span class="inline-block align-middle i-lucide-arrow-right size-3 text-n-slate-10" />
+              <span
+                class="inline-block align-middle i-lucide-arrow-right size-3 text-n-slate-10"
+              />
               {{
                 route.no_answer_action === 'bot'
                   ? route.bot_persona_slug
@@ -617,7 +620,9 @@ onMounted(() => {
         <div class="flex items-center justify-between gap-2">
           <span class="text-n-slate-12">
             {{ call.from_number }}
-            <span class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10" />
+            <span
+              class="inline-block align-middle i-lucide-arrow-right size-3.5 text-n-slate-10"
+            />
             {{ call.phone_number }}
           </span>
           <span class="text-xs text-n-slate-11">
