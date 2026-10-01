@@ -118,6 +118,16 @@ class Integrations::Botlayer::Client
     delete("bot_channel_routes?id=eq.#{uuid!(id)}")
   end
 
+  # A rota morre com a inbox. Sem isto ela fica orfa no Supabase, e a varredura
+  # de follow-up tentaria ler uma inbox que nao existe.
+  def delete_inbox_routes(account_id, inbox_id)
+    delete("bot_channel_routes?chatwoot_account_id=eq.#{account_id.to_i}&chatwoot_inbox_id=eq.#{inbox_id.to_i}")
+  end
+
+  def deactivate_inbox_route(account_id, inbox_id)
+    patch("bot_channel_routes?chatwoot_account_id=eq.#{account_id.to_i}&chatwoot_inbox_id=eq.#{inbox_id.to_i}", { is_active: false })
+  end
+
   # O nó Historico do workflow lê as últimas mensagens da conversa com um token
   # de **User**: o de Agent Bot não alcança `messages#index`
   # (BOT_ACCESSIBLE_ENDPOINTS, de propósito). É por conta, não por rota — o

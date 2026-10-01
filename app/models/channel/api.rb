@@ -21,6 +21,8 @@
 
 class Channel::Api < ApplicationRecord
   include Channelable
+  # Sessão do OpenWA caída (Openwa::SessionWatchJob).
+  include Reauthorizable
 
   self.table_name = 'channel_api'
   EDITABLE_ATTRS = [:webhook_url, :hmac_mandatory, { additional_attributes: {} }].freeze

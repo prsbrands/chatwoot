@@ -26,8 +26,12 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
     render json: result
   end
 
+  # QR lido: o alerta de sessão caída sai na hora, sem esperar a próxima
+  # checagem do Openwa::SessionWatchJob.
   def qr
-    render json: client.qr(permitted_params[:session_id])
+    result = client.qr(permitted_params[:session_id])
+    mark_session_inboxes_reauthorized if result['status'] == 'ready'
+    render json: result
   end
 
   def start
@@ -44,13 +48,18 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
 
   # Remove a sessão do gateway e as instâncias do adapter escopadas a ela.
   # A inbox do Chatwoot é preservada — apagar inbox destrói conversas, e isso
-  # fica a cargo do admin no fluxo normal de Settings → Inboxes.
+  # fica a cargo do admin no fluxo normal de Settings → Inboxes. Mas sem a
+  # sessão ela não entrega mais nada: a rota do bot desliga, senão o bot e o
+  # follow-up "respondem" num canal morto e o cliente nunca recebe.
   def destroy
     session_id = permitted_params[:session_id]
-    client.adapter_instances.select { |instance| instance['sessionScope'] == session_id }.each do |instance|
-      client.delete_adapter_instance(instance['instanceId'])
-    end
+    instances = client.adapter_instances.select { |instance| instance['sessionScope'] == session_id }
+    instances.each { |instance| client.delete_adapter_instance(instance['instanceId']) }
     client.delete_session(session_id)
+    Current.account.inboxes.where(id: instances.filter_map { |instance| instance.dig('config', 'inboxId') }).find_each do |inbox|
+      Integrations::Botlayer::Client.new.deactivate_inbox_route(Current.account.id, inbox.id)
+      inbox.agent_bot_inbox&.destroy!
+    end
     head :ok
   end
 
@@ -80,6 +89,12 @@ class Api::V1::Accounts::Integrations::Openwa::SessionsController < Api::V1::Acc
     return if owned_session_ids.include?(permitted_params[:session_id])
 
     render json: { error: I18n.t('errors.openwa.session_not_found') }, status: :not_found
+  end
+
+  def mark_session_inboxes_reauthorized
+    inbox_ids = account_instances.select { |instance| instance['sessionScope'] == permitted_params[:session_id] }
+                                 .filter_map { |instance| instance.dig('config', 'inboxId') }
+    Current.account.inboxes.where(id: inbox_ids).find_each { |inbox| inbox.channel.reauthorized! if inbox.api? }
   end
 
   def slim_adapter_instances

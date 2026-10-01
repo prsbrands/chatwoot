@@ -1,7 +1,7 @@
 """Monta o workflow "CortexGen Follow-up" (bloco 2) a partir do export do bot.
 
     docker exec n8n-y4jd-n8n-1 n8n export:workflow --id=pd5V9pdaldRLUu4C --output=/tmp/wf.json
-    python3 build_followup.py wf.json wf-followup.json   # na pasta ops/n8n
+    python3 build_followup.py wf.json wf-followup.json [id]   # na pasta ops/n8n; com id, atualiza o existente
     docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/tmp/wf-followup.json   # entra desativado: publicar
 
     A cada 15 min -> Candidatos -> JevFollowup -> MontaRetomada -> EscolheProvider
@@ -20,6 +20,8 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 src, dst = sys.argv[1], sys.argv[2]
+# Terceiro argumento: id do workflow que ja existe no n8n, para atualizar.
+wf_existente = sys.argv[3] if len(sys.argv) > 3 else None
 
 bot = json.load(open(src))
 bot = bot[0] if isinstance(bot, list) else bot
@@ -61,7 +63,7 @@ def link(a, *saidas):
 # O import:workflow exige id (SQLITE_CONSTRAINT: workflow_entity.id sem ele).
 # Id novo a cada geracao: reimportar este arquivo cria outro workflow, nao
 # atualiza o anterior — para atualizar, use o id que o n8n ja tem.
-wf_id = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+wf_id = wf_existente or ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
 
 wf = {
     'id': wf_id,

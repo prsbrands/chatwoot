@@ -22,6 +22,9 @@ class TriggerScheduledItemsJob < ApplicationJob
 
     # Job to trigger pending executions
     AutomationRules::TriggerPendingExecutionsJob.perform_later
+
+    # Sessões de WhatsApp por QR (OpenWA) que caíram
+    Openwa::SessionWatchJob.perform_later if Integrations::Openwa::Client.configured?
   end
 end
 

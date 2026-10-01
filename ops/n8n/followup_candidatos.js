@@ -75,6 +75,9 @@ for (const rota of rotas) {
   const cw = (method, path, body) => pedir(method, CHATWOOT + conta + path, { api_access_token: userToken }, body).then(r => r.body);
 
   const dadosInbox = await cw('GET', '/inboxes/' + inbox);
+  // Sessao do WhatsApp caida (Openwa::SessionWatchJob no Rails): o follow-up
+  // apareceria no Chatwoot e nunca chegaria ao cliente.
+  if (dadosInbox.reauthorization_required) continue;
   const fuso = dadosInbox.timezone;
   if (!fuso || fuso === 'UTC' || fuso === 'Etc/UTC') continue;
   // hourCycle h23: com hour12:false alguns ICU devolvem "24" a meia-noite, e a

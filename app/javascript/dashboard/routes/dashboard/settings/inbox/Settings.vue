@@ -18,6 +18,7 @@ import DuplicateInboxBanner from './channels/instagram/DuplicateInboxBanner.vue'
 import MicrosoftReauthorize from './channels/microsoft/Reauthorize.vue';
 import GoogleReauthorize from './channels/google/Reauthorize.vue';
 import WhatsappReauthorize from './channels/whatsapp/Reauthorize.vue';
+import OpenwaReauthorize from './channels/openwa/Reauthorize.vue';
 import InboxHealthAPI from 'dashboard/api/inboxHealth';
 import PreChatFormSettings from './PreChatForm/Settings.vue';
 import WeeklyAvailability from './components/WeeklyAvailability.vue';
@@ -78,6 +79,7 @@ export default {
     InstagramReauthorize,
     TiktokReauthorize,
     WhatsappReauthorize,
+    OpenwaReauthorize,
     DuplicateInboxBanner,
     Editor,
     Avatar,
@@ -404,6 +406,9 @@ export default {
     },
     isEmbeddedSignupWhatsApp() {
       return this.inbox.provider_config?.source === 'embedded_signup';
+    },
+    openwaUnauthorized() {
+      return this.isAPIInbox && this.inbox.reauthorization_required;
     },
     whatsappUnauthorized() {
       return (
@@ -839,6 +844,11 @@ export default {
           v-if="whatsappUnauthorized"
           :whatsapp-registration-incomplete="whatsappRegistrationIncomplete"
           :inbox="inbox"
+          class="mb-4"
+          :class="bannerMaxWidth"
+        />
+        <OpenwaReauthorize
+          v-if="openwaUnauthorized"
           class="mb-4"
           :class="bannerMaxWidth"
         />
