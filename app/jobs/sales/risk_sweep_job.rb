@@ -13,6 +13,7 @@ class Sales::RiskSweepJob < ApplicationJob
       activity = Message.joins(:conversation)
                         .where(conversations: { account_id: account.id, contact_id: deals.map(&:contact_id) })
                         .where(message_type: %i[incoming outgoing], private: false)
+                        .reorder(nil) # o default_scope do Message ordena e o GROUP BY recusa
                         .group('conversations.contact_id').maximum(:created_at)
       deals.each do |deal|
         insight = deal.insight || deal.build_insight(account: account)
