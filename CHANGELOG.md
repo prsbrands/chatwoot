@@ -14,6 +14,18 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.14.0] — 2026-10-01 · base Chatwoot 4.18.0
+
+**O Jev move o negócio no funil (bloco 3b)**
+- Nova atividade no cartão do Jev: **Move the deal along the pipeline**. A cada mensagem do cliente (uma vez por rajada), o Jev diz em que etapa o negócio está.
+- Só para frente, só entre etapas com passo do agente, e nunca para a perda.
+- Em **Deciding**:
+  - com 80% ou mais, move sozinho, e o histórico mostra "IA" e a confiança;
+  - entre 50% e 80%, e sempre para "fechou", deixa uma **sugestão** no card do Kanban e no card Deal da conversa, com Accept e Dismiss.
+- Depois que uma pessoa mexe no negócio, o Jev só sugere por 24 h.
+- Etapa marcada como "precisa de pessoa" (Pipeline settings): quando a IA move o negócio para ela, a conversa abre para a equipe.
+- Em **Observing** (o padrão), só registra o que faria; o cartão do Jev mostra quantas vezes moveria.
+
 ## [0.13.0] — 2026-10-01 · base Chatwoot 4.18.0
 
 **Vários funis por conta**

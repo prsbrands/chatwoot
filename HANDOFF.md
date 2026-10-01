@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.13.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.14.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -185,6 +185,15 @@ Fusos a acertar:
 - Só apaga funil vazio e que não seja o padrão.
 - `move_to!` com etapa de outro funil leva o negócio junto.
 - O automático nasce no padrão.
+
+**3b no ar em 01/10 (0.14.0).**
+- Commit `5936d660f`; imagem `9e088f884835`, com rollback em `:v1-pre-b7`.
+- Migration `20261001000002`: colunas `suggested_*` em `sales_deals`.
+- O `Sales::StageAdvisor` faz uma pergunta `choice` entre as etapas à frente que têm `agent_step`, mais `won` e `stay`. Ela vai pelo `Captain::JevClient`, que ganhou `decisions:` para o cartão contar.
+- O `Sales::StageAdvisorJob` espera 15 s; uma chave no Redis por negócio guarda a última mensagem, então a rajada é avaliada uma vez.
+- Regras: move com ≥ 0,8 (só etapa aberta); sugere entre 0,5 e 0,8 e sempre para `won`; nunca vai para a perda; humano < 24 h, só sugere; `requires_human` deixa nota de atividade e faz `conversation.open!`.
+- Atividade `deal_stage`: começa em Observing.
+- Testado com 17 cenários (Jev e Supabase trocados por respostas fixas) e com os 25 da 3a.
 
 **Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
 
