@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_01_000003) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_01_000004) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1606,6 +1606,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_01_000003) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_sales_stages_on_account_id"
+    t.index ["pipeline_id", "agent_step"], name: "index_sales_stages_unique_agent_step", unique: true, where: "(agent_step IS NOT NULL)"
     t.index ["pipeline_id"], name: "index_sales_stages_on_pipeline_id"
     t.index ["pipeline_id"], name: "index_sales_stages_one_lost", unique: true, where: "(kind = 2)"
     t.index ["pipeline_id"], name: "index_sales_stages_one_won", unique: true, where: "(kind = 1)"
