@@ -14,6 +14,19 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.10.0] — 2026-09-30 · base Chatwoot 4.18.0
+
+**Follow-up quando o cliente some (WhatsApp por QR)**
+- Na persona: "Follow up after N hours of silence" (vazio = desligado) e quantos follow-ups por silêncio (padrão 2).
+- Só retoma conversa pendente com o bot, em que o bot falou por último e o cliente escreveu nos últimos 7 dias. Humano atribuído, contato bloqueado ou cliente que respondeu encerram a série.
+- O Jev decide se vale retomar ("vou pensar" vale; "obrigado, era só isso" não): atividade nova no cartão do Jev. Sem Jev, quem decide é a IA da persona.
+- A IA da persona escreve a retomada com o contexto ("passou 1 dia, você ia pensar no plano Pro"), em bolhas com "digitando".
+
+**Anti-ban dos números conectados por QR**
+- Envio só das 8h às 20h no fuso da inbox (Inboxes → Business hours). Inbox sem fuso não recebe follow-up.
+- Teto diário pela idade do número: 20, 50, 100 e depois 200. Até 3 por número a cada 15 min, com 20–45 s entre um e outro.
+- Texto quase igual aos últimos follow-ups do número é vetado.
+
 ## [0.9.0] — 2026-09-30 · base Chatwoot 4.18.0
 
 **Passagem para humano com briefing**

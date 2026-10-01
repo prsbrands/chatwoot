@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.9.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.10.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -79,7 +79,14 @@ O ideal é um nó ou função única chamada pelos três. Modelo de resumo do De
 
 ### Bloco 2 → 0.10.0: follow-up por silêncio + anti-ban
 
-**Código pronto; nada foi ao ar.** Decisões do Paulo em 30/09:
+**No ar em 30/09, desligado em todas as personas.**
+- Imagem `:v1` = `b39eacfc6a47`, com rollback em `:v1-pre-b2`.
+- Workflow `1aloIF0zKm8pjpeK` ativo; a 1ª varredura (exec 87319) saiu verde e vazia.
+- Fusos: inboxes 2, 14 e 30 em `America/Bogota`, inbox 31 em `America/Sao_Paulo`.
+
+**Falta:** ligar na `nathan-whatsapp` e ver um envio real.
+
+Decisões do Paulo em 30/09:
 - só no OpenWA (nos canais Meta, depois de 24 h, só template; no widget o visitante já saiu);
 - janela no fuso da inbox;
 - configuração na persona, com tela;
@@ -113,7 +120,7 @@ Regras. Portadas do DeskComm, exceto o "vale retomar?", que lá não existe:
 O SQL vem antes da imagem porque o PersonaEditor manda os campos novos, e o PostgREST recusa coluna que não existe.
 
 Fusos a acertar:
-- inboxes 2, 14 e 30: `America/Panama`;
+- inboxes 2, 14 e 30: `America/Bogota`, sem horário de verão (`America/Chicago`, o "Central", muda em novembro);
 - inbox 31: `America/Sao_Paulo`.
 
 #### O pedido original
