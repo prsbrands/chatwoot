@@ -686,6 +686,13 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Pipeline',
+      label: t('SIDEBAR.SALES_PIPELINE'),
+      icon: 'i-lucide-kanban',
+      to: accountScopedRoute('sales_pipeline_index'),
+      activeOn: ['sales_pipeline_index'],
+    },
+    {
       name: 'Reports',
       label: t('SIDEBAR.REPORTS'),
       icon: 'i-lucide-chart-spline',

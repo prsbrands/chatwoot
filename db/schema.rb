@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_01_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1522,6 +1522,72 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_120000) do
     t.index ["account_id", "date", "dimension_type", "dimension_id", "metric"], name: "index_rollup_unique_key", unique: true
     t.index ["account_id", "dimension_type", "date"], name: "index_rollup_summary"
     t.index ["account_id", "metric", "date"], name: "index_rollup_timeseries"
+  end
+
+  create_table "sales_deal_transitions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "deal_id", null: false
+    t.bigint "from_stage_id"
+    t.bigint "to_stage_id", null: false
+    t.string "actor_type", null: false
+    t.bigint "actor_id"
+    t.text "reason"
+    t.datetime "created_at", null: false
+    t.index ["account_id"], name: "index_sales_deal_transitions_on_account_id"
+    t.index ["deal_id"], name: "index_sales_deal_transitions_on_deal_id"
+  end
+
+  create_table "sales_deals", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "stage_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "conversation_id"
+    t.bigint "assignee_id"
+    t.string "title", null: false
+    t.bigint "value_cents"
+    t.string "currency", default: "USD", null: false
+    t.integer "status", default: 0, null: false
+    t.string "lost_reason"
+    t.datetime "stage_changed_at", null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "contact_id", "status"], name: "index_sales_deals_on_account_id_and_contact_id_and_status"
+    t.index ["account_id"], name: "index_sales_deals_on_account_id"
+    t.index ["assignee_id"], name: "index_sales_deals_on_assignee_id"
+    t.index ["contact_id"], name: "index_sales_deals_on_contact_id"
+    t.index ["conversation_id"], name: "index_sales_deals_on_conversation_id"
+    t.index ["pipeline_id"], name: "index_sales_deals_on_pipeline_id"
+    t.index ["stage_id"], name: "index_sales_deals_on_stage_id"
+  end
+
+  create_table "sales_pipelines", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.boolean "is_default", default: false, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_sales_pipelines_on_account_id"
+    t.index ["account_id"], name: "index_sales_pipelines_one_default", unique: true, where: "is_default"
+  end
+
+  create_table "sales_stages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "kind", default: 0, null: false
+    t.integer "expected_duration_hours"
+    t.boolean "requires_human", default: false, null: false
+    t.string "agent_step"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_sales_stages_on_account_id"
+    t.index ["pipeline_id"], name: "index_sales_stages_on_pipeline_id"
+    t.index ["pipeline_id"], name: "index_sales_stages_one_lost", unique: true, where: "(kind = 2)"
+    t.index ["pipeline_id"], name: "index_sales_stages_one_won", unique: true, where: "(kind = 1)"
   end
 
   create_table "sla_events", force: :cascade do |t|

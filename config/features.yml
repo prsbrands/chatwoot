@@ -321,3 +321,9 @@
   premium: true
   chatwoot_internal: true
   column: feature_flags_ext_1
+# CortexGen: funil de vendas (bloco 3). Depois das do upstream — as posicoes
+# de bit em feature_flags_ext_1 ja gravadas em producao nao podem mudar.
+- name: sales_pipeline
+  display_name: Sales Pipeline
+  enabled: false
+  column: feature_flags_ext_1

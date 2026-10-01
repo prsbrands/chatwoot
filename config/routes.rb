@@ -247,6 +247,13 @@ Rails.application.routes.draw do
               resources :notes, only: [:index]
             end
           end
+          # CortexGen: funil de vendas (flag sales_pipeline)
+          namespace :sales do
+            resources :pipelines, only: [:index, :update] do
+              resources :stages, only: [:create, :update, :destroy]
+            end
+            resources :deals, only: [:index, :show, :create, :update, :destroy]
+          end
           resources :contacts, only: [:index, :show, :update, :create, :destroy] do
             collection do
               get :active

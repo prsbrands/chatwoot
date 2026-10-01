@@ -107,6 +107,8 @@ class Account < ApplicationRecord
   has_one :twilio_credential, dependent: :destroy_async
   has_many :twilio_voice_routes, dependent: :destroy_async
   has_many :twilio_voice_calls, dependent: :destroy_async
+  has_many :sales_pipelines, class_name: 'Sales::Pipeline', dependent: :destroy_async
+  has_many :sales_deals, class_name: 'Sales::Deal', dependent: :destroy_async
   has_many :whatsapp_channels, dependent: :destroy_async, class_name: '::Channel::Whatsapp'
   has_many :working_hours, dependent: :destroy_async
 

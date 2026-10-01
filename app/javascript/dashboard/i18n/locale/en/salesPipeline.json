@@ -1,0 +1,62 @@
+{
+  "SALES_PIPELINE": {
+    "HEADER": "Pipeline",
+    "LOADING": "Loading the pipeline",
+    "MANAGE_STAGES": "Manage stages",
+    "EMPTY_STAGE": "No deals here",
+    "DEALS_COUNT": "{count} deals",
+    "IN_STAGE_FOR": "{time} in this stage",
+    "OPEN_CONVERSATION": "Open conversation",
+    "STATUS": {
+      "open": "Open",
+      "won": "Won",
+      "lost": "Lost"
+    },
+    "LOST_DIALOG": {
+      "TITLE": "Why was this deal lost?",
+      "DESCRIPTION": "Moving to {stage} closes the deal. The reason goes into the deal history.",
+      "LABEL": "Reason",
+      "PLACEHOLDER": "Price, no response, chose a competitor…",
+      "CONFIRM": "Mark as lost"
+    },
+    "STAGES": {
+      "TITLE": "Stages",
+      "DESCRIPTION": "Rename, reorder and add stages. Expected hours is how long a deal can sit in a stage before it counts as cold (24 when empty). Stages with deals cannot be deleted.",
+      "NAME": "Name",
+      "EXPECTED_HOURS": "Expected hours",
+      "REQUIRES_HUMAN": "Needs a person",
+      "KIND": {
+        "open": "Open",
+        "won": "Won",
+        "lost": "Lost"
+      },
+      "ADD": "Add stage",
+      "NEW_STAGE": "New stage",
+      "DELETE": "Delete stage",
+      "MOVE_UP": "Move up",
+      "MOVE_DOWN": "Move down",
+      "SAVE": "Save",
+      "DONE": "Done"
+    },
+    "CARD": {
+      "TITLE": "Deal",
+      "NONE": "No deal for this contact yet.",
+      "CREATE": "Create deal",
+      "STAGE": "Stage",
+      "VALUE": "Value",
+      "SAVE_VALUE": "Save",
+      "HISTORY": "History",
+      "OPEN_PIPELINE": "Open pipeline",
+      "CREATED": "Deal created",
+      "MOVED_BY": {
+        "user": "{name} moved it to {stage}",
+        "ai": "The AI moved it to {stage}",
+        "system": "Created in {stage}"
+      }
+    },
+    "API": {
+      "ERROR": "Could not update the pipeline",
+      "MOVED": "Deal moved to {stage}"
+    }
+  }
+}

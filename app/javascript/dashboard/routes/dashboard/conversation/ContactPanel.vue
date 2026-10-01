@@ -24,6 +24,7 @@ import ShopifyOrdersList from 'dashboard/components/widgets/conversation/Shopify
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
+import ConversationDeal from 'dashboard/routes/dashboard/salesPipeline/components/ConversationDeal.vue';
 
 const props = defineProps({
   conversationId: {
@@ -60,6 +61,10 @@ const { isCloudFeatureEnabled } = useAccount();
 
 const isLinearFeatureEnabled = computed(() =>
   isCloudFeatureEnabled(FEATURE_FLAGS.LINEAR)
+);
+
+const isSalesPipelineEnabled = computed(() =>
+  isCloudFeatureEnabled(FEATURE_FLAGS.SALES_PIPELINE)
 );
 
 const linearIntegration = useFunctionGetter(
@@ -297,6 +302,19 @@ onMounted(() => {
               "
             >
               <ShopifyOrdersList :contact-id="contactId" />
+            </AccordionItem>
+          </div>
+          <div v-else-if="element.name === 'sales_deal' && isSalesPipelineEnabled">
+            <AccordionItem
+              :title="$t('SALES_PIPELINE.CARD.TITLE')"
+              :is-open="isContactSidebarItemOpen('is_sales_deal_open')"
+              compact
+              @toggle="value => toggleSidebarUIState('is_sales_deal_open', value)"
+            >
+              <ConversationDeal
+                :contact-id="contactId"
+                :conversation-id="conversationId"
+              />
             </AccordionItem>
           </div>
           <div v-else-if="element.name === 'contact_notes'">
