@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.12.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-09-30 · Instância: https://prs.cortexgen.cloud · Versão: **0.13.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -178,6 +178,13 @@ Fusos a acertar:
 - O `SalesDealListener` abre o negócio na mensagem do cliente numa inbox com bot, com lock no contato.
 - O motivo da perda fica na transição; reabrir limpa o motivo do negócio.
 - Testado com 21 cenários contra um Postgres e um Redis descartáveis. A rajada de 3 mensagens simultâneas abriu um negócio só.
+
+**Vários funis no ar em 01/10 (0.13.0):** commit `ba9bfd55e`, imagem `03d43a8ab356`, rollback em `:v1-pre-b6`, sem migration.
+- `create_with_template!`: funil novo com as etapas-modelo.
+- `make_default!`: desmarca o padrão anterior.
+- Só apaga funil vazio e que não seja o padrão.
+- `move_to!` com etapa de outro funil leva o negócio junto.
+- O automático nasce no padrão.
 
 **Decisões do Paulo:** negócio automático na 1ª mensagem; agentes e admins usam o funil, e só admin edita etapas; etapas no idioma da conta; fases 3a → 3b (Jev move a etapa) → 3c (radar e score) = 1.0.0.
 

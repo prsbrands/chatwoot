@@ -14,6 +14,15 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [0.13.0] — 2026-10-01 · base Chatwoot 4.18.0
+
+**Vários funis por conta**
+- Admin cria funis em **Pipeline → New pipeline**. O funil novo vem com as etapas-modelo no idioma da conta, que dá para renomear ou apagar.
+- Em **Pipeline settings**: renomear o funil, torná-lo padrão e apagar (só funil vazio e que não seja o padrão).
+- Seletor de funil no topo do Kanban. A escolha fica no link.
+- No card **Deal** da conversa, com mais de um funil, dá para levar o negócio para outro funil; ele vai para a 1ª etapa aberta, e a mudança fica no histórico.
+- O negócio automático (1ª mensagem numa inbox com bot) continua nascendo no funil padrão.
+
 ## [0.12.0] — 2026-10-01 · base Chatwoot 4.18.0
 
 **Funil de vendas (bloco 3a)**
