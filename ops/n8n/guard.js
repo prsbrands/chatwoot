@@ -103,10 +103,10 @@ if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + 
 // Jev (TypeSafe): chave e atividades da conta, ligadas no cartao em AI
 // Providers. Sem chave, sem consentimento ou desligado, os nos JevEntrada e
 // JevRevisao nao perguntam nada e o fluxo segue como antes. Atividade sem
-// estado gravado comeca observando, como mostra a tela — menos o idioma, que
-// entra decidindo (o JevController tem a mesma tabela).
-const JEV_ACTIVITIES = ['knowledge', 'model_routing', 'no_reply', 'human_request', 'mood', 'opt_out', 'manipulation', 'reply_review', 'language'];
-const JEV_DEFAULT_STATES = { language: 'deciding' };
+// estado gravado comeca observando, como mostra a tela — menos o idioma e o
+// agendamento, que entram decidindo (o JevController tem a mesma tabela).
+const JEV_ACTIVITIES = ['knowledge', 'model_routing', 'no_reply', 'human_request', 'mood', 'opt_out', 'manipulation', 'reply_review', 'language', 'booking'];
+const JEV_DEFAULT_STATES = { language: 'deciding', booking: 'deciding' };
 const jevConfig = tokenRows[0].jev || {};
 let jev = null;
 if (tokenRows[0].jev_api_key && jevConfig.enabled === true && jevConfig.consent) {

@@ -83,6 +83,8 @@ en:
     sessions:
       cannot_revoke_current: You cannot revoke the current session.
 
+  agenda:
+    ai_booked: 'The AI booked %{type} with %{owner} for %{when}.'
   errors:
     account:
       not_authorized: You are not authorized to access this account

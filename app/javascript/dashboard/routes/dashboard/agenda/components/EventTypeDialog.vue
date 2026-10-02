@@ -8,6 +8,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Switch from 'dashboard/components-next/switch/Switch.vue';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 
 // Criar ou editar um tipo de agendamento.
 const emit = defineEmits(['saved']);
@@ -27,6 +28,19 @@ const DEFAULTS = {
   default_owner_id: NOBODY,
   requires_confirmation: false,
   active: true,
+  ai_bookable: false,
+  remind: false,
+  reminder_hours: 24,
+  reminder_message: '',
+};
+
+// Os marcadores do lembrete são do backend (Agenda::ReminderJob); passados
+// como parâmetros, o vue-i18n os devolve literais em vez de apagá-los.
+const PLACEHOLDERS = {
+  name: '{name}',
+  date: '{date}',
+  time: '{time}',
+  type: '{type}',
 };
 
 const dialogRef = ref(null);
@@ -46,15 +60,25 @@ const open = (eventType = null) => {
     ...(eventType || {}),
     default_owner_id: eventType?.default_owner_id || NOBODY,
     location: eventType?.location || '',
+    remind: Boolean(eventType?.reminder_minutes_before),
+    reminder_hours: eventType?.reminder_minutes_before
+      ? eventType.reminder_minutes_before / 60
+      : 24,
+    reminder_message:
+      eventType?.reminder_message ||
+      t('AGENDA.SETTINGS.TYPE.REMINDER_DEFAULT', PLACEHOLDERS),
   };
   dialogRef.value.open();
 };
 
 const save = async () => {
+  const { remind, reminder_hours: hours, ...fields } = form.value;
   const payload = {
-    ...form.value,
-    name: form.value.name.trim(),
-    default_owner_id: form.value.default_owner_id || null,
+    ...fields,
+    name: fields.name.trim(),
+    default_owner_id: fields.default_owner_id || null,
+    reminder_minutes_before: remind ? Math.round(hours * 60) : null,
+    reminder_message: remind ? fields.reminder_message.trim() : null,
   };
   isSaving.value = true;
   try {
@@ -140,6 +164,37 @@ defineExpose({ open });
         {{ $t('AGENDA.SETTINGS.TYPE.ACTIVE') }}
         <Switch v-model="form.active" />
       </label>
+      <label class="flex items-center justify-between gap-3 text-sm text-n-slate-12">
+        <span class="flex flex-col">
+          {{ $t('AGENDA.SETTINGS.TYPE.AI_BOOKABLE') }}
+          <span class="text-xs text-n-slate-11">
+            {{ $t('AGENDA.SETTINGS.TYPE.AI_BOOKABLE_HELP') }}
+          </span>
+        </span>
+        <Switch v-model="form.ai_bookable" />
+      </label>
+      <label class="flex items-center justify-between gap-3 text-sm text-n-slate-12">
+        <span class="flex flex-col">
+          {{ $t('AGENDA.SETTINGS.TYPE.REMIND') }}
+          <span class="text-xs text-n-slate-11">
+            {{ $t('AGENDA.SETTINGS.TYPE.REMIND_HELP') }}
+          </span>
+        </span>
+        <Switch v-model="form.remind" />
+      </label>
+      <template v-if="form.remind">
+        <Input
+          v-model.number="form.reminder_hours"
+          type="number"
+          :label="$t('AGENDA.SETTINGS.TYPE.REMINDER_HOURS')"
+        />
+        <TextArea
+          v-model="form.reminder_message"
+          :label="$t('AGENDA.SETTINGS.TYPE.REMINDER_MESSAGE')"
+          :message="$t('AGENDA.SETTINGS.TYPE.REMINDER_MESSAGE_HELP', PLACEHOLDERS)"
+          :max-length="1000"
+        />
+      </template>
     </div>
   </Dialog>
 </template>

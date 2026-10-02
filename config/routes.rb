@@ -254,6 +254,8 @@ Rails.application.routes.draw do
             resources :event_types, only: [:index, :create, :update, :destroy]
             resources :availabilities, only: [:index, :update]
             resources :free_slots, only: [:index]
+            get 'bot/slots', to: 'bot#slots'
+            post 'bot/bookings', to: 'bot#book'
           end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do

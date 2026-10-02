@@ -32,6 +32,9 @@ const NO_REPLY_NOUL = 0.85;
 const UPSET_SCORE = 0.75;
 const MIN_CONFIDENCE = 0.5;
 const KNOWLEDGE_KEEP_NOUL = 0.3;
+// Agendar: errar para mais só põe a lista de horários no prompt; errar para
+// menos deixa o cliente sem horário.
+const BOOKING_NOUL = 0.6;
 const MAX_SECTIONS = 80;
 
 const g = $('Guard').first().json;
@@ -213,6 +216,18 @@ if (act.language) {
     },
   };
 }
+// Marcar: vale também a resposta a uma oferta de horário ("pode ser às 10h"),
+// por isso a pergunta olha a conversa recente.
+if (act.booking) {
+  perguntas.booking = {
+    type: 'noul',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer trying to book, schedule or reschedule an appointment, asking which times are available, or choosing or accepting a time the assistant offered?',
+    criteria: {
+      true: 'The customer asks to book, schedule, reschedule or meet, asks for available days or times, says which day or time suits them, or accepts an offered time.',
+      false: 'Anything else, including questions about prices, services or opening hours with no wish to book.',
+    },
+  };
+}
 const temModelos = rota.light_model || rota.strong_model;
 if (act.model_routing && temModelos) {
   perguntas.model_routing = {
@@ -304,6 +319,9 @@ if (a.language && a.language.choice) {
     signal: a.language.choice !== 'other' && a.language.confidence >= MIN_CONFIDENCE, acted: false,
   };
 }
+if (noul('booking') !== null) {
+  decisions.booking = { state: act.booking, value: noul('booking'), signal: noul('booking') >= BOOKING_NOUL, acted: false };
+}
 let modelo = null;
 if (a.model_routing && a.model_routing.choice) {
   const escolha = a.model_routing.choice;
@@ -338,6 +356,7 @@ if (respostaDaBase && respostaDaBase.answers) {
 }
 if (decide('model_routing') && modelo && modelo !== rota.model) decisions.model_routing.acted = true;
 if (decide('language') && decisions.language && decisions.language.signal) decisions.language.acted = true;
+if (decide('booking') && decisions.booking && decisions.booking.signal) decisions.booking.acted = true;
 
 // ---- agir --------------------------------------------------------------------
 
@@ -360,6 +379,7 @@ if (handoff) {
   if (decisions.knowledge) decisions.knowledge.acted = false;
   if (decisions.model_routing) decisions.model_routing.acted = false;
   if (decisions.language) decisions.language.acted = false;
+  if (decisions.booking) decisions.booking.acted = false;
   await gravar(row);
   // Nota com briefing, etiqueta, bloqueio (opt_out) e abrir a conversa ficam
   // no no Passagem, o mesmo dos outros caminhos de handoff.
@@ -371,6 +391,7 @@ if (decisions.no_reply && decisions.no_reply.signal && decide('no_reply')) {
   if (decisions.knowledge) decisions.knowledge.acted = false;
   if (decisions.model_routing) decisions.model_routing.acted = false;
   if (decisions.language) decisions.language.acted = false;
+  if (decisions.booking) decisions.booking.acted = false;
   await gravar(row);
   return [];
 }
@@ -380,4 +401,5 @@ return segue({
   knowledge: base,
   model: decisions.model_routing && decisions.model_routing.acted ? modelo : null,
   language: decisions.language && decisions.language.acted ? decisions.language.value : null,
+  booking: Boolean(decisions.booking && decisions.booking.acted),
 });

@@ -14,6 +14,15 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.8.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **A IA marca na conversa.** Nova atividade do Jev, **"Notice a wish to book"**, que já entra decidindo e pode ser passada para observar ou desligada.
+  - Quando o cliente quer marcar, a IA recebe os horários livres do tipo marcado como **"The AI can book this type"**.
+  - A IA **pergunta primeiro qual dia e período o cliente prefere** e oferece até 3 horários. Quando o cliente aceita, o sistema confere de novo se o horário continua livre e marca o compromisso com o contato, a conversa e o negócio. O compromisso vai para o Google de quem atende, e uma nota fica na conversa.
+  - Se o horário for ocupado no meio do caminho, o cliente recebe as próximas opções no idioma dele.
+- **Lembretes pelo WhatsApp por QR:** cada tipo pode avisar o cliente X horas antes, com o texto que você escrever usando {name}, {date}, {time} e {type}. No WhatsApp oficial, os lembretes ficam para quando houver um template aprovado.
+- A revisão do Jev não segura mais a confirmação de um horário que o próprio sistema marcou.
+
 ## [1.7.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - **Tipos de agendamento** (Agenda → engrenagem): nome, duração, folga antes e depois, antecedência mínima, até quantos dias à frente se marca, quem atende por padrão e se o compromisso nasce "aguardando confirmação". Só admin cria e altera.

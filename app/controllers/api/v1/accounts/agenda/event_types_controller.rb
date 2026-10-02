@@ -31,7 +31,8 @@ class Api::V1::Accounts::Agenda::EventTypesController < Api::V1::Accounts::BaseC
   def event_type_params
     @event_type_params ||= params.permit(:name, :duration_minutes, :buffer_before_minutes, :buffer_after_minutes,
                                          :minimum_notice_minutes, :booking_window_days, :location, :default_owner_id,
-                                         :requires_confirmation, :active).tap do |permitted|
+                                         :requires_confirmation, :active, :ai_bookable, :reminder_minutes_before,
+                                         :reminder_message).tap do |permitted|
       Current.account.users.find(permitted[:default_owner_id]) if permitted[:default_owner_id].present?
     end
   end

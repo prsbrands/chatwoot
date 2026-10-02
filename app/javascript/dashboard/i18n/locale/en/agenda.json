@@ -92,7 +92,16 @@
         "REQUIRES_CONFIRMATION": "Needs confirmation",
         "ACTIVE": "Offered when booking",
         "INACTIVE": "Not offered",
-        "SUMMARY": "{minutes} min · {owner}"
+        "SUMMARY": "{minutes} min · {owner}",
+        "AI_BOOKABLE": "The AI can book this type",
+        "AI_BOOKABLE_HELP": "In the chat, the AI asks which day and time suit the customer and offers free times of this type. Needs someone who attends by default, with working hours.",
+        "REMIND": "Remind the customer",
+        "REMIND_HELP": "A WhatsApp message before the appointment. For now only on numbers connected by QR code.",
+        "REMINDER_HOURS": "How many hours before",
+        "REMINDER_MESSAGE": "Reminder message",
+        "REMINDER_MESSAGE_HELP": "Use {name}, {date}, {time} and {type}.",
+        "REMINDER_DEFAULT": "Hi {name}! A reminder of your {type} on {date} at {time}. If you cannot make it, just reply to this message.",
+        "AI_SUMMARY": "The AI books this type"
       },
       "HOURS": {
         "TITLE": "Working hours",

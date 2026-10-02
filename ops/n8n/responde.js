@@ -23,7 +23,54 @@ const paraWhatsapp = texto => texto
   .replace(/__(.+?)__/g, '_$1_')
   .replace(/~~(.+?)~~/g, '~$1~')
   .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '$1: $2');
-const reply = doOpenwa ? paraWhatsapp(i.reply) : i.reply;
+// Agendamento: a IA fecha a resposta com [[BOOK <horario>]] quando o cliente
+// aceitou um horario (MontaPrompt). A etiqueta nunca chega ao cliente; o
+// Rails confere de novo se o horario esta livre e marca. Ocupado no meio do
+// caminho (409): a resposta vira um pedido de desculpas com as proximas opcoes.
+const ETIQUETA = /\s*\[\[BOOK ([^\]]+)\]\]\s*/;
+const marcado = String(i.reply || '').match(ETIQUETA);
+let texto = String(i.reply || '').replace(new RegExp(ETIQUETA.source, 'g'), '\n').trim();
+
+function agendar(startsAt) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify({ conversation_id: i.conversationId, starts_at: startsAt });
+    const req = https.request('https://prs.cortexgen.cloud/api/v1/accounts/' + i.accountId + '/agenda/bot/bookings', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data), api_access_token: g.chatUserToken },
+    }, res => {
+      let raw = '';
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve({ ok: true });
+        else if (res.statusCode === 409) resolve({ ok: false, conflict: JSON.parse(raw) });
+        else reject(new Error('Responde: agendar HTTP ' + res.statusCode + ' ' + raw.slice(0, 200)));
+      });
+    });
+    req.setTimeout(20000, () => req.destroy(new Error('Responde: agendar timeout')));
+    req.on('error', reject);
+    req.end(data);
+  });
+}
+
+const OCUPADO = {
+  es: ['Ese horario se acaba de ocupar, lo siento. ¿Te sirve alguno de estos?', 'Ese horario se acaba de ocupar, lo siento. Alguien del equipo te escribe para confirmar otro.'],
+  pt: ['Esse horário acabou de ser ocupado, desculpe. Algum destes serve para você?', 'Esse horário acabou de ser ocupado, desculpe. Alguém da equipe vai te escrever para confirmar outro.'],
+  en: ['Sorry, that time was just taken. Would one of these work for you?', 'Sorry, that time was just taken. Someone from the team will write to you to confirm another one.'],
+};
+
+if (marcado) {
+  const resultado = await agendar(marcado[1].trim());
+  if (!resultado.ok) {
+    const idioma = ($('JevEntrada').first().json.jev || {}).language;
+    const frases = OCUPADO[idioma] || OCUPADO.en;
+    const opcoes = (resultado.conflict.alternatives || []).map(slot => '• ' + new Intl.DateTimeFormat(idioma || 'en', {
+      weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: resultado.conflict.time_zone,
+    }).format(new Date(slot)));
+    texto = opcoes.length ? frases[0] + '\n\n' + opcoes.join('\n') : frases[1];
+  }
+}
+
+const reply = doOpenwa ? paraWhatsapp(texto) : texto;
 const atraso = texto => Math.min(Math.max(900 + 22 * texto.length, 1200), 7500);
 const espera = ms => new Promise(resolve => setTimeout(resolve, ms));
 

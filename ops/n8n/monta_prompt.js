@@ -1,3 +1,5 @@
+const https = require('https');
+
 const g = $('Guard').first().json;
 const rota = $('Persona').first().json;
 // O que o Jev decidiu (JevEntrada): secoes da base que importam para esta
@@ -33,6 +35,49 @@ const firstName = String(g.contactName || '').split(' ')[0] || '';
 let composto = rota.composed_prompt;
 if (jev.knowledge === '') composto = rota.system_prompt;
 else if (jev.knowledge) composto = rota.system_prompt + '\n\n---\n\n# BASE DE CONOCIMIENTO\n\n' + jev.knowledge;
+// Agenda: quando o Jev ve o cliente querendo marcar, entram os horarios livres
+// do tipo que a IA oferece (Agenda::AiBooking, no Rails). A IA pergunta a
+// preferencia do cliente antes de oferecer, e fecha com a etiqueta
+// [[BOOK <horario>]] que o Responde tira do texto e usa para marcar.
+function getJson(url, headers) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers }, res => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => (res.statusCode >= 200 && res.statusCode < 300
+        ? resolve(JSON.parse(body))
+        : reject(new Error('MontaPrompt: agenda HTTP ' + res.statusCode + ' ' + body.slice(0, 200)))));
+    });
+    req.setTimeout(10000, () => req.destroy(new Error('MontaPrompt: agenda timeout')));
+    req.on('error', reject);
+  });
+}
+
+let regraDeAgenda = '';
+// A Agenda fora do ar nao pode calar o bot: ele responde e diz que a equipe
+// confirma o horario.
+let agenda = { available: false };
+if (jev.booking) {
+  try {
+    agenda = await getJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/agenda/bot/slots',
+      { api_access_token: g.chatUserToken });
+  } catch (error) {
+    console.error(error.message);
+    regraDeAgenda = '\n\n---\n\n# BOOKING\n\nThe customer wants to book, but the calendar cannot be read right now. Do not offer or confirm any time: say that someone from the team will confirm a time shortly.';
+  }
+  if (agenda.available) {
+    const diaDaSemana = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: agenda.time_zone });
+    const lista = agenda.slots.map(slot => '- ' + slot + ' (' + diaDaSemana.format(new Date(slot)) + ')').join('\n');
+    regraDeAgenda = '\n\n---\n\n# BOOKING\n\n' +
+      'The customer wants to book a "' + agenda.event_type.name + '" (' + agenda.event_type.duration_minutes + ' minutes). ' +
+      'Times are in ' + agenda.time_zone + '.\n' +
+      '1. Unless the customer already said it, first ask which day and which part of the day (morning or afternoon) suit them best. Do not list times before that.\n' +
+      '2. Then offer at most 3 times from the list below that best match their preference, written naturally (weekday, date and hour). Never offer or confirm a time that is not on the list.\n' +
+      '3. Only after the customer clearly accepts one time, confirm it and end your reply with a last line containing exactly [[BOOK <the time exactly as written in the list>]]. The customer never sees that line. Never write it before a clear yes.\n' +
+      (lista ? 'Free times:\n' + lista : 'There are no free times in the next 14 days: say so and offer that someone from the team will get in touch.');
+  }
+}
+
 // O idioma vai por ultimo, depois da base. Prompt e base costumam estar num
 // idioma so (na conta 1, espanhol) e o modelo seguia o bloco maior: visto em
 // 02/10, cliente em ingles, a 1a resposta (so a persona) em ingles e a 2a (com
@@ -43,7 +88,7 @@ const idioma = IDIOMAS[jev.language]
   : 'the language the customer is writing in (their latest messages)';
 const regraDeIdioma = '\n\n---\n\n# LANGUAGE\n\nReply in ' + idioma +
   ', even when these instructions or the knowledge base are written in another language.';
-const systemText = (String(composto || '') + regraDeIdioma)
+const systemText = (String(composto || '') + regraDeAgenda + regraDeIdioma)
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')
   .split('{{contact.call_summary}}').join(g.callSummary || '(vacio)');

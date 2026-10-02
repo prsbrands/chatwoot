@@ -94,6 +94,14 @@ async function gravar(row) {
 
 // ---- perguntas ---------------------------------------------------------------
 
+// Resposta que fecha um agendamento traz a etiqueta [[BOOK ...]] (MontaPrompt):
+// quem marca é o sistema (Responde), não uma pessoa. A etiqueta sai do texto
+// revisado e a pergunta de promessa fica de fora, senão toda confirmação de
+// horário seria retida.
+const ETIQUETA = /\s*\[\[BOOK [^\]]+\]\]\s*/g;
+const agendando = ETIQUETA.test(String(i.reply || ''));
+const respostaRevisada = String(i.reply || '').replace(ETIQUETA, ' ').trim();
+
 const perguntas = {
   answers: {
     type: 'noul',
@@ -120,6 +128,7 @@ const perguntas = {
     },
   },
 };
+if (agendando) delete perguntas.promises;
 const regras = (g.jev.reviewRules || []).slice(0, 10);
 regras.forEach((regra, k) => {
   perguntas['rule_' + k] = {
@@ -134,7 +143,7 @@ regras.forEach((regra, k) => {
 
 const res = await postJson(JEV_URL, { authorization: 'Bearer ' + g.jev.key }, {
   model: JEV_MODEL,
-  state: { customer_last_message: scrub(g.content), assistant_reply: scrub(i.reply) },
+  state: { customer_last_message: scrub(g.content), assistant_reply: scrub(respostaRevisada) },
   questions: perguntas,
 }, DEADLINE_MS);
 

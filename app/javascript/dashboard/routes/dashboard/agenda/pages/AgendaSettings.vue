@@ -122,6 +122,9 @@ onMounted(() => {
                 <template v-if="eventType.requires_confirmation">
                   · {{ $t('AGENDA.SETTINGS.TYPE.REQUIRES_CONFIRMATION') }}
                 </template>
+                <template v-if="eventType.ai_bookable">
+                  · {{ $t('AGENDA.SETTINGS.TYPE.AI_SUMMARY') }}
+                </template>
                 <template v-if="!eventType.active">
                   · {{ $t('AGENDA.SETTINGS.TYPE.INACTIVE') }}
                 </template>

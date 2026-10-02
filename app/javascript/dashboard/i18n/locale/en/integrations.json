@@ -256,7 +256,8 @@
           "LANGUAGE": "Reply in the customer's language",
           "REVIEW": "Check before sending",
           "FOLLOWUP": "Follow up when the customer goes quiet",
-          "SALES": "Sales pipeline"
+          "SALES": "Sales pipeline",
+          "BOOKING": "Book appointments"
         },
         "WEEK": "Last 7 days",
         "METRIC": {
@@ -283,7 +284,8 @@
           "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies.",
           "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups.",
           "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages.",
-          "language": "Last 30 days: Jev told the language in {signals} of {runs} messages."
+          "language": "Last 30 days: Jev told the language in {signals} of {runs} messages.",
+          "booking": "Last 30 days: Jev saw a wish to book in {signals} of {runs} messages."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -340,6 +342,11 @@
             "TITLE": "Tell the customer's language",
             "WHAT": "Jev reads which language the customer is writing in (Spanish, Portuguese or English). A short \"ok\" or \"👍\" keeps the language of their earlier messages. Without Jev, the AI is still told to reply in the customer's language, but has to work it out on its own.",
             "DECIDES": "The AI is told exactly which language to reply in, even when the persona and the knowledge base are written in another one. Turned off or observing, the AI works the language out on its own."
+          },
+          "booking": {
+            "TITLE": "Notice a wish to book",
+            "WHAT": "Jev notices when the customer wants to book or reschedule, asks which times are free, or picks a time the bot offered.",
+            "DECIDES": "The bot gets the free times of the appointment type marked \"The AI can book this type\" (Agenda settings), asks which day and time suit the customer, offers up to 3 times and books the one the customer accepts — on the person's Google Calendar too."
           }
         },
         "TEAM": {
