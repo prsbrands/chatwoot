@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.4.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.6.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -24,8 +24,10 @@
 | 1.2.0 | Tela **Connections**: canais, WhatsApp QR × oficial, saúde do bot por inbox (`botlayer/health`) e ponto de alerta no menu | Sim |
 | 1.3.0 | **Risk radar** (`Sales::Radar`, `GET /sales/radar`): crítico, esfriando, em voo (follow-up previsto), dono e Take over | Sim |
 | 1.4.0 | **Menu por jornada** (seções CRM / AI agent / Channels / Analysis / Account, ordem em `MENU_LAYOUT` no `Sidebar.vue`) e hubs **View all in CRM / AI** (`routes/dashboard/hubs/catalog.js`) | Sim |
+| 1.5.0 | **Tarefas** (`Sales::Task`, `/sales/tasks`), próximos passos no card do negócio e "sem próximo passo" no Radar | Sim |
+| 1.6.0 | **Agenda** em todas as contas (`Agenda::Appointment`) e **Google Calendar por pessoa** (`Agenda::GoogleConnection`, OAuth em Super Admin → Google Calendar, callback `/google_calendar/callback`) | Sim |
 
-Imagem `:v1` = `71e649d4dce3` (commit `196366e12`, clone `src-b9`), rollback em `:v1-pre-b14`. Antes: 1.3.0 = `f952026f56d7` (`:v1-pre-b14`), 1.2.0 = `965314341baa` (`:v1-pre-b13`), 1.1.0 = `13a843a869bf` (`:v1-pre-b12`). Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
+Imagem `:v1` = `39bc8017aa8d` (commit `2727e7f10`, clone `src-b11`), rollback em `:v1-pre-b16`. Antes: 1.5.0 = `44d2d3dca3c4` (`:v1-pre-b16`), 1.4.0 = `71e649d4dce3` (`:v1-pre-b15`), 1.3.0 = `f952026f56d7` (`:v1-pre-b14`), 1.2.0 = `965314341baa` (`:v1-pre-b13`), 1.1.0 = `13a843a869bf` (`:v1-pre-b12`). Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
 
 **02/10 — WhatsApp oficial (Cloud API) testado:** inbox **34** (`+15055573540`), conta 1, bot e persona `nathan-whatsapp` respondendo. Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase e o Guard recusa ("sem secret de bot gravado"): ligue sempre por Bot Personas → Channels. As rotas do Instagram (8) e Messenger (9) estavam sem secret desde agosto, ou seja, mudas; foram salvas de novo em 02/10.
 - **Builds sem push:** `git bundle` do Mac → `scp` → `git pull ../bN.bundle` num clone novo do GitHub. Não use `pgrep -f "docker build"` para esperar o build: casa com o próprio comando de espera.
@@ -53,7 +55,9 @@ Imagem `:v1` = `71e649d4dce3` (commit `196366e12`, clone `src-b9`), rollback em 
 
 ### Fila, na ordem que eu seguiria
 
-**02/10 — comparação com o CRM (DeskComm, `/Volumes/KINGSTON/projetos_ia/crm`):** o plano combinado com o Paulo é Conexões ✅ → Radar ✅ → menu por jornada com hubs ✅ → **um ou dois módulos que faltam** (Tarefas e Agenda pesam mais). O sistema ainda é de uso exclusivo do Paulo: navegação e telas podem mudar sem esboço prévio.
+**02/10 — comparação com o CRM (DeskComm, `/Volumes/KINGSTON/projetos_ia/crm`):** o plano combinado com o Paulo é Conexões ✅ → Radar ✅ → menu por jornada com hubs ✅ → Tarefas ✅ → Agenda + Google ✅ → **Agenda, 2ª parte**: tipos de agendamento, jornada de cada pessoa e horários livres; depois a IA marcando pelo WhatsApp e os lembretes.
+- **Google Calendar:** o app OAuth é o do projeto `cortexgencrm` (o mesmo do CRM), ainda **"Em teste"**: a conexão vence em 7 dias e só testadores conectam. Publicar em produção no Google Cloud. Desconectar **não revoga** no Google de propósito (revogaria a concessão do CRM também). A conta 1 está conectada como prsglobalbusiness@gmail.com; o 1º evento (`cgchat1`) foi ao Google em 02/10.
+- Commit `8226ba2cd` (linha da hora atual na Agenda) ainda não foi ao ar. O sistema ainda é de uso exclusivo do Paulo: navegação e telas podem mudar sem esboço prévio.
 - **SMS da inbox 15** aparece em Connections como "persona sem bot": decisão do Paulo se a IA responde SMS.
 - O Radar da conta 1 está vazio (2 negócios abertos, em dia); o teste com conteúdo está em `ops/smoke/sales_radar.rb` (14 cenários, roda no `run.sh`).
 
