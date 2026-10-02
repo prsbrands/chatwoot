@@ -1,0 +1,43 @@
+{
+  "CONNECTIONS": {
+    "HEADER": "Connections",
+    "DESCRIPTION": "Your channels in one place: WhatsApp by QR code or through Meta's official API, Instagram, Messenger and your website — whether each one is connected, and who answers on it.",
+    "CONNECT_QR": "WhatsApp by QR code",
+    "CONNECT_OFFICIAL": "WhatsApp official API",
+    "ATTENTION": "{count} channel(s) need attention: customers there may be getting no answer.",
+    "EMPTY": "No channels yet. Connect a WhatsApp number to start.",
+    "FIX": "Fix",
+    "SECTION": {
+      "WHATSAPP": "WhatsApp",
+      "OTHERS": "Other channels"
+    },
+    "KIND": {
+      "WHATSAPP_QR": "WhatsApp · QR code",
+      "WHATSAPP_OFFICIAL": "WhatsApp · Official API (Meta)",
+      "WHATSAPP_360": "WhatsApp · 360dialog",
+      "INSTAGRAM": "Instagram",
+      "MESSENGER": "Messenger",
+      "WEBSITE": "Website chat",
+      "EMAIL": "Email",
+      "TELEGRAM": "Telegram",
+      "LINE": "LINE",
+      "SMS": "SMS",
+      "TWILIO": "Twilio",
+      "TIKTOK": "TikTok",
+      "API": "API",
+      "OTHER": "Other"
+    },
+    "STATUS": {
+      "CONNECTED": "Connected",
+      "DISCONNECTED": "Disconnected"
+    },
+    "BOT": {
+      "OK": "AI answers as {persona}",
+      "NONE": "No AI — your team answers",
+      "VOICE": "Voice calls, answered by the voice agent",
+      "BOT_WITHOUT_ROUTE": "The AI bot is on but has no persona, so it does not answer",
+      "STALE_CREDENTIALS": "The AI bot's saved credentials are out of date, so it does not answer",
+      "ROUTE_WITHOUT_BOT": "A persona is set, but the AI bot is not on this channel, so it does not answer"
+    }
+  }
+}

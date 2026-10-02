@@ -11,6 +11,7 @@ import cannedMgmt from './cannedMgmt.json';
 import chatlist from './chatlist.json';
 import companies from './companies.json';
 import salesPipeline from './salesPipeline.json';
+import connections from './connections.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -60,6 +61,7 @@ export default {
   ...chatlist,
   ...companies,
   ...salesPipeline,
+  ...connections,
   ...components,
   ...contact,
   ...contactFilters,

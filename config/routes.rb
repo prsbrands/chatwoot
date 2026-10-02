@@ -459,6 +459,7 @@ Rails.application.routes.draw do
               resources :personas, only: [:index, :create, :update, :destroy]
               resources :knowledge, only: [:index, :create, :update, :destroy]
               resources :routes, only: [:index, :create, :destroy]
+              resource :health, only: [:show], controller: 'health'
               resources :providers, only: [:index, :create, :update, :destroy] do
                 member do
                   post :sync_models

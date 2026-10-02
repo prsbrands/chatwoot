@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.2.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- Nova tela **Conexões** (Connections), no menu lateral, só para administradores. Ela reúne todos os canais da conta, com o WhatsApp separado entre **QR** e **API oficial (Meta)**, e mostra se cada canal está conectado e quem responde nele: a persona da IA ou a equipe.
+- Os botões "WhatsApp por QR" e "API oficial" levam direto para conectar um número.
+- **Canal mudo** fica em vermelho, com o botão **Corrigir**, e acende um ponto no item do menu. Isso acontece quando o WhatsApp caiu, ou quando o bot está ligado sem persona (ou com credencial velha), ou com persona mas sem o bot na caixa. Foi assim que o Instagram e o Messenger ficaram sem resposta de agosto a 02/10 sem ninguém perceber.
+- A tela de Bot Personas abre direto na aba Channels quando chamada pelo "Corrigir".
+
 ## [1.1.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - O bot responde **no idioma do cliente** durante toda a conversa, mesmo quando a persona e a base de conhecimento estão escritas em outro idioma. Antes, a resposta que usava a base voltava para o espanhol.

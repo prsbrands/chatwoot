@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -14,11 +14,16 @@ import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
 
 const { t } = useI18n();
 const store = useStore();
+const currentRoute = useRoute();
 const router = useRouter();
 const getters = useStoreGetters();
 
 const TABS = ['personas', 'knowledge', 'channels'];
-const activeTab = ref('personas');
+// A tela Conexões abre direto em Channels (?tab=channels) para corrigir um
+// canal com o bot mudo.
+const activeTab = ref(
+  TABS.includes(currentRoute.query.tab) ? currentRoute.query.tab : 'personas'
+);
 
 const personas = ref([]);
 const docs = ref([]);
@@ -182,6 +187,7 @@ const saveRoute = async row => {
     useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.SAVED'));
     delete draftRoutes.value[row.inbox.id];
     fetchAll();
+    store.dispatch('connections/fetchHealth');
   } catch (error) {
     alertError(error);
   }
@@ -193,6 +199,7 @@ const removeRoute = async row => {
     useAlert(t('INTEGRATION_SETTINGS.BOTLAYER.API.DELETED'));
     delete draftRoutes.value[row.inbox.id];
     fetchAll();
+    store.dispatch('connections/fetchHealth');
   } catch (error) {
     alertError(error);
   }

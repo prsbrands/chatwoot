@@ -2,6 +2,7 @@
 import { h, ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -101,6 +102,22 @@ const hasFilteredUnreadCounts = computed(() => {
     )
   );
 });
+
+// Ponto de alerta em Conexões: canal caído ou bot mudo. A saúde do bot só
+// existe com as personas ligadas na conta, e só o admin vê a tela.
+const { isAdmin } = useAdmin();
+const hasBotLayer = computed(() =>
+  isFeatureEnabledonAccount.value(accountId.value, FEATURE_FLAGS.BOT_PERSONAS)
+);
+watch(
+  [accountId, isAdmin, hasBotLayer],
+  ([currentAccountId, admin, botLayer]) => {
+    if (currentAccountId && admin && botLayer) {
+      store.dispatch('connections/fetchHealth');
+    }
+  },
+  { immediate: true }
+);
 
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
@@ -734,6 +751,16 @@ const menuItems = computed(() => {
             ]
           : []),
       ],
+    },
+    {
+      name: 'Connections',
+      label: t('SIDEBAR.CONNECTIONS'),
+      icon: 'i-lucide-plug',
+      to: accountScopedRoute('connections_index'),
+      activeOn: ['connections_index'],
+      getterKeys: {
+        badge: 'connections/hasProblems',
+      },
     },
     {
       name: 'Campaigns',

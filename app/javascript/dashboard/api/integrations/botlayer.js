@@ -78,6 +78,10 @@ class BotlayerAPI extends ApiClient {
     return axios.get(`${this.url}/routes`);
   }
 
+  health() {
+    return axios.get(`${this.url}/health`);
+  }
+
   upsertRoute(data) {
     return axios.post(`${this.url}/routes`, data);
   }
