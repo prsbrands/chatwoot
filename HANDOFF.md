@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.1.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.3.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -21,8 +21,10 @@
 | 1.0.1 | "Failed to send" falso no WhatsApp (timeout de 30 s no canal API) | Sim |
 | 1.0.2 | Revisão de código: rubocop e eslint zerados; seletor de etapa do card Deal | Sim |
 | 1.1.0 | Bot responde no idioma do cliente (regra no MontaPrompt + atividade `language` do Jev, que entra **decidindo**); negrito do OpenWA no formato do WhatsApp | Sim |
+| 1.2.0 | Tela **Connections**: canais, WhatsApp QR × oficial, saúde do bot por inbox (`botlayer/health`) e ponto de alerta no menu | Sim |
+| 1.3.0 | **Risk radar** (`Sales::Radar`, `GET /sales/radar`): crítico, esfriando, em voo (follow-up previsto), dono e Take over | Sim |
 
-Imagem `:v1` = `13a843a869bf` (commit `afe2ac67b`, clone `src-b6`), rollback em `:v1-pre-b11`. Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
+Imagem `:v1` = `f952026f56d7` (commit `70ef5c204`, clone `src-b8`), rollback em `:v1-pre-b13`. Antes: 1.2.0 = `965314341baa` (`:v1-pre-b13`), 1.1.0 = `13a843a869bf` (`:v1-pre-b12`). Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
 
 **02/10 — WhatsApp oficial (Cloud API) testado:** inbox **34** (`+15055573540`), conta 1, bot e persona `nathan-whatsapp` respondendo. Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase e o Guard recusa ("sem secret de bot gravado"): ligue sempre por Bot Personas → Channels. As rotas do Instagram (8) e Messenger (9) estavam sem secret desde agosto, ou seja, mudas; foram salvas de novo em 02/10.
 - **Builds sem push:** `git bundle` do Mac → `scp` → `git pull ../bN.bundle` num clone novo do GitHub. Não use `pgrep -f "docker build"` para esperar o build: casa com o próprio comando de espera.
@@ -49,6 +51,11 @@ Imagem `:v1` = `13a843a869bf` (commit `afe2ac67b`, clone `src-b6`), rollback em 
 - **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão (Settings → Integrations → WhatsApp Sessions). Excluir e criar outra duplica o número. O WhatsApp vivo da conta 1 é a **inbox 33**, que é nova e tem teto de 20 follow-ups por dia até 04/10.
 
 ### Fila, na ordem que eu seguiria
+
+**02/10 — comparação com o CRM (DeskComm, `/Volumes/KINGSTON/projetos_ia/crm`):** o plano combinado com o Paulo é Conexões ✅ → Radar ✅ → **menu por jornada com hubs "Ver tudo em…"** (o `lib/navigation/catalogo.ts` do CRM é o modelo; tirar personas, Jev e conhecimento de Integrações para um grupo "Agente de IA") → depois um ou dois módulos que faltam (Tarefas e Agenda pesam mais). O ponto de alerta do menu usa a cor da marca (verde); para Connections deve ser vermelho.
+- **SMS da inbox 15** aparece em Connections como "persona sem bot": decisão do Paulo se a IA responde SMS.
+- O Radar da conta 1 está vazio (2 negócios abertos, em dia); o teste com conteúdo está em `ops/smoke/sales_radar.rb` (14 cenários, roda no `run.sh`).
+
 
 1. **Conferir em uso real o que só foi testado em banco descartável.** Peça ao Paulo uma conversa nova pelo WhatsApp da inbox 33 e confira:
    - o negócio nasce em "Nuevo contacto";
