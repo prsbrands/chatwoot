@@ -694,3 +694,17 @@
   locked: false
   type: secret
 ## ------ End of Configs added for the Voice Agent ------ ##
+
+## ------ Configs added for the Agenda (Google Calendar) ------ ##
+# Um app OAuth por instalação; cada pessoa conecta a própria conta Google na
+# Agenda. Redirect URI no Google Cloud: <FRONTEND_URL>/google_calendar/callback
+- name: GOOGLE_CALENDAR_CLIENT_ID
+  display_title: 'Google Calendar client ID'
+  description: 'OAuth client ID from Google Cloud. Add <your URL>/google_calendar/callback to its authorized redirect URIs.'
+  locked: false
+- name: GOOGLE_CALENDAR_CLIENT_SECRET
+  display_title: 'Google Calendar client secret'
+  description: 'OAuth client secret of the same Google Cloud client'
+  locked: false
+  type: secret
+## ------ End of Configs added for the Agenda (Google Calendar) ------ ##

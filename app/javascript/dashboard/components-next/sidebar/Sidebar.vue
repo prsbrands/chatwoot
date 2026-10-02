@@ -842,6 +842,13 @@ const baseMenuItems = computed(() => {
       ],
     },
     {
+      name: 'Agenda',
+      label: t('SIDEBAR.AGENDA'),
+      icon: 'i-lucide-calendar-days',
+      to: accountScopedRoute('agenda_index'),
+      activeOn: ['agenda_index'],
+    },
+    {
       name: 'Tasks',
       label: t('SIDEBAR.TASKS'),
       icon: 'i-lucide-list-checks',
@@ -1060,6 +1067,7 @@ const MENU_LAYOUT = [
   ['Inbox'],
   ['Conversation'],
   ['Radar'],
+  ['Agenda'],
   ['Calls'],
   ['Pipeline', 'CRM'],
   ['Contacts', 'CRM'],

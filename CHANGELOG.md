@@ -14,6 +14,18 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.6.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- Nova **Agenda**, no topo do menu e em **todas as contas**: compromissos com hora marcada, em grade de dia ou de semana, com "minha agenda", "equipe inteira" ou a agenda de uma pessoa. Clicar num horário vazio marca ali.
+- Cada compromisso tem título, quando, duração, quem atende, quem é atendido (busca de contato), onde e notas, e pode ser confirmado, realizado, "não compareceu" ou cancelado.
+- **Google Calendar por pessoa**: cada um conecta a própria conta Google na Agenda, troca de conta ou desconecta.
+  - Os compromissos vão para a agenda principal do responsável no Google, e saem de lá quando são apagados ou mudam de responsável.
+  - O que está ocupado no Google aparece em cinza na grade.
+  - Se o Google parar de aceitar a conexão, a Agenda pede para conectar de novo.
+  - O app OAuth fica em Super Admin → Settings → Google Calendar.
+- No **card do negócio**, o botão "+ Appointment" marca com o contato e o negócio já preenchidos, e os próximos compromissos aparecem logo abaixo. No Radar, um compromisso marcado também conta como próximo passo.
+- Tarefas: só a data atrasada fica vermelha, o link do negócio ficou do tamanho certo, e as listas perderam o marcador "•".
+
 ## [1.5.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - **Tarefas** (Tasks, no menu em CRM): o que ficou combinado, com prazo e responsável, ligado a um negócio ou a um contato, ou avulso.

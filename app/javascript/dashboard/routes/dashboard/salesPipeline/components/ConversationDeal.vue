@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import SalesPipelineAPI from 'dashboard/api/salesPipeline';
+import AgendaAPI from 'dashboard/api/agenda';
+import AppointmentDialog from 'dashboard/routes/dashboard/agenda/components/AppointmentDialog.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
@@ -29,6 +31,8 @@ const isLoading = ref(false);
 const lostDialogRef = ref(null);
 const taskDialogRef = ref(null);
 const tasks = ref([]);
+const appointmentDialogRef = ref(null);
+const appointments = ref([]);
 let pendingStage = null;
 
 const allStages = computed(() =>
@@ -60,10 +64,27 @@ const loadTasks = async () => {
   tasks.value = data.payload;
 };
 
+// Os próximos compromissos do negócio (a Agenda devolve só os futuros).
+const loadAppointments = async () => {
+  const { data } = await AgendaAPI.appointments({ deal_id: deal.value.id });
+  appointments.value = data.payload.filter(item => item.status !== 'cancelled');
+};
+
+const appointmentLabel = appointment =>
+  `${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(appointment.starts_at * 1000))} · ${appointment.title}`;
+
+const newAppointment = () =>
+  appointmentDialogRef.value.open({
+    dealId: deal.value.id,
+    contact: deal.value.contact,
+    conversationId: props.conversationId,
+    title: deal.value.title,
+  });
+
 const show = async id => {
   const { data } = await SalesPipelineAPI.deal(id);
   deal.value = data;
-  await loadTasks();
+  await Promise.all([loadTasks(), loadAppointments()]);
   value.value =
     data.value_cents === null ? '' : String(Math.round(data.value_cents / 100));
 };
@@ -289,16 +310,39 @@ watch(() => props.contactId, load, { immediate: true });
           <span class="text-label-small text-n-slate-11">
             {{ $t('SALES_PIPELINE.TASKS.NEXT_STEPS') }}
           </span>
-          <Button
-            xs
-            ghost
-            slate
-            icon="i-lucide-plus"
-            :label="$t('SALES_PIPELINE.TASKS.ADD')"
-            @click="taskDialogRef.open({ dealId: deal.id })"
-          />
+          <div class="flex gap-1">
+            <Button
+              xs
+              ghost
+              slate
+              icon="i-lucide-plus"
+              :label="$t('SALES_PIPELINE.TASKS.ADD')"
+              @click="taskDialogRef.open({ dealId: deal.id })"
+            />
+            <Button
+              xs
+              ghost
+              slate
+              icon="i-lucide-calendar-plus"
+              :label="$t('AGENDA.CARD.ADD')"
+              @click="newAppointment"
+            />
+          </div>
         </div>
-        <span v-if="!tasks.length" class="text-label-small text-n-amber-11">
+        <button
+          v-for="appointment in appointments"
+          :key="`appointment-${appointment.id}`"
+          type="button"
+          class="flex items-center gap-2 text-start text-label-small text-n-blue-11 hover:underline"
+          @click="appointmentDialogRef.open({ appointment })"
+        >
+          <span class="i-lucide-calendar-days size-3 shrink-0" />
+          {{ appointmentLabel(appointment) }}
+        </button>
+        <span
+          v-if="!tasks.length && !appointments.length"
+          class="text-label-small text-n-amber-11"
+        >
           {{ $t('SALES_PIPELINE.TASKS.NO_NEXT_STEP') }}
         </span>
         <TaskRow
@@ -335,6 +379,7 @@ watch(() => props.contactId, load, { immediate: true });
       />
     </template>
     <TaskDialog ref="taskDialogRef" @saved="loadTasks" />
+    <AppointmentDialog ref="appointmentDialogRef" @saved="loadAppointments" />
     <LostReasonDialog
       ref="lostDialogRef"
       @confirm="

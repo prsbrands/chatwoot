@@ -52,7 +52,8 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
   CORTEXGEN_CONFIGS = {
     'openwa' => %w[OPENWA_API_URL OPENWA_API_KEY OPENWA_BOT_PERSONA_SLUG],
     'botlayer' => %w[SUPABASE_REST_URL SUPABASE_SERVICE_ROLE_KEY],
-    'voice' => %w[VOICE_STREAM_URL VOICE_SERVICE_TOKEN]
+    'voice' => %w[VOICE_STREAM_URL VOICE_SERVICE_TOKEN],
+    'google_calendar' => %w[GOOGLE_CALENDAR_CLIENT_ID GOOGLE_CALENDAR_CLIENT_SECRET]
   }.freeze
 
   def set_config

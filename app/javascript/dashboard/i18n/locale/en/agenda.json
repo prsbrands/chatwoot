@@ -1,0 +1,65 @@
+{
+  "AGENDA": {
+    "HEADER": "Agenda",
+    "TODAY": "Today",
+    "NEW": "New appointment",
+    "BUSY": "Busy",
+    "ALL_DAY_BUSY": "Busy all day",
+    "ERROR": "Could not save the appointment. Try again.",
+    "VIEW": { "day": "Day", "week": "Week" },
+    "OWNER": { "me": "My agenda", "all": "Whole team" },
+    "STATUS": {
+      "pending": "Waiting for confirmation",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "completed": "Done",
+      "no_show": "Did not show up"
+    },
+    "ACTION": {
+      "confirmed": "Confirm",
+      "completed": "Mark as done",
+      "no_show": "Did not show up",
+      "cancelled": "Cancel"
+    },
+    "DIALOG": {
+      "NEW": "New appointment",
+      "EDIT": "Appointment",
+      "SAVE": "Save",
+      "DELETE": "Delete",
+      "TITLE": "What",
+      "TITLE_PLACEHOLDER": "Demo call, visit, consultation…",
+      "STARTS": "When",
+      "DURATION": "How long",
+      "MINUTES": "{minutes} min",
+      "OWNER": "Who attends",
+      "CONTACT": "Who is being attended",
+      "CONTACT_PLACEHOLDER": "Search a contact by name, phone or email",
+      "REMOVE_CONTACT": "Remove the contact",
+      "LOCATION": "Where",
+      "LOCATION_PLACEHOLDER": "Address, video call link or phone",
+      "NOTES": "Notes"
+    },
+    "GOOGLE": {
+      "TITLE": "Google Calendar",
+      "NOT_CONNECTED": "Connect your Google Calendar: your appointments go there, and what is busy there shows here.",
+      "CONNECTED": "Connected as {email}. Your appointments go to its main calendar.",
+      "RECONNECT": "Google stopped accepting the connection with {email}. Connect again to keep syncing.",
+      "CONNECT": "Connect Google",
+      "RECONNECT_BUTTON": "Connect again",
+      "SWITCH": "Use another account",
+      "DISCONNECT": "Disconnect",
+      "ERROR": "Could not start the Google connection.",
+      "READ_ERROR": "Could not read {count} Google Calendar(s) right now; their busy times are missing.",
+      "RESULT": {
+        "connected": "Google Calendar connected.",
+        "denied": "The Google connection was cancelled.",
+        "missing_scope": "Google did not grant access to the calendar. Connect again and allow every permission.",
+        "failed": "Could not connect Google Calendar. Try again."
+      }
+    },
+    "CARD": {
+      "ADD": "Appointment",
+      "UPCOMING": "Upcoming appointments"
+    }
+  }
+}

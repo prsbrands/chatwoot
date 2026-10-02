@@ -130,3 +130,9 @@ voice:
   enabled: true
   icon: 'icon-phone-line'
   config_key: 'voice'
+google_calendar:
+  name: 'Google Calendar'
+  description: 'OAuth client the Agenda uses so each person can connect their own Google Calendar. Redirect URI: <your URL>/google_calendar/callback'
+  enabled: true
+  icon: 'icon-google'
+  config_key: 'google_calendar'

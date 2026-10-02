@@ -248,6 +248,10 @@ Rails.application.routes.draw do
             end
           end
           # CortexGen: funil de vendas (flag sales_pipeline)
+          namespace :agenda do
+            resources :appointments, only: [:index, :create, :update, :destroy]
+            resource :google_connection, only: [:show, :create, :destroy]
+          end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do
               resources :stages, only: [:create, :update, :destroy]
@@ -799,6 +803,7 @@ Rails.application.routes.draw do
 
   get 'microsoft/callback', to: 'microsoft/callbacks#show'
   get 'google/callback', to: 'google/callbacks#show'
+  get 'google_calendar/callback', to: 'google_calendar/callbacks#show'
   get 'instagram/callback', to: 'instagram/callbacks#show'
   get 'tiktok/callback', to: 'tiktok/callbacks#show'
   get 'notion/callback', to: 'notion/callbacks#show'

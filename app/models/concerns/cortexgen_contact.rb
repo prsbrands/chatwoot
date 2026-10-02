@@ -7,5 +7,6 @@ module CortexgenContact
   included do
     has_many :sales_deals, class_name: 'Sales::Deal', dependent: :destroy_async
     has_many :sales_tasks, class_name: 'Sales::Task', dependent: :delete_all
+    has_many :agenda_appointments, class_name: 'Agenda::Appointment', dependent: :nullify
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_02_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_02_000002) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -112,6 +112,47 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_02_000001) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agenda_appointments", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "title", null: false
+    t.text "notes"
+    t.string "location"
+    t.datetime "starts_at", null: false
+    t.datetime "ends_at", null: false
+    t.integer "status", default: 1, null: false
+    t.bigint "owner_id"
+    t.bigint "contact_id"
+    t.bigint "deal_id"
+    t.bigint "conversation_id"
+    t.bigint "created_by_id"
+    t.string "cancellation_reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "google_event_id"
+    t.bigint "google_connection_id"
+    t.datetime "google_synced_at"
+    t.string "google_sync_error"
+    t.index ["account_id", "starts_at"], name: "index_agenda_appointments_on_account_id_and_starts_at"
+    t.index ["contact_id"], name: "index_agenda_appointments_on_contact_id"
+    t.index ["deal_id"], name: "index_agenda_appointments_on_deal_id"
+    t.index ["owner_id"], name: "index_agenda_appointments_on_owner_id"
+  end
+
+  create_table "agenda_google_connections", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "email", null: false
+    t.text "access_token"
+    t.text "refresh_token"
+    t.datetime "token_expires_at"
+    t.integer "status", default: 0, null: false
+    t.string "last_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id"], name: "index_agenda_google_connections_on_account_id_and_user_id", unique: true
+    t.index ["user_id"], name: "index_agenda_google_connections_on_user_id"
   end
 
   create_table "agent_bot_inboxes", force: :cascade do |t|

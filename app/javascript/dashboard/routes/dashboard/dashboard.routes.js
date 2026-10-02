@@ -7,6 +7,7 @@ import { routes as companyRoutes } from './companies/routes';
 import { routes as salesPipelineRoutes } from './salesPipeline/routes';
 import { routes as connectionsRoutes } from './connections/routes';
 import { routes as hubRoutes } from './hubs/routes';
+import { routes as agendaRoutes } from './agenda/routes';
 import { routes as inboxRoutes } from './inbox/routes';
 import { frontendURL } from '../../helper/URLHelper';
 import helpcenterRoutes from './helpcenter/helpcenter.routes';
@@ -34,6 +35,7 @@ export default {
         ...salesPipelineRoutes,
         ...connectionsRoutes,
         ...hubRoutes,
+        ...agendaRoutes,
         ...searchRoutes,
         ...helpcenterRoutes.routes,
         ...campaignsRoutes.routes,

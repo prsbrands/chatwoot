@@ -24,15 +24,13 @@ class Sales::Radar
                    .sort_by { |row| [BUCKETS.index(row[:bucket]), row[:last_activity_at] || 0] }
   end
 
-  # Negócio aberto sem tarefa pendente, nem dele nem do contato (tarefa só do
-  # contato também é um próximo passo). É o único número do Radar cujo alvo é
-  # zero; os mais antigos na etapa primeiro. O `not nil` importa: um NULL na
-  # subconsulta do NOT IN zera a lista inteira (tarefa avulsa não tem contato).
+  # Negócio aberto sem próximo passo: nenhuma tarefa pendente e nenhum
+  # compromisso por vir, nem no negócio nem no contato. É o único número do
+  # Radar cujo alvo é zero; os mais antigos na etapa primeiro.
   def without_next_step
-    pending = @account.sales_tasks.pending
     @account.sales_deals.open
-            .where.not(id: pending.where.not(deal_id: nil).select(:deal_id))
-            .where.not(contact_id: pending.where(deal_id: nil).where.not(contact_id: nil).select(:contact_id))
+            .where("sales_deals.id NOT IN #{next_step_ids(:deal_id)}")
+            .where("sales_deals.contact_id NOT IN #{next_step_ids(:contact_id)}")
             .preload(:contact, :stage, :pipeline, :conversation)
             .order(stage_changed_at: :asc)
             .limit(NO_NEXT_STEP_CAP)
@@ -58,6 +56,16 @@ class Sales::Radar
       followup_at: followup_at&.to_i,
       owner: owner(deal)
     }
+  end
+
+  # Subconsulta gerada pelo próprio ActiveRecord (sem entrada do usuário). O
+  # `not nil` importa: um NULL no NOT IN zera a lista inteira (tarefa avulsa
+  # não tem contato nem negócio).
+  def next_step_ids(column)
+    tasks = @account.sales_tasks.pending.where.not(column => nil)
+    appointments = @account.agenda_appointments.where(status: %i[pending confirmed]).where(starts_at: Time.current..)
+                           .where.not(column => nil)
+    "(#{tasks.select(column).to_sql} UNION #{appointments.select(column).to_sql})"
   end
 
   def owner(deal)

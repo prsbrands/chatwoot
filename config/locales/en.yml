@@ -149,6 +149,8 @@ en:
     categories:
       locale:
         unique: should be unique in the category and portal
+    agenda:
+      google_not_configured: 'Google Calendar is not set up on this installation yet. Add the OAuth client in Super Admin → Settings → Google Calendar.'
     botlayer:
       not_configured: 'Bot layer is not configured. Set the Supabase REST URL and service role key in Super Admin → Settings → Bot Layer.'
       no_models: 'The provider returned no models.'
