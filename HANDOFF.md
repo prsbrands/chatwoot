@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-01 · Instância: https://prs.cortexgen.cloud · Versão: **1.0.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.1.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -20,8 +20,12 @@
 | 1.0.0 | Radar de risco e score | Sim (score só com o Jev lendo) |
 | 1.0.1 | "Failed to send" falso no WhatsApp (timeout de 30 s no canal API) | Sim |
 | 1.0.2 | Revisão de código: rubocop e eslint zerados; seletor de etapa do card Deal | Sim |
+| 1.1.0 | Bot responde no idioma do cliente (regra no MontaPrompt + atividade `language` do Jev, que entra **decidindo**); negrito do OpenWA no formato do WhatsApp | Sim |
 
-Imagem `:v1` = `3b4162ebc0bc` (commit `11c4a7d7a`), rollback em `:v1-pre-b10`. Todas as tags `cg-v*` estão no GitHub até a `cg-v1.0.1`. A `cg-v1.0.2` e o commit `dd64864fc` dependem do push do Paulo.
+Imagem `:v1` = `13a843a869bf` (commit `afe2ac67b`, clone `src-b6`), rollback em `:v1-pre-b11`. Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
+
+**02/10 — WhatsApp oficial (Cloud API) testado:** inbox **34** (`+15055573540`), conta 1, bot e persona `nathan-whatsapp` respondendo. Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase e o Guard recusa ("sem secret de bot gravado"): ligue sempre por Bot Personas → Channels. As rotas do Instagram (8) e Messenger (9) estavam sem secret desde agosto, ou seja, mudas; foram salvas de novo em 02/10.
+- **Builds sem push:** `git bundle` do Mac → `scp` → `git pull ../bN.bundle` num clone novo do GitHub. Não use `pgrep -f "docker build"` para esperar o build: casa com o próprio comando de espera.
 
 ### Regras de operação (leia antes de mexer)
 
