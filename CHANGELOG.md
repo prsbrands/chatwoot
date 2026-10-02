@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.8.1] — 2026-10-02 · base Chatwoot 4.18.0
+
+- Os diálogos de tipo de agendamento, compromisso e tarefa ganharam rolagem: em telas mais baixas, o botão Save ficava fora do alcance.
+
 ## [1.8.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - **A IA marca na conversa.** Nova atividade do Jev, **"Notice a wish to book"**, que já entra decidindo e pode ser passada para observar ou desligada.

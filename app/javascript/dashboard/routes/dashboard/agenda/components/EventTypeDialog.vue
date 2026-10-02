@@ -102,6 +102,7 @@ defineExpose({ open });
 <template>
   <Dialog
     ref="dialogRef"
+    overflow-y-auto
     :title="
       eventTypeId
         ? $t('AGENDA.SETTINGS.TYPE.EDIT')

@@ -218,6 +218,7 @@ defineExpose({ open });
 <template>
   <Dialog
     ref="dialogRef"
+    overflow-y-auto
     :title="
       appointment ? $t('AGENDA.DIALOG.EDIT') : $t('AGENDA.DIALOG.NEW')
     "

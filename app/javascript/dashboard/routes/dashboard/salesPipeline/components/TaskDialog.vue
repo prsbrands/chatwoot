@@ -83,6 +83,7 @@ defineExpose({ open });
 <template>
   <Dialog
     ref="dialogRef"
+    overflow-y-auto
     :title="
       taskId
         ? $t('SALES_PIPELINE.TASKS.EDIT')
