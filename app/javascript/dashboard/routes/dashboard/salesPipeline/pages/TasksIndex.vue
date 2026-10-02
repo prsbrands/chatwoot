@@ -127,7 +127,7 @@ onMounted(fetchTasks);
           {{ group.tasks.length }}
         </h2>
         <ul
-          class="flex flex-col divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
+          class="flex flex-col m-0 list-none divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
         >
           <li v-for="task in group.tasks" :key="task.id" class="px-4 py-3">
             <TaskRow :task="task" @changed="fetchTasks" @edit="editTask" />

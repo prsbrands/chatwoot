@@ -145,7 +145,7 @@ onMounted(fetchRadar);
       <p class="text-xs text-n-amber-11">
         {{ $t('SALES_PIPELINE.RADAR.NO_NEXT_STEP_HELP') }}
       </p>
-      <ul class="flex flex-wrap gap-2">
+      <ul class="flex flex-wrap gap-2 m-0 list-none">
         <li v-for="deal in noNextStep" :key="deal.id">
           <button
             type="button"
@@ -164,7 +164,7 @@ onMounted(fetchRadar);
 
     <ul
       v-else-if="!isLoading"
-      class="flex flex-col mx-6 my-5 divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
+      class="flex flex-col mx-6 my-5 list-none divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
     >
       <li
         v-for="row in rows"

@@ -183,7 +183,7 @@ onMounted(() => {
           {{ $t(`CONNECTIONS.SECTION.${section.id}`) }}
         </h2>
         <ul
-          class="flex flex-col divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
+          class="flex flex-col m-0 list-none divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
         >
           <li
             v-for="row in section.rows"

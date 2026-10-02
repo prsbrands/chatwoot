@@ -91,16 +91,15 @@ const remove = async () => {
       >
         {{ task.title }}
       </span>
-      <span
-        class="flex flex-wrap gap-x-2 text-xs"
-        :class="overdue ? 'text-n-ruby-11' : 'text-n-slate-11'"
-      >
-        <span v-if="dueLabel">{{ dueLabel }}</span>
+      <span class="flex flex-wrap gap-x-2 text-xs text-n-slate-11">
+        <span v-if="dueLabel" :class="{ 'text-n-ruby-11': overdue }">
+          {{ dueLabel }}
+        </span>
         <span v-if="task.assignee">{{ task.assignee.name }}</span>
         <router-link
           v-if="!compact && link"
           :to="link"
-          class="truncate text-n-slate-11 hover:text-n-slate-12 hover:underline"
+          class="text-xs truncate text-n-slate-11 hover:text-n-slate-12 hover:underline"
         >
           {{ linkLabel }}
         </router-link>
