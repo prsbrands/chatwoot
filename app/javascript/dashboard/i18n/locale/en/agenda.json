@@ -6,8 +6,14 @@
     "BUSY": "Busy",
     "ALL_DAY_BUSY": "Busy all day",
     "ERROR": "Could not save the appointment. Try again.",
-    "VIEW": { "day": "Day", "week": "Week" },
-    "OWNER": { "me": "My agenda", "all": "Whole team" },
+    "VIEW": {
+      "day": "Day",
+      "week": "Week"
+    },
+    "OWNER": {
+      "me": "My agenda",
+      "all": "Whole team"
+    },
     "STATUS": {
       "pending": "Waiting for confirmation",
       "confirmed": "Confirmed",
@@ -37,7 +43,12 @@
       "REMOVE_CONTACT": "Remove the contact",
       "LOCATION": "Where",
       "LOCATION_PLACEHOLDER": "Address, video call link or phone",
-      "NOTES": "Notes"
+      "NOTES": "Notes",
+      "TYPE": "Type",
+      "NO_TYPE": "No type",
+      "FREE_SLOTS": "Free times that day",
+      "NO_FREE_SLOTS": "No free time that day for this type. Pick another day, or set the time by hand.",
+      "GOOGLE_UNAVAILABLE": "Google Calendar did not answer: its busy times were left out."
     },
     "GOOGLE": {
       "TITLE": "Google Calendar",
@@ -60,6 +71,38 @@
     "CARD": {
       "ADD": "Appointment",
       "UPCOMING": "Upcoming appointments"
+    },
+    "SETTINGS": {
+      "HEADER": "Agenda settings",
+      "DESCRIPTION": "The kinds of appointment you book and when each person attends. Together they decide the free times offered.",
+      "TYPES": "Appointment types",
+      "NO_TYPES": "No appointment type yet. Create one to get free times suggested when booking.",
+      "TYPE": {
+        "NEW": "New type",
+        "EDIT": "Appointment type",
+        "NAME": "Name",
+        "NAME_PLACEHOLDER": "Consultation, demo call, visit…",
+        "DURATION": "Duration (min)",
+        "BUFFER_BEFORE": "Gap before (min)",
+        "BUFFER_AFTER": "Gap after (min)",
+        "NOTICE": "Minimum notice (min)",
+        "WINDOW": "Bookable up to (days ahead)",
+        "DEFAULT_OWNER": "Who attends by default",
+        "NO_DEFAULT_OWNER": "Whoever books",
+        "REQUIRES_CONFIRMATION": "Needs confirmation",
+        "ACTIVE": "Offered when booking",
+        "INACTIVE": "Not offered",
+        "SUMMARY": "{minutes} min · {owner}"
+      },
+      "HOURS": {
+        "TITLE": "Working hours",
+        "DESCRIPTION": "The days and times each person attends. Without working hours, nobody is offered free times for that person.",
+        "TIME_ZONE": "Time zone",
+        "TIME_ZONE_HELP": "As in America/Bogota or America/Sao_Paulo.",
+        "OFF": "Off",
+        "SAVE": "Save working hours",
+        "SAVED": "Working hours saved."
+      }
     }
   }
 }

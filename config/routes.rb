@@ -251,6 +251,9 @@ Rails.application.routes.draw do
           namespace :agenda do
             resources :appointments, only: [:index, :create, :update, :destroy]
             resource :google_connection, only: [:show, :create, :destroy]
+            resources :event_types, only: [:index, :create, :update, :destroy]
+            resources :availabilities, only: [:index, :update]
+            resources :free_slots, only: [:index]
           end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do

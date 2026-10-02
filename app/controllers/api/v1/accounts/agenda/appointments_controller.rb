@@ -13,10 +13,11 @@ class Api::V1::Accounts::Agenda::AppointmentsController < Api::V1::Accounts::Bas
     @busy = deal_or_contact? ? [] : google_busy
   end
 
+  # Tipo que pede confirmação faz o compromisso nascer pendente.
   def create
-    @appointment = Current.account.agenda_appointments.create!(
-      appointment_params.with_defaults(owner_id: Current.user.id).merge(created_by: Current.user)
-    )
+    defaults = { owner_id: Current.user.id }
+    defaults[:status] = :pending if event_type&.requires_confirmation
+    @appointment = Current.account.agenda_appointments.create!(appointment_params.with_defaults(defaults).merge(created_by: Current.user))
     render :show
   end
 
@@ -90,7 +91,7 @@ class Api::V1::Accounts::Agenda::AppointmentsController < Api::V1::Accounts::Bas
   # 404 em vez de gravar o de outra conta. A conversa vem pelo display_id.
   def appointment_params
     @appointment_params ||= params.permit(:title, :notes, :location, :starts_at, :ends_at, :status, :cancellation_reason,
-                                          :owner_id, :contact_id, :deal_id).tap do |permitted|
+                                          :owner_id, :contact_id, :deal_id, :event_type_id).tap do |permitted|
       ensure_links_in_account!(permitted)
       if params[:conversation_id].present?
         permitted[:conversation_id] = Current.account.conversations.find_by!(display_id: params[:conversation_id]).id
@@ -98,7 +99,12 @@ class Api::V1::Accounts::Agenda::AppointmentsController < Api::V1::Accounts::Bas
     end
   end
 
+  def event_type
+    @event_type ||= Current.account.agenda_event_types.find(params[:event_type_id]) if params[:event_type_id].present?
+  end
+
   def ensure_links_in_account!(permitted)
+    event_type if permitted[:event_type_id].present?
     Current.account.users.find(permitted[:owner_id]) if permitted[:owner_id].present?
     Current.account.contacts.find(permitted[:contact_id]) if permitted[:contact_id].present?
     Current.account.sales_deals.find(permitted[:deal_id]) if permitted[:deal_id].present?

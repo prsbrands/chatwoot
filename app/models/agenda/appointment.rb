@@ -10,6 +10,7 @@ class Agenda::Appointment < ApplicationRecord
   belongs_to :deal, class_name: 'Sales::Deal', optional: true
   belongs_to :conversation, optional: true
   belongs_to :created_by, class_name: 'User', optional: true
+  belongs_to :event_type, class_name: 'Agenda::EventType', optional: true
 
   enum :status, { pending: 0, confirmed: 1, cancelled: 2, completed: 3, no_show: 4 }, validate: true
 

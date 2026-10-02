@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_02_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_02_000003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -134,10 +134,39 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_02_000002) do
     t.bigint "google_connection_id"
     t.datetime "google_synced_at"
     t.string "google_sync_error"
+    t.bigint "event_type_id"
     t.index ["account_id", "starts_at"], name: "index_agenda_appointments_on_account_id_and_starts_at"
     t.index ["contact_id"], name: "index_agenda_appointments_on_contact_id"
     t.index ["deal_id"], name: "index_agenda_appointments_on_deal_id"
     t.index ["owner_id"], name: "index_agenda_appointments_on_owner_id"
+  end
+
+  create_table "agenda_availabilities", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "time_zone", null: false
+    t.jsonb "windows", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id"], name: "index_agenda_availabilities_on_account_id_and_user_id", unique: true
+    t.index ["user_id"], name: "index_agenda_availabilities_on_user_id"
+  end
+
+  create_table "agenda_event_types", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.integer "duration_minutes", default: 60, null: false
+    t.integer "buffer_before_minutes", default: 0, null: false
+    t.integer "buffer_after_minutes", default: 0, null: false
+    t.integer "minimum_notice_minutes", default: 120, null: false
+    t.integer "booking_window_days", default: 60, null: false
+    t.string "location"
+    t.bigint "default_owner_id"
+    t.boolean "requires_confirmation", default: false, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_agenda_event_types_on_account_id"
   end
 
   create_table "agenda_google_connections", force: :cascade do |t|

@@ -37,6 +37,21 @@ const contact = ref(null);
 const contactQuery = ref('');
 const contactResults = ref([]);
 const isSaving = ref(false);
+const NO_TYPE = 0;
+const eventTypes = ref([]);
+const eventTypeId = ref(NO_TYPE);
+const slots = ref([]);
+const googleUnavailable = ref(false);
+
+const typeOptions = computed(() => [
+  { value: NO_TYPE, label: t('AGENDA.DIALOG.NO_TYPE') },
+  ...eventTypes.value
+    .filter(item => item.active || item.id === eventTypeId.value)
+    .map(item => ({ value: item.id, label: item.name })),
+]);
+const selectedType = computed(() =>
+  eventTypes.value.find(item => item.id === eventTypeId.value)
+);
 
 const ownerOptions = computed(() =>
   agents.value.map(agent => ({ value: agent.id, label: agent.name }))
@@ -86,8 +101,51 @@ const open = ({
   contact.value = existing?.contact || presetContact;
   contactQuery.value = '';
   contactResults.value = [];
+  eventTypeId.value = existing?.event_type_id || NO_TYPE;
+  slots.value = [];
   dialogRef.value.open();
+  AgendaAPI.eventTypes().then(({ data }) => {
+    eventTypes.value = data.payload;
+  });
 };
+
+// O tipo traz a duração, o local e quem atende por padrão.
+const pickType = id => {
+  eventTypeId.value = id;
+  const type = selectedType.value;
+  if (!type) return;
+  duration.value = type.duration_minutes;
+  if (!location.value) location.value = type.location || '';
+  if (!appointment.value && type.default_owner_id) {
+    ownerId.value = type.default_owner_id;
+  }
+};
+
+// Horários livres do dia escolhido, para o tipo e a pessoa.
+const startDate = computed(() => starts.value.slice(0, 10));
+const loadSlots = async () => {
+  slots.value = [];
+  if (!selectedType.value || !startDate.value || !ownerId.value) return;
+  const { data } = await AgendaAPI.freeSlots({
+    event_type_id: eventTypeId.value,
+    owner_id: ownerId.value,
+    date: startDate.value,
+  });
+  slots.value = data.slots;
+  googleUnavailable.value = data.google_unavailable;
+};
+watch([eventTypeId, ownerId, startDate], loadSlots);
+
+const slotLabel = epoch =>
+  new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(epoch * 1000));
+const pickSlot = epoch => {
+  starts.value = toLocalInput(new Date(epoch * 1000));
+};
+const isPicked = epoch =>
+  starts.value === toLocalInput(new Date(epoch * 1000));
 
 let searchTimer = null;
 watch(contactQuery, query => {
@@ -131,6 +189,7 @@ const save = () => {
     starts_at: start.toISOString(),
     ends_at: new Date(start.getTime() + duration.value * 60000).toISOString(),
     owner_id: ownerId.value,
+    event_type_id: eventTypeId.value || null,
     contact_id: contact.value?.id || null,
     location: location.value.trim(),
     notes: notes.value.trim(),
@@ -201,6 +260,17 @@ defineExpose({ open });
         :label="$t('AGENDA.DIALOG.TITLE')"
         :placeholder="$t('AGENDA.DIALOG.TITLE_PLACEHOLDER')"
       />
+      <label
+        v-if="eventTypes.length"
+        class="flex flex-col gap-1 text-label-small text-n-slate-11"
+      >
+        {{ $t('AGENDA.DIALOG.TYPE') }}
+        <Select
+          :model-value="eventTypeId"
+          :options="typeOptions"
+          @update:model-value="pickType"
+        />
+      </label>
       <div class="grid grid-cols-2 gap-3">
         <Input
           v-model="starts"
@@ -211,6 +281,28 @@ defineExpose({ open });
           {{ $t('AGENDA.DIALOG.DURATION') }}
           <Select v-model="duration" :options="durationOptions" />
         </label>
+      </div>
+      <div v-if="selectedType" class="flex flex-col gap-1">
+        <span class="text-label-small text-n-slate-11">
+          {{ $t('AGENDA.DIALOG.FREE_SLOTS') }}
+        </span>
+        <div v-if="slots.length" class="flex flex-wrap gap-1">
+          <Button
+            v-for="slot in slots"
+            :key="slot"
+            xs
+            :faded="!isPicked(slot)"
+            :slate="!isPicked(slot)"
+            :label="slotLabel(slot)"
+            @click="pickSlot(slot)"
+          />
+        </div>
+        <span v-else class="text-xs text-n-slate-10">
+          {{ $t('AGENDA.DIALOG.NO_FREE_SLOTS') }}
+        </span>
+        <span v-if="googleUnavailable" class="text-xs text-n-amber-11">
+          {{ $t('AGENDA.DIALOG.GOOGLE_UNAVAILABLE') }}
+        </span>
       </div>
       <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
         {{ $t('AGENDA.DIALOG.OWNER') }}

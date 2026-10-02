@@ -232,6 +232,14 @@ onBeforeUnmount(() => clearInterval(clock));
         />
         <Select v-model="owner" :options="ownerOptions" />
         <Button
+          xs
+          slate
+          faded
+          icon="i-lucide-settings"
+          :title="$t('AGENDA.SETTINGS.HEADER')"
+          @click="$router.push({ name: 'agenda_settings' })"
+        />
+        <Button
           sm
           icon="i-lucide-plus"
           :label="$t('AGENDA.NEW')"

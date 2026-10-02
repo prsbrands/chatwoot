@@ -34,6 +34,34 @@ class AgendaAPI extends ApiClient {
   disconnectGoogle() {
     return axios.delete(`${this.url}/google_connection`);
   }
+
+  eventTypes() {
+    return axios.get(`${this.url}/event_types`);
+  }
+
+  createEventType(eventType) {
+    return axios.post(`${this.url}/event_types`, eventType);
+  }
+
+  updateEventType(id, eventType) {
+    return axios.patch(`${this.url}/event_types/${id}`, eventType);
+  }
+
+  deleteEventType(id) {
+    return axios.delete(`${this.url}/event_types/${id}`);
+  }
+
+  availabilities() {
+    return axios.get(`${this.url}/availabilities`);
+  }
+
+  updateAvailability(userId, availability) {
+    return axios.put(`${this.url}/availabilities/${userId}`, availability);
+  }
+
+  freeSlots(params) {
+    return axios.get(`${this.url}/free_slots`, { params });
+  }
 }
 
 export default new AgendaAPI();

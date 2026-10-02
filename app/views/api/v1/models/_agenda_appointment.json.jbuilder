@@ -5,6 +5,7 @@ json.location resource.location
 json.starts_at resource.starts_at.to_i
 json.ends_at resource.ends_at.to_i
 json.status resource.status
+json.event_type_id resource.event_type_id
 json.cancellation_reason resource.cancellation_reason
 json.created_by_id resource.created_by_id
 json.google_synced_at resource.google_synced_at&.to_i

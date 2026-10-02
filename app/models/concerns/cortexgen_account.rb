@@ -12,5 +12,7 @@ module CortexgenAccount
     has_many :sales_tasks, class_name: 'Sales::Task', dependent: :delete_all
     has_many :agenda_appointments, class_name: 'Agenda::Appointment', dependent: :delete_all
     has_many :agenda_google_connections, class_name: 'Agenda::GoogleConnection', dependent: :delete_all
+    has_many :agenda_event_types, class_name: 'Agenda::EventType', dependent: :delete_all
+    has_many :agenda_availabilities, class_name: 'Agenda::Availability', dependent: :delete_all
   end
 end

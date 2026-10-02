@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.7.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **Tipos de agendamento** (Agenda → engrenagem): nome, duração, folga antes e depois, antecedência mínima, até quantos dias à frente se marca, quem atende por padrão e se o compromisso nasce "aguardando confirmação". Só admin cria e altera.
+- **Jornada de cada pessoa**, na mesma tela: os dias e as faixas em que ela atende, no fuso dela. Cada um ajusta a própria jornada; o admin ajusta a de qualquer um.
+- **Horários livres ao marcar:** escolhido o tipo, o compromisso sugere os horários livres do dia, descontando a jornada, a antecedência, as folgas, os compromissos já marcados e o ocupado do Google. Se o Google não responder, os horários saem sem ele e com aviso.
+- A linha da hora atual voltou a aparecer na grade da Agenda.
+
 ## [1.6.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - Nova **Agenda**, no topo do menu e em **todas as contas**: compromissos com hora marcada, em grade de dia ou de semana, com "minha agenda", "equipe inteira" ou a agenda de uma pessoa. Clicar num horário vazio marca ali.
