@@ -710,6 +710,13 @@ const menuItems = computed(() => {
       activeOn: ['sales_pipeline_index'],
     },
     {
+      name: 'Radar',
+      label: t('SIDEBAR.RADAR'),
+      icon: 'i-lucide-radar',
+      to: accountScopedRoute('sales_radar_index'),
+      activeOn: ['sales_radar_index'],
+    },
+    {
       name: 'Reports',
       label: t('SIDEBAR.REPORTS'),
       icon: 'i-lucide-chart-spline',

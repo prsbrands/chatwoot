@@ -12,6 +12,10 @@ class SalesPipelineAPI extends ApiClient {
     return axios.get(`${this.url}/pipelines`);
   }
 
+  radar() {
+    return axios.get(`${this.url}/radar`);
+  }
+
   createPipeline(name) {
     return axios.post(`${this.url}/pipelines`, { name });
   }

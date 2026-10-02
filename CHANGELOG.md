@@ -14,6 +14,16 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.3.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- Novo **Radar de risco**, no menu logo abaixo do Pipeline. Lista os negócios abertos que esfriaram, do mais urgente para o menos:
+  - **Critical**: parado há 3 vezes o tempo esperado da etapa ou mais;
+  - **Going cold**: passou do tempo esperado da etapa;
+  - **Bot follows up**: o bot ainda vai retomar a conversa pelo follow-up.
+- Cada linha mostra o funil e a etapa, há quanto tempo está parado, o score, quem cuida (uma pessoa, a IA ou ninguém) e quando a IA retoma.
+- O botão **Take over** passa a conversa para quem clicou, e a IA para de responder nela.
+- Conexões: o WhatsApp por QR ganha o ícone do WhatsApp e as caixas de voz um telefone; o aviso de canais com problema usa o plural certo.
+
 ## [1.2.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - Nova tela **Conexões** (Connections), no menu lateral, só para administradores. Ela reúne todos os canais da conta, com o WhatsApp separado entre **QR** e **API oficial (Meta)**, e mostra se cada canal está conectado e quem responde nele: a persona da IA ou a equipe.

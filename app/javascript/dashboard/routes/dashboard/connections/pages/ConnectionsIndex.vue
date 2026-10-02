@@ -8,6 +8,7 @@ import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { BOT_PROBLEMS } from 'dashboard/store/modules/connections';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
+import Icon from 'next/icon/Icon.vue';
 
 const { t } = useI18n();
 const store = useStore();
@@ -49,6 +50,13 @@ const kindOf = inbox => {
   }
   return KINDS[inbox.channel_type] || 'OTHER';
 };
+
+// O QR é um canal API para o Chatwoot; na tela ele é WhatsApp, com o ícone do
+// WhatsApp. A voz ganha o telefone (no template).
+const iconInbox = row =>
+  row.kind === 'WHATSAPP_QR'
+    ? { ...row.inbox, channel_type: 'Channel::Whatsapp' }
+    : row.inbox;
 
 const rows = computed(() =>
   inboxes.value.map(inbox => {
@@ -159,7 +167,7 @@ onMounted(() => {
         v-if="attentionCount"
         class="px-3 py-2 text-sm rounded-lg bg-n-ruby-3 text-n-ruby-11"
       >
-        {{ $t('CONNECTIONS.ATTENTION', { count: attentionCount }) }}
+        {{ $t('CONNECTIONS.ATTENTION', { count: attentionCount }, attentionCount) }}
       </p>
 
       <p v-if="!rows.length" class="text-sm text-n-slate-11">
@@ -187,8 +195,14 @@ onMounted(() => {
               class="flex items-center flex-1 min-w-48 gap-3 text-start"
               @click="openInbox(row)"
             >
+              <Icon
+                v-if="row.health?.status === 'voice'"
+                icon="i-lucide-phone"
+                class="size-5 shrink-0 text-n-slate-11"
+              />
               <ChannelIcon
-                :inbox="row.inbox"
+                v-else
+                :inbox="iconInbox(row)"
                 use-brand-icon
                 class="size-5 shrink-0 text-n-slate-11"
               />

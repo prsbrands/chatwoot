@@ -152,6 +152,16 @@ class Integrations::Botlayer::Client
     post('rpc/bot_jev_summary', { p_account: account_id.to_i })
   end
 
+  # Séries de follow-up das conversas (display_id), para o Radar saber quem o
+  # bot ainda vai retomar.
+  def followups(account_id, conversation_display_ids)
+    return [] if conversation_display_ids.empty?
+
+    get("bot_followups?chatwoot_account_id=eq.#{account_id.to_i}" \
+        "&chatwoot_conversation_id=in.(#{conversation_display_ids.map(&:to_i).join(',')})" \
+        '&select=chatwoot_conversation_id,anchor_message_id,status,attempts')
+  end
+
   private
 
   def uuid!(value)

@@ -110,6 +110,29 @@
         "recency_at_risk": "going cold",
         "recency_critical": "no interaction for a long time"
       }
+    },
+    "RADAR": {
+      "HEADER": "Risk radar",
+      "DESCRIPTION": "Open deals that went quiet — the ones that can die without an answer. The most urgent first.",
+      "LOADING": "Loading the radar",
+      "EMPTY": "No deal at risk. Every open deal had an interaction within its stage's time.",
+      "BUCKET": {
+        "critical": "Critical",
+        "at_risk": "Going cold",
+        "in_flight": "Bot follows up"
+      },
+      "IDLE": "Quiet {time}",
+      "OWNER": {
+        "user": "With {name}",
+        "bot": "With the AI ({name})",
+        "none": "No owner"
+      },
+      "FOLLOWUP_AT": "The AI follows up {time}",
+      "FOLLOWUP_SOON": "The AI follows up soon",
+      "NO_FOLLOWUP": "No follow-up scheduled",
+      "TAKE_OVER": "Take over",
+      "TAKEN_OVER": "The conversation is yours now: the AI stopped answering it.",
+      "TAKE_OVER_ERROR": "Could not take over the conversation. Try again."
     }
   }
 }

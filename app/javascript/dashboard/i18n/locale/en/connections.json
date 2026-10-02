@@ -4,7 +4,7 @@
     "DESCRIPTION": "Your channels in one place: WhatsApp by QR code or through Meta's official API, Instagram, Messenger and your website — whether each one is connected, and who answers on it.",
     "CONNECT_QR": "WhatsApp by QR code",
     "CONNECT_OFFICIAL": "WhatsApp official API",
-    "ATTENTION": "{count} channel(s) need attention: customers there may be getting no answer.",
+    "ATTENTION": "{count} channel needs attention: customers there may be getting no answer. | {count} channels need attention: customers there may be getting no answer.",
     "EMPTY": "No channels yet. Connect a WhatsApp number to start.",
     "FIX": "Fix",
     "SECTION": {
