@@ -1,8 +1,9 @@
 const g = $('Guard').first().json;
 const rota = $('Persona').first().json;
 // O que o Jev decidiu (JevEntrada): secoes da base que importam para esta
-// mensagem e o modelo. null/ausente = o de sempre (base inteira, modelo da
-// persona); knowledge '' = a mensagem nao precisa da base, vai so a persona.
+// mensagem, o modelo e o idioma. null/ausente = o de sempre (base inteira,
+// modelo da persona, idioma do cliente); knowledge '' = a mensagem nao precisa
+// da base, vai so a persona.
 const jev = $('JevEntrada').first().json.jev || {};
 if (!rota || !rota.persona_id) return [];
 
@@ -32,7 +33,17 @@ const firstName = String(g.contactName || '').split(' ')[0] || '';
 let composto = rota.composed_prompt;
 if (jev.knowledge === '') composto = rota.system_prompt;
 else if (jev.knowledge) composto = rota.system_prompt + '\n\n---\n\n# BASE DE CONOCIMIENTO\n\n' + jev.knowledge;
-const systemText = String(composto || '')
+// O idioma vai por ultimo, depois da base. Prompt e base costumam estar num
+// idioma so (na conta 1, espanhol) e o modelo seguia o bloco maior: visto em
+// 02/10, cliente em ingles, a 1a resposta (so a persona) em ingles e a 2a (com
+// a base) em espanhol. Com o Jev decidindo, a regra diz qual idioma.
+const IDIOMAS = { es: 'Spanish', pt: 'Portuguese', en: 'English' };
+const idioma = IDIOMAS[jev.language]
+  ? IDIOMAS[jev.language] + ', the language the customer is writing in'
+  : 'the language the customer is writing in (their latest messages)';
+const regraDeIdioma = '\n\n---\n\n# LANGUAGE\n\nReply in ' + idioma +
+  ', even when these instructions or the knowledge base are written in another language.';
+const systemText = (String(composto || '') + regraDeIdioma)
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')
   .split('{{contact.call_summary}}').join(g.callSummary || '(vacio)');

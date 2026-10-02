@@ -253,6 +253,7 @@
         "GROUP": {
           "SAVE": "Spend fewer AI tokens",
           "HANDOFF": "Hand off to a person",
+          "LANGUAGE": "Reply in the customer's language",
           "REVIEW": "Check before sending",
           "FOLLOWUP": "Follow up when the customer goes quiet",
           "SALES": "Sales pipeline"
@@ -281,7 +282,8 @@
           "manipulation": "Last 30 days: Jev saw a clear manipulation attempt in {signals} of {runs} messages.",
           "reply_review": "Last 30 days: Jev would hold {signals} of {runs} replies.",
           "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups.",
-          "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages."
+          "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages.",
+          "language": "Last 30 days: Jev told the language in {signals} of {runs} messages."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -333,6 +335,11 @@
             "TITLE": "Move the deal along the pipeline",
             "WHAT": "On every customer message, Jev reads the conversation and says where the deal is now: the stages ahead that have an agent step, \"won\", or stay. It never moves a deal back and never marks it as lost.",
             "DECIDES": "With 80% confidence or more Jev moves the deal forward on its own, recorded as the AI in the deal history. Between 50% and 80%, and always for \"won\", it leaves a suggestion on the deal for your team to accept. After a person moves a deal, Jev only suggests for 24 hours."
+          },
+          "language": {
+            "TITLE": "Tell the customer's language",
+            "WHAT": "Jev reads which language the customer is writing in (Spanish, Portuguese or English). A short \"ok\" or \"👍\" keeps the language of their earlier messages. Without Jev, the AI is still told to reply in the customer's language, but has to work it out on its own.",
+            "DECIDES": "The AI is told exactly which language to reply in, even when the persona and the knowledge base are written in another one. Turned off or observing, the AI works the language out on its own."
           }
         },
         "TEAM": {

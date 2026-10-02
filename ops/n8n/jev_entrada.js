@@ -2,7 +2,8 @@
 //
 // Pergunta ao Jev (TypeSafe, modelo System One) o que fazer com a mensagem
 // ANTES de o LLM rodar: se ela precisa de resposta, se vai para um humano, com
-// que modelo responder e que secoes da base de conhecimento o LLM precisa.
+// que modelo responder, que secoes da base de conhecimento o LLM precisa e em
+// que idioma responder.
 // Cada atividade da conta esta em `observing` (so grava o que o Jev faria) ou
 // `deciding` (age) — vem do Guard, que le bot_account_settings.
 //
@@ -197,6 +198,21 @@ if (act.manipulation) {
     },
   };
 }
+// O idioma vai na mesma chamada das outras perguntas: nao custa tempo a mais.
+// Mensagem curta demais ("ok", "👍") nao diz o idioma, por isso vale o que o
+// cliente vinha escrevendo.
+if (act.language) {
+  perguntas.language = {
+    type: 'choice',
+    instructions: 'Which language is the customer writing in? Read `customer_last_message`; when it is too short to tell (such as "ok", "👍", a name, a number or a link), use the customer\'s messages in `recent_conversation`.',
+    criteria: {
+      es: 'Spanish.',
+      pt: 'Portuguese.',
+      en: 'English.',
+      other: 'Another language, or impossible to tell even from the earlier messages.',
+    },
+  };
+}
 const temModelos = rota.light_model || rota.strong_model;
 if (act.model_routing && temModelos) {
   perguntas.model_routing = {
@@ -282,6 +298,12 @@ if (a.manipulation && a.manipulation.choice) {
     signal: a.manipulation.choice === 'high' && a.manipulation.confidence >= MIN_CONFIDENCE, acted: false,
   };
 }
+if (a.language && a.language.choice) {
+  decisions.language = {
+    state: act.language, value: a.language.choice, confidence: a.language.confidence,
+    signal: a.language.choice !== 'other' && a.language.confidence >= MIN_CONFIDENCE, acted: false,
+  };
+}
 let modelo = null;
 if (a.model_routing && a.model_routing.choice) {
   const escolha = a.model_routing.choice;
@@ -315,6 +337,7 @@ if (respostaDaBase && respostaDaBase.answers) {
   }
 }
 if (decide('model_routing') && modelo && modelo !== rota.model) decisions.model_routing.acted = true;
+if (decide('language') && decisions.language && decisions.language.signal) decisions.language.acted = true;
 
 // ---- agir --------------------------------------------------------------------
 
@@ -333,9 +356,10 @@ const row = {
 
 if (handoff) {
   decisions[handoff].acted = true;
-  // A base e o modelo nao chegaram a ser usados.
+  // A base, o modelo e o idioma nao chegaram a ser usados.
   if (decisions.knowledge) decisions.knowledge.acted = false;
   if (decisions.model_routing) decisions.model_routing.acted = false;
+  if (decisions.language) decisions.language.acted = false;
   await gravar(row);
   // Nota com briefing, etiqueta, bloqueio (opt_out) e abrir a conversa ficam
   // no no Passagem, o mesmo dos outros caminhos de handoff.
@@ -346,9 +370,14 @@ if (decisions.no_reply && decisions.no_reply.signal && decide('no_reply')) {
   decisions.no_reply.acted = true;
   if (decisions.knowledge) decisions.knowledge.acted = false;
   if (decisions.model_routing) decisions.model_routing.acted = false;
+  if (decisions.language) decisions.language.acted = false;
   await gravar(row);
   return [];
 }
 
 await gravar(row);
-return segue({ knowledge: base, model: decisions.model_routing && decisions.model_routing.acted ? modelo : null });
+return segue({
+  knowledge: base,
+  model: decisions.model_routing && decisions.model_routing.acted ? modelo : null,
+  language: decisions.language && decisions.language.acted ? decisions.language.value : null,
+});

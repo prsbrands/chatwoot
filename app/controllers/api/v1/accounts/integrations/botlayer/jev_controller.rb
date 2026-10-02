@@ -6,7 +6,10 @@
 # que escreve essas colunas.
 class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accounts::Integrations::Botlayer::BaseController
   MODELS_URL = 'https://api.typesafe.ai/v1/models'.freeze
-  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup deal_stage].freeze
+  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup deal_stage language].freeze
+  # Sem estado gravado a atividade observa. O idioma entra decidindo: responder
+  # no idioma errado é pior do que perguntar à toa. O Guard do n8n tem a mesma tabela.
+  DEFAULT_STATES = { 'language' => 'deciding' }.freeze
   STATES = %w[observing deciding off].freeze
   MAX_REVIEW_RULES = 10
   # Sugestao de etiqueta e prioridade e condicoes por IA nas automacoes (codigo
@@ -73,7 +76,7 @@ class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accoun
       key_checked_at: row['jev_key_checked_at'],
       enabled: config['enabled'] == true,
       consent: config['consent'],
-      activities: ACTIVITIES.index_with { |id| config.dig('activities', id) || 'observing' },
+      activities: ACTIVITIES.index_with { |id| config.dig('activities', id) || DEFAULT_STATES.fetch(id, 'observing') },
       review_rules: config['review_rules'] || [],
       team: Current.account.feature_enabled?(TEAM_FEATURE),
       summary: client.jev_summary(account_id)

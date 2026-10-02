@@ -10,6 +10,20 @@ const i = $input.first().json;
 const https = require('https');
 
 const MAX_BOLHAS = 4;
+
+// O Chatwoot converte o Markdown do LLM para o formato de cada canal (WhatsApp
+// Cloud, Instagram, Messenger...), mas o canal API manda o texto cru, e o
+// OpenWA entregava "**negrito**" com os asteriscos. O OpenWA e o canal API com
+// bolhas ligadas pela rota (o provision grava split_replies true); a voz e o
+// site da DaGente tambem sao canal API, sem bolhas, e ficam como estao.
+const doOpenwa = g.channel === 'Channel::Api' && g.splitReplies;
+const paraWhatsapp = texto => texto
+  .replace(/^#{1,6}\s+(.+)$/gm, '*$1*')
+  .replace(/\*\*(.+?)\*\*/g, '*$1*')
+  .replace(/__(.+?)__/g, '_$1_')
+  .replace(/~~(.+?)~~/g, '~$1~')
+  .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '$1: $2');
+const reply = doOpenwa ? paraWhatsapp(i.reply) : i.reply;
 const atraso = texto => Math.min(Math.max(900 + 22 * texto.length, 1200), 7500);
 const espera = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -63,11 +77,11 @@ function bolhas(texto) {
 }
 
 if (!g.splitReplies) {
-  await postar('/messages', { content: i.reply, message_type: 'outgoing' });
+  await postar('/messages', { content: reply, message_type: 'outgoing' });
   return [{ json: i }];
 }
 
-for (const bolha of bolhas(i.reply)) {
+for (const bolha of bolhas(reply)) {
   await postar('/toggle_typing_status', { typing_status: 'on' });
   await espera(atraso(bolha));
   await postar('/messages', { content: bolha, message_type: 'outgoing' });

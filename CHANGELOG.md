@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.1.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- O bot responde **no idioma do cliente** durante toda a conversa, mesmo quando a persona e a base de conhecimento estão escritas em outro idioma. Antes, a resposta que usava a base voltava para o espanhol.
+- Nova atividade do Jev, **"Tell the customer's language"**, que já entra decidindo: o Jev diz ao bot se o cliente escreve em espanhol, português ou inglês, e um "ok" curto mantém o idioma de antes. Dá para passar a só observar ou desligar no cartão do Jev; sem o Jev, o bot continua instruído a responder no idioma do cliente.
+- No WhatsApp por QR, negrito, títulos e links da resposta do bot saem no formato do WhatsApp, sem os `**` aparecendo. O WhatsApp oficial, o Instagram e o Messenger já eram convertidos pelo próprio Chatwoot.
+
 ## [1.0.2] — 2026-10-01 · base Chatwoot 4.18.0
 
 - O seletor de etapa do card **Deal** na conversa voltou a listar as etapas (estava vazio).
