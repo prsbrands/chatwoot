@@ -2,7 +2,7 @@
 booking do Jev, horarios no prompt, etiqueta [[BOOK]] e revisao sem promessa.
 
     docker exec n8n-y4jd-n8n-1 n8n export:workflow --id=pd5V9pdaldRLUu4C --output=/home/node/wf.json
-    python3 ops/n8n/patch_agenda.py wf.json wf-agenda.json   # na raiz do repo, precisa do git
+    python3 ops/n8n/patch_agenda.py wf.json wf-agenda.json [BASE]   # na raiz do repo, precisa do git
     docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-agenda.json   # desativa: publicar de novo
 
 Troca Guard, JevEntrada, MontaPrompt, Responde e JevRevisao pelo que esta no repo, e so se
@@ -14,7 +14,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-BASE = '535def329'
+# O que esta publicado; o 3o argumento troca (ex.: depois de um patch ja aplicado).
+BASE = sys.argv[3] if len(sys.argv) > 3 else '535def329'
 HERE = Path(__file__).parent
 NODES = {'Guard': 'guard.js', 'JevEntrada': 'jev_entrada.js', 'MontaPrompt': 'monta_prompt.js', 'Responde': 'responde.js',
          'JevRevisao': 'jev_revisao.js'}

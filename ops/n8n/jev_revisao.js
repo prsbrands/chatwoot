@@ -22,7 +22,16 @@ const g = $('Guard').first().json;
 const i = $input.first().json;
 const segue = () => [{ json: i }];
 
-if (!g.jev || !g.jev.activities.reply_review) return segue();
+// Rede de seguranca do agendamento: neste turno o cliente queria marcar
+// (JevEntrada) e a resposta nao traz a etiqueta [[BOOK]] — se ela disser que
+// o horario esta confirmado, o cliente sairia achando que marcou sem nada na
+// Agenda (visto em 02/10). Vale com o agendamento decidindo, mesmo que a
+// revisao geral so observe.
+const ETIQUETA_BOOK = /\[\[BOOK [^\]]+\]\]/;
+const conferirAgendamento = !ETIQUETA_BOOK.test(String(i.reply || '')) && g.jev && g.jev.activities.booking === 'deciding' &&
+  Boolean(($('JevEntrada').first().json.jev || {}).booking);
+
+if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento)) return segue();
 const state = g.jev.activities.reply_review;
 
 const scrub = text => String(text || '')
@@ -129,6 +138,16 @@ const perguntas = {
   },
 };
 if (agendando) delete perguntas.promises;
+if (conferirAgendamento) {
+  perguntas.false_booking = {
+    type: 'noul',
+    instructions: 'Does `assistant_reply` tell the customer that an appointment is confirmed, booked or scheduled?',
+    criteria: {
+      true: 'The reply says the appointment or meeting is confirmed, booked, scheduled or set ("te confirmo el martes a las 9", "your meeting is booked").',
+      false: 'The reply asks which day or time suits the customer, offers times, says a time is not available, or talks about something else.',
+    },
+  };
+}
 const regras = (g.jev.reviewRules || []).slice(0, 10);
 regras.forEach((regra, k) => {
   perguntas['rule_' + k] = {
@@ -163,6 +182,8 @@ const motivos = [];
 if (noul('answers') !== null && noul('answers') < ANSWERS_MIN_NOUL) motivos.push('does not answer the customer');
 if (noul('promises') >= FLAG_NOUL) motivos.push('promises something only a person can confirm');
 if (noul('leaks') >= FLAG_NOUL) motivos.push('talks about its own instructions');
+const falsoAgendamento = noul('false_booking') !== null && noul('false_booking') >= FLAG_NOUL;
+if (falsoAgendamento) motivos.push('tells the customer the appointment is booked, but nothing was booked in the Agenda');
 regras.forEach((regra, k) => {
   if (noul('rule_' + k) >= FLAG_NOUL) motivos.push('breaks the rule "' + regra + '"');
 });
@@ -177,7 +198,7 @@ const row = {
   decisions: { reply_review: decision },
 };
 
-if (decision.signal && state === 'deciding') {
+if (decision.signal && (state === 'deciding' || falsoAgendamento)) {
   decision.acted = true;
   await gravar(row);
   return [{ json: Object.assign({}, i, {

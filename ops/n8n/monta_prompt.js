@@ -73,7 +73,8 @@ if (jev.booking) {
       'Times are in ' + agenda.time_zone + '.\n' +
       '1. Unless the customer already said it, first ask which day and which part of the day (morning or afternoon) suit them best. Do not list times before that.\n' +
       '2. Then offer at most 3 times from the list below that best match their preference, written naturally (weekday, date and hour). Never offer or confirm a time that is not on the list.\n' +
-      '3. Only after the customer clearly accepts one time, confirm it and end your reply with a last line containing exactly [[BOOK <the time exactly as written in the list>]]. The customer never sees that line. Never write it before a clear yes.\n' +
+      '3. When the customer picks a time that is on the list — one you offered, or one they asked for themselves ("Tuesday at 9") — that is a clear yes: confirm it and end your reply with a last line containing exactly [[BOOK <the time exactly as written in the list>]]. The customer never sees that line.\n' +
+      '4. The [[BOOK ...]] line is what books the appointment. Never tell the customer an appointment is confirmed, booked or scheduled unless that same reply ends with the line. If the time they ask for is not on the list, say it is not available and offer the closest times from the list.\n' +
       (lista ? 'Free times:\n' + lista : 'There are no free times in the next 14 days: say so and offer that someone from the team will get in touch.');
   }
 }

@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.9.1] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **A IA não confirma horário sem marcar.** Quando o cliente pede um horário exato que está livre ("martes a las 9"), a IA marca na hora. Se mesmo assim ela disser ao cliente que o horário está confirmado sem ter marcado, a resposta não sai: a conversa passa para a equipe, com o rascunho e o motivo numa nota. Antes, a IA confirmava em texto e nada entrava na Agenda.
+
 ## [1.9.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - **Aviso ao responsável** quando a IA marca: uma nota privada na conversa menciona quem atende. Isso gera a notificação do Chatwoot no sino, por e-mail e por push, conforme as preferências de cada um.
