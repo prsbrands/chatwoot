@@ -14,6 +14,14 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.9.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **Aviso ao responsável** quando a IA marca: uma nota privada na conversa menciona quem atende. Isso gera a notificação do Chatwoot no sino, por e-mail e por push, conforme as preferências de cada um.
+- **Google Meet automático:** o tipo ganha "Create a Google Meet link". O evento no Google de quem atende ganha uma sala do Meet, o link aparece no compromisso e o marcador **{link}** o leva para as mensagens ao cliente (o Meet, ou o local).
+- **Negócio anda ao marcar:** o tipo ganha "When booked, move the deal to…". O negócio do contato vai para essa etapa, só para a frente e no mesmo funil, e o histórico registra quem moveu (a pessoa, ou a IA).
+- **Presença cobrada no Radar:** os compromissos que já passaram sem desfecho aparecem num bloco próprio, com "Mark as done" e "Did not show up".
+- **Mensagem de falta:** marcar "Did not show up" manda ao cliente a mensagem do tipo pelo WhatsApp por QR. Quando ele responde, a IA oferece novos horários.
+
 ## [1.8.1] — 2026-10-02 · base Chatwoot 4.18.0
 
 - Os diálogos de tipo de agendamento, compromisso e tarefa ganharam rolagem: em telas mais baixas, o botão Save ficava fora do alcance.

@@ -7,7 +7,10 @@ CALLS = []
 BUSY = {}
 Agenda::GoogleCalendar.class_eval do
   def primary_email = 'ana@gmail.test'
-  def upsert_event(appointment) = CALLS << [:upsert, @connection.id, appointment.google_event_key, appointment.status]
+  def upsert_event(appointment)
+    CALLS << [:upsert, @connection.id, appointment.google_event_key, appointment.status]
+    { 'id' => appointment.google_event_key }
+  end
   def delete_event(key) = CALLS << [:delete, @connection.id, key]
 
   def busy(_from, _to)

@@ -45,7 +45,11 @@ compromisso = Agenda::Appointment.find_by(id: marcado&.dig('id'))
 ok 'marcar: compromisso da Ana com o contato, a conversa e o negocio', st == 200 && compromisso.owner == ana && compromisso.contact == c1.contact &&
                                                                       compromisso.conversation == c1 && compromisso.deal == deal &&
                                                                       compromisso.starts_at == Time.zone.iso8601(escolhido) && compromisso.confirmed?
-ok 'nota de atividade na conversa', c1.messages.activity.last&.content.to_s.include?('Consulta')
+nota = c1.messages.where(private: true).last
+Messages::MentionService.new(message: nota).perform if nota # no app roda pelo AsyncDispatcher
+ok 'nota privada mencionando a Ana, que recebe a notificacao', nota&.content.to_s.include?("mention://user/#{ana.id}/") &&
+                                                                nota.content.include?('Consulta') &&
+                                                                Notification.where(user: ana, notification_type: 'conversation_mention').exists?
 
 st, conflito = api.(:post, 'bot/bookings', { conversation_id: c1.display_id, starts_at: escolhido })
 ok 'mesmo horario de novo: 409 com 3 alternativas depois dele', st == 409 && conflito['alternatives'].size == 3 &&

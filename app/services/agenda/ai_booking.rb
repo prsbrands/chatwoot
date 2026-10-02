@@ -39,13 +39,21 @@ class Agenda::AiBooking
     raise SlotTaken, slots.reject { |slot| slot < starts_at }.first(3) unless slots.any? { |slot| slot.to_i == starts_at.to_i }
 
     appointment = create_appointment(conversation, starts_at)
-    conversation.messages.create!(account: @account, inbox: conversation.inbox, message_type: :activity,
-                                  content: I18n.t('agenda.ai_booked', type: @event_type.name, owner: owner.available_name,
-                                                                      when: I18n.l(starts_at.in_time_zone(zone), format: :long)))
+    notify_owner(conversation, starts_at)
     appointment
   end
 
   private
+
+  # Nota privada que menciona quem atende: a menção é a notificação nativa do
+  # Chatwoot (sino, e-mail e push, conforme as preferências da pessoa). Sem
+  # remetente, como as notas do sistema; o Guard do bot ignora nota privada.
+  def notify_owner(conversation, starts_at)
+    mention = "[@#{owner.available_name}](mention://user/#{owner.id}/#{ERB::Util.url_encode(owner.available_name)})"
+    conversation.messages.create!(account: @account, inbox: conversation.inbox, message_type: :outgoing, private: true,
+                                  content: I18n.t('agenda.ai_booked', mention: mention, type: @event_type.name,
+                                                                      when: I18n.l(starts_at.in_time_zone(zone), format: :long)))
+  end
 
   def create_appointment(conversation, starts_at)
     contact = conversation.contact

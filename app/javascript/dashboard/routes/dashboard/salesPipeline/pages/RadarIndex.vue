@@ -7,6 +7,7 @@ import { useMapGetter } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 import SalesPipelineAPI from 'dashboard/api/salesPipeline';
 import ConversationAPI from 'dashboard/api/inbox/conversation';
+import AgendaAPI from 'dashboard/api/agenda';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -27,6 +28,7 @@ const BUCKET_CLASSES = {
 
 const rows = ref([]);
 const noNextStep = ref([]);
+const awaitingOutcome = ref([]);
 const counts = ref({});
 const isLoading = ref(true);
 const takingOver = ref(null);
@@ -36,6 +38,7 @@ const fetchRadar = async () => {
     const { data } = await SalesPipelineAPI.radar();
     rows.value = data.payload;
     noNextStep.value = data.no_next_step;
+    awaitingOutcome.value = data.awaiting_outcome;
     counts.value = data.counts;
   } finally {
     isLoading.value = false;
@@ -92,6 +95,23 @@ const takeOver = async row => {
   }
 };
 
+// Presença: quem atendeu diz se o cliente veio. "Não compareceu" manda ao
+// cliente a mensagem de falta do tipo (se houver), e a IA oferece outro horário.
+const setOutcome = async (appointment, status) => {
+  try {
+    await AgendaAPI.updateAppointment(appointment.id, { status });
+    await fetchRadar();
+  } catch (error) {
+    useAlert(t('AGENDA.ERROR'));
+  }
+};
+
+const appointmentWhen = appointment =>
+  new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(appointment.starts_at * 1000));
+
 onMounted(fetchRadar);
 </script>
 
@@ -130,6 +150,55 @@ onMounted(fetchRadar);
     </div>
 
     <section
+      v-if="!isLoading && awaitingOutcome.length"
+      class="flex flex-col gap-2 px-4 py-3 mx-6 mt-5 rounded-xl bg-n-ruby-2 outline outline-1 outline-n-ruby-5"
+    >
+      <h2 class="text-sm font-medium text-n-ruby-11">
+        {{
+          $t(
+            'SALES_PIPELINE.RADAR.AWAITING_OUTCOME',
+            { count: awaitingOutcome.length },
+            awaitingOutcome.length
+          )
+        }}
+      </h2>
+      <ul class="flex flex-col gap-2 m-0 list-none">
+        <li
+          v-for="appointment in awaitingOutcome"
+          :key="appointment.id"
+          class="flex flex-wrap items-center gap-2"
+        >
+          <button
+            type="button"
+            class="flex-1 text-sm text-start min-w-48 text-n-slate-12 hover:underline"
+            @click="
+              open({ deal: { conversation_id: appointment.conversation_id } })
+            "
+          >
+            {{ appointmentWhen(appointment) }} · {{ appointment.title }}
+            <template v-if="appointment.owner">
+              · {{ appointment.owner.name }}
+            </template>
+          </button>
+          <Button
+            xs
+            slate
+            faded
+            :label="$t('AGENDA.ACTION.completed')"
+            @click="setOutcome(appointment, 'completed')"
+          />
+          <Button
+            xs
+            ruby
+            faded
+            :label="$t('AGENDA.ACTION.no_show')"
+            @click="setOutcome(appointment, 'no_show')"
+          />
+        </li>
+      </ul>
+    </section>
+
+    <section
       v-if="!isLoading && noNextStep.length"
       class="flex flex-col gap-2 px-4 py-3 mx-6 mt-5 rounded-xl bg-n-amber-2 outline outline-1 outline-n-amber-5"
     >
@@ -158,7 +227,10 @@ onMounted(fetchRadar);
       </ul>
     </section>
 
-    <p v-if="!isLoading && !rows.length" class="px-6 py-5 text-sm text-n-slate-11">
+    <p
+      v-if="!isLoading && !rows.length"
+      class="px-6 py-5 text-sm text-n-slate-11"
+    >
       {{ $t('SALES_PIPELINE.RADAR.EMPTY') }}
     </p>
 

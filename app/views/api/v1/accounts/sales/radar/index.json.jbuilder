@@ -21,3 +21,6 @@ json.no_next_step @radar.without_next_step do |deal|
   json.stage_changed_at deal.stage_changed_at.to_i
   json.conversation_id deal.conversation&.display_id
 end
+json.awaiting_outcome @radar.awaiting_outcome do |appointment|
+  json.partial! 'api/v1/models/agenda_appointment', formats: [:json], resource: appointment
+end

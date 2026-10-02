@@ -32,8 +32,9 @@ class Api::V1::Accounts::Agenda::EventTypesController < Api::V1::Accounts::BaseC
     @event_type_params ||= params.permit(:name, :duration_minutes, :buffer_before_minutes, :buffer_after_minutes,
                                          :minimum_notice_minutes, :booking_window_days, :location, :default_owner_id,
                                          :requires_confirmation, :active, :ai_bookable, :reminder_minutes_before,
-                                         :reminder_message).tap do |permitted|
+                                         :reminder_message, :google_meet, :booked_stage_id, :no_show_message).tap do |permitted|
       Current.account.users.find(permitted[:default_owner_id]) if permitted[:default_owner_id].present?
+      ::Sales::Stage.where(account_id: Current.account.id).find(permitted[:booked_stage_id]) if permitted[:booked_stage_id].present?
     end
   end
 end

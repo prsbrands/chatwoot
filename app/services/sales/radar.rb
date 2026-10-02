@@ -36,6 +36,12 @@ class Sales::Radar
             .limit(NO_NEXT_STEP_CAP)
   end
 
+  # Compromissos que já acabaram sem dizerem se o cliente veio (o "presença
+  # vencida" do CRM). Os mais antigos primeiro.
+  def awaiting_outcome
+    @account.agenda_appointments.awaiting_outcome.preload(:contact, :owner, :conversation).order(:ends_at)
+  end
+
   private
 
   def deals

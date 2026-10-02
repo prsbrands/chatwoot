@@ -48,7 +48,8 @@
       "NO_TYPE": "No type",
       "FREE_SLOTS": "Free times that day",
       "NO_FREE_SLOTS": "No free time that day for this type. Pick another day, or set the time by hand.",
-      "GOOGLE_UNAVAILABLE": "Google Calendar did not answer: its busy times were left out."
+      "GOOGLE_UNAVAILABLE": "Google Calendar did not answer: its busy times were left out.",
+      "JOIN_MEET": "Join the Google Meet"
     },
     "GOOGLE": {
       "TITLE": "Google Calendar",
@@ -99,9 +100,16 @@
         "REMIND_HELP": "A WhatsApp message before the appointment. For now only on numbers connected by QR code.",
         "REMINDER_HOURS": "How many hours before",
         "REMINDER_MESSAGE": "Reminder message",
-        "REMINDER_MESSAGE_HELP": "Use {name}, {date}, {time} and {type}.",
+        "REMINDER_MESSAGE_HELP": "Use {name}, {date}, {time}, {type} and {link} (the Google Meet link, or the place).",
         "REMINDER_DEFAULT": "Hi {name}! A reminder of your {type} on {date} at {time}. If you cannot make it, just reply to this message.",
-        "AI_SUMMARY": "The AI books this type"
+        "AI_SUMMARY": "The AI books this type",
+        "GOOGLE_MEET": "Create a Google Meet link",
+        "GOOGLE_MEET_HELP": "The event on the attendee's Google Calendar gets a Meet room; {link} puts it in the customer's messages. Needs the attendee's Google Calendar connected.",
+        "BOOKED_STAGE": "When booked, move the deal to",
+        "NO_STAGE": "Do not move the deal",
+        "NO_SHOW_MESSAGE": "Message when the customer does not show up",
+        "NO_SHOW_MESSAGE_HELP": "Sent on WhatsApp (QR code) when the appointment is marked \"Did not show up\". When the customer replies, the AI offers new times. Use {name}, {date}, {time}, {type} and {link}. Empty: nothing is sent.",
+        "NO_SHOW_DEFAULT": "Hi {name}, we missed you at your {type} today. Would you like to book another time?"
       },
       "HOURS": {
         "TITLE": "Working hours",

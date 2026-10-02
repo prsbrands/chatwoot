@@ -19,7 +19,7 @@ E="--network $N --env-file .env -e RAILS_ENV=production -e NODE_ENV=production -
    -e POSTGRES_HOST=sales-pg -e POSTGRES_DATABASE=sales_test -e POSTGRES_USERNAME=postgres -e POSTGRES_PASSWORD=t
    -e REDIS_URL=redis://sales-redis:6379 -e REDIS_PASSWORD= -e DISABLE_DATABASE_ENVIRONMENT_CHECK=1"
 docker run --rm $E --entrypoint bundle "$IMAGE" exec rails db:schema:load >/dev/null 2>&1
-for t in sales_pipeline sales_stage_advisor sales_insights sales_radar sales_tasks agenda agenda_slots agenda_ai; do
+for t in sales_pipeline sales_stage_advisor sales_insights sales_radar sales_tasks agenda agenda_slots agenda_ai agenda_cycle; do
   out=$(docker run --rm $E -v "$DIR/$t.rb:/tmp/t.rb" --entrypoint bundle "$IMAGE" exec rails runner /tmp/t.rb 2>&1)
   echo "== $t: $(echo "$out" | grep -c '^OK') OK, $(echo "$out" | grep -c '^FALHOU') falhas"
   echo "$out" | grep -E '^FALHOU|t.rb:[0-9]+' | head -5

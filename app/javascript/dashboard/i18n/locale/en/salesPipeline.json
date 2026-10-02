@@ -134,7 +134,8 @@
       "TAKEN_OVER": "The conversation is yours now: the AI stopped answering it.",
       "TAKE_OVER_ERROR": "Could not take over the conversation. Try again.",
       "NO_NEXT_STEP": "{count} open deal has no next step | {count} open deals have no next step",
-      "NO_NEXT_STEP_HELP": "No pending task on the deal or the contact. Open it and add what comes next — this is the one number that should be zero."
+      "NO_NEXT_STEP_HELP": "No pending task on the deal or the contact. Open it and add what comes next — this is the one number that should be zero.",
+      "AWAITING_OUTCOME": "{count} appointment already happened — did the customer show up? | {count} appointments already happened — did the customers show up?"
     },
     "TASKS": {
       "HEADER": "Tasks",

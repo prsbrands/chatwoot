@@ -84,7 +84,8 @@ en:
       cannot_revoke_current: You cannot revoke the current session.
 
   agenda:
-    ai_booked: 'The AI booked %{type} with %{owner} for %{when}.'
+    ai_booked: '%{mention} the AI booked a %{type} with you for %{when}. It is in the Agenda and in your Google Calendar.'
+    deal_moved: '%{type} booked'
   errors:
     account:
       not_authorized: You are not authorized to access this account

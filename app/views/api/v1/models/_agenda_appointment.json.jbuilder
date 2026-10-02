@@ -2,6 +2,7 @@ json.id resource.id
 json.title resource.title
 json.notes resource.notes
 json.location resource.location
+json.meeting_url resource.meeting_url
 json.starts_at resource.starts_at.to_i
 json.ends_at resource.ends_at.to_i
 json.status resource.status

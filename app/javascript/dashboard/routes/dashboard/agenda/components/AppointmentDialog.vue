@@ -342,6 +342,16 @@ defineExpose({ open });
           </div>
         </template>
       </div>
+      <a
+        v-if="appointment?.meeting_url"
+        :href="appointment.meeting_url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-2 text-sm text-n-blue-11 hover:underline"
+      >
+        <span class="i-logos-google-meet size-4" />
+        {{ $t('AGENDA.DIALOG.JOIN_MEET') }}
+      </a>
       <Input
         v-model="location"
         :label="$t('AGENDA.DIALOG.LOCATION')"

@@ -26,9 +26,10 @@ class Agenda::GooglePushJob < ApplicationJob
   # mandar o compromisso de novo ao Google.
   # rubocop:disable Rails/SkipsModelValidations
   def push(appointment, connection)
-    ::Agenda::GoogleCalendar.new(connection).upsert_event(appointment)
+    event = ::Agenda::GoogleCalendar.new(connection).upsert_event(appointment)
     appointment.update_columns(google_connection_id: connection.id, google_event_id: appointment.google_event_key,
-                               google_synced_at: Time.current, google_sync_error: nil)
+                               google_synced_at: Time.current, google_sync_error: nil,
+                               meeting_url: event['hangoutLink'].presence || appointment.meeting_url)
   rescue ::Agenda::GoogleCalendar::Error => e
     appointment.update_columns(google_sync_error: e.message.truncate(250))
   end

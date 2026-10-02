@@ -6,6 +6,8 @@ class Agenda::EventType < ApplicationRecord
 
   belongs_to :account
   belongs_to :default_owner, class_name: 'User', optional: true
+  # Ao marcar um compromisso deste tipo, o negócio do contato vai para cá.
+  belongs_to :booked_stage, class_name: 'Sales::Stage', optional: true
   has_many :appointments, class_name: 'Agenda::Appointment', dependent: :nullify, inverse_of: :event_type
 
   validates :name, presence: true

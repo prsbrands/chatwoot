@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useMapGetter } from 'dashboard/composables/store';
 import AgendaAPI from 'dashboard/api/agenda';
+import SalesPipelineAPI from 'dashboard/api/salesPipeline';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
@@ -32,6 +33,9 @@ const DEFAULTS = {
   remind: false,
   reminder_hours: 24,
   reminder_message: '',
+  google_meet: false,
+  booked_stage_id: 0,
+  no_show_message: '',
 };
 
 // Os marcadores do lembrete são do backend (Agenda::ReminderJob); passados
@@ -41,12 +45,31 @@ const PLACEHOLDERS = {
   date: '{date}',
   time: '{time}',
   type: '{type}',
+  link: '{link}',
 };
 
 const dialogRef = ref(null);
 const eventTypeId = ref(null);
 const form = ref({ ...DEFAULTS });
 const isSaving = ref(false);
+
+// Etapas dos funis para "ao marcar, mover o negócio para". Conta sem funil
+// (a API recusa) fica sem a opção.
+const pipelines = ref([]);
+const stageOptions = computed(() => [
+  { value: 0, label: t('AGENDA.SETTINGS.TYPE.NO_STAGE') },
+  ...pipelines.value.flatMap(pipeline =>
+    pipeline.stages
+      .filter(stage => stage.kind === 'open')
+      .map(stage => ({
+        value: stage.id,
+        label:
+          pipelines.value.length > 1
+            ? `${pipeline.name} · ${stage.name}`
+            : stage.name,
+      }))
+  ),
+]);
 
 const ownerOptions = computed(() => [
   { value: NOBODY, label: t('AGENDA.SETTINGS.TYPE.NO_DEFAULT_OWNER') },
@@ -67,8 +90,17 @@ const open = (eventType = null) => {
     reminder_message:
       eventType?.reminder_message ||
       t('AGENDA.SETTINGS.TYPE.REMINDER_DEFAULT', PLACEHOLDERS),
+    booked_stage_id: eventType?.booked_stage_id || 0,
+    no_show_message: eventType?.no_show_message || '',
   };
   dialogRef.value.open();
+  SalesPipelineAPI.pipelines()
+    .then(({ data }) => {
+      pipelines.value = data.payload;
+    })
+    .catch(() => {
+      pipelines.value = [];
+    });
 };
 
 const save = async () => {
@@ -79,6 +111,8 @@ const save = async () => {
     default_owner_id: fields.default_owner_id || null,
     reminder_minutes_before: remind ? Math.round(hours * 60) : null,
     reminder_message: remind ? fields.reminder_message.trim() : null,
+    booked_stage_id: fields.booked_stage_id || null,
+    no_show_message: fields.no_show_message.trim() || null,
   };
   isSaving.value = true;
   try {
@@ -176,6 +210,22 @@ defineExpose({ open });
       </label>
       <label class="flex items-center justify-between gap-3 text-sm text-n-slate-12">
         <span class="flex flex-col">
+          {{ $t('AGENDA.SETTINGS.TYPE.GOOGLE_MEET') }}
+          <span class="text-xs text-n-slate-11">
+            {{ $t('AGENDA.SETTINGS.TYPE.GOOGLE_MEET_HELP') }}
+          </span>
+        </span>
+        <Switch v-model="form.google_meet" />
+      </label>
+      <label
+        v-if="pipelines.length"
+        class="flex flex-col gap-1 text-label-small text-n-slate-11"
+      >
+        {{ $t('AGENDA.SETTINGS.TYPE.BOOKED_STAGE') }}
+        <Select v-model="form.booked_stage_id" :options="stageOptions" />
+      </label>
+      <label class="flex items-center justify-between gap-3 text-sm text-n-slate-12">
+        <span class="flex flex-col">
           {{ $t('AGENDA.SETTINGS.TYPE.REMIND') }}
           <span class="text-xs text-n-slate-11">
             {{ $t('AGENDA.SETTINGS.TYPE.REMIND_HELP') }}
@@ -196,6 +246,13 @@ defineExpose({ open });
           :max-length="1000"
         />
       </template>
+      <TextArea
+        v-model="form.no_show_message"
+        :label="$t('AGENDA.SETTINGS.TYPE.NO_SHOW_MESSAGE')"
+        :message="$t('AGENDA.SETTINGS.TYPE.NO_SHOW_MESSAGE_HELP', PLACEHOLDERS)"
+        :placeholder="$t('AGENDA.SETTINGS.TYPE.NO_SHOW_DEFAULT', PLACEHOLDERS)"
+        :max-length="1000"
+      />
     </div>
   </Dialog>
 </template>

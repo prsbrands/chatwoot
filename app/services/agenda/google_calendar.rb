@@ -8,6 +8,8 @@ class Agenda::GoogleCalendar
   # O Google devolve status 'cancelled' para evento cancelado; pendente vira
   # 'tentative' (aparece riscado na agenda da pessoa).
   EVENT_STATUS = { 'pending' => 'tentative', 'cancelled' => 'cancelled' }.freeze
+  # Sem conferenceDataVersion=1 o Google ignora o pedido de sala do Meet.
+  MEET_QUERY = { conferenceDataVersion: 1 }.freeze
 
   class Error < StandardError; end
   class AuthError < Error; end
@@ -52,12 +54,13 @@ class Agenda::GoogleCalendar
   end
 
   # PATCH primeiro: o evento pode já existir (inclusive cancelado, que o PATCH
-  # reativa). Só cria quando o Google não conhece o id.
+  # reativa). Só cria quando o Google não conhece o id. Devolve o evento, com o
+  # hangoutLink quando o tipo pede Google Meet.
   def upsert_event(appointment)
     body = event_body(appointment)
-    request(:patch, "/calendars/primary/events/#{appointment.google_event_key}", body: body)
+    request(:patch, "/calendars/primary/events/#{appointment.google_event_key}", query: MEET_QUERY, body: body)
   rescue NotFound
-    request(:post, '/calendars/primary/events', body: body.merge(id: appointment.google_event_key))
+    request(:post, '/calendars/primary/events', query: MEET_QUERY, body: body.merge(id: appointment.google_event_key))
   end
 
   def delete_event(event_key)
@@ -76,7 +79,16 @@ class Agenda::GoogleCalendar
       start: { dateTime: appointment.starts_at.utc.iso8601 },
       end: { dateTime: appointment.ends_at.utc.iso8601 },
       status: EVENT_STATUS.fetch(appointment.status, 'confirmed')
-    }
+    }.merge(meet_request(appointment))
+  end
+
+  # Pede a sala uma vez só: com o link gravado, o PATCH não mexe nela. O
+  # requestId fixo faz o Google devolver a mesma sala se o pedido se repetir.
+  def meet_request(appointment)
+    return {} unless appointment.event_type&.google_meet && appointment.meeting_url.blank?
+
+    { conferenceData: { createRequest: { requestId: appointment.google_event_key,
+                                         conferenceSolutionKey: { type: 'hangoutsMeet' } } } }
   end
 
   def event_time(value)
