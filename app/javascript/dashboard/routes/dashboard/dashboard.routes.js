@@ -6,6 +6,7 @@ import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
 import { routes as salesPipelineRoutes } from './salesPipeline/routes';
 import { routes as connectionsRoutes } from './connections/routes';
+import { routes as hubRoutes } from './hubs/routes';
 import { routes as inboxRoutes } from './inbox/routes';
 import { frontendURL } from '../../helper/URLHelper';
 import helpcenterRoutes from './helpcenter/helpcenter.routes';
@@ -32,6 +33,7 @@ export default {
         ...companyRoutes,
         ...salesPipelineRoutes,
         ...connectionsRoutes,
+        ...hubRoutes,
         ...searchRoutes,
         ...helpcenterRoutes.routes,
         ...campaignsRoutes.routes,

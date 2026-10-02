@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
@@ -19,10 +19,16 @@ const router = useRouter();
 const getters = useStoreGetters();
 
 const TABS = ['personas', 'knowledge', 'channels'];
-// A tela Conexões abre direto em Channels (?tab=channels) para corrigir um
-// canal com o bot mudo.
+// A tela Conexões e o hub de IA abrem direto numa aba (?tab=channels para
+// corrigir um canal com o bot mudo, ?tab=knowledge…).
 const activeTab = ref(
   TABS.includes(currentRoute.query.tab) ? currentRoute.query.tab : 'personas'
+);
+watch(
+  () => currentRoute.query.tab,
+  tab => {
+    if (TABS.includes(tab)) activeTab.value = tab;
+  }
 );
 
 const personas = ref([]);

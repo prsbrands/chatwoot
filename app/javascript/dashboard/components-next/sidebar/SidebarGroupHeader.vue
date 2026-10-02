@@ -54,7 +54,8 @@ const onClick = event => {
       <Icon v-if="icon" :icon="icon" class="size-4" />
       <span
         v-if="showBadge"
-        class="size-2 -top-px ltr:-right-px rtl:-left-px bg-n-brand absolute rounded-full border border-n-solid-2"
+        class="size-2 -top-px ltr:-right-px rtl:-left-px absolute rounded-full border border-n-solid-2"
+        :class="getterKeys.badgeClass || 'bg-n-brand'"
       />
     </div>
     <div

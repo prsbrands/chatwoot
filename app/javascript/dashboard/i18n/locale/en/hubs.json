@@ -1,0 +1,101 @@
+{
+  "HUBS": {
+    "CRM": {
+      "HEADER": "CRM",
+      "DESCRIPTION": "Where the sale happens — and what you set up once for it to work.",
+      "SECTION": {
+        "DAY_TO_DAY": "The day-to-day of selling",
+        "PREPARE": "Setting up the sale"
+      },
+      "ITEMS": {
+        "PIPELINE": {
+          "TITLE": "Pipeline",
+          "DESCRIPTION": "Your deals by stage, on a board you can drag, with the AI moving them along."
+        },
+        "RADAR": {
+          "TITLE": "Risk radar",
+          "DESCRIPTION": "Open deals that went quiet — the ones that can die without an answer."
+        },
+        "CONTACTS": {
+          "TITLE": "Contacts",
+          "DESCRIPTION": "The people on the other side of the conversation and their history."
+        },
+        "COMPANIES": {
+          "TITLE": "Companies",
+          "DESCRIPTION": "The businesses your contacts work for."
+        },
+        "CAMPAIGNS": {
+          "TITLE": "Campaigns",
+          "DESCRIPTION": "Message a list of contacts you choose, on WhatsApp, SMS or the website chat."
+        },
+        "CANNED": {
+          "TITLE": "Canned responses",
+          "DESCRIPTION": "Saved replies your team sends with a shortcut."
+        },
+        "LABELS": {
+          "TITLE": "Labels",
+          "DESCRIPTION": "Tags that sort conversations and contacts."
+        },
+        "ATTRIBUTES": {
+          "TITLE": "Custom attributes",
+          "DESCRIPTION": "Extra fields your business keeps on each contact and conversation."
+        },
+        "AUTOMATIONS": {
+          "TITLE": "Automations",
+          "DESCRIPTION": "Rules that act on their own when something happens: assign, label, reply."
+        },
+        "MACROS": {
+          "TITLE": "Macros",
+          "DESCRIPTION": "Several actions in one click for the agent in the conversation."
+        }
+      }
+    },
+    "AI": {
+      "HEADER": "AI agent",
+      "DESCRIPTION": "Everything that defines who answers for you — and how to keep an eye on what it does.",
+      "SECTION": {
+        "BUILD": "Build the agent",
+        "TEACH": "Teach the agent",
+        "WATCH": "Keep an eye on the agent"
+      },
+      "ITEMS": {
+        "PERSONAS": {
+          "TITLE": "Personas",
+          "DESCRIPTION": "Who answers for you: instructions, model, voice and follow-up."
+        },
+        "CHANNELS": {
+          "TITLE": "Channels",
+          "DESCRIPTION": "Which persona answers on each channel, and the AI bot that hands it the messages."
+        },
+        "PROVIDERS": {
+          "TITLE": "AI providers",
+          "DESCRIPTION": "The AI keys and models the personas use to think."
+        },
+        "VOICE": {
+          "TITLE": "Voice",
+          "DESCRIPTION": "Phone numbers and calls answered by the voice agent."
+        },
+        "KNOWLEDGE": {
+          "TITLE": "Knowledge",
+          "DESCRIPTION": "The materials the agent reads before answering about your business."
+        },
+        "JEV": {
+          "TITLE": "Jev",
+          "DESCRIPTION": "Quick decisions the AI makes on every message — language, handoff, follow-up — with how often it was right and what it cost."
+        },
+        "FOLLOWUPS": {
+          "TITLE": "Follow-ups",
+          "DESCRIPTION": "How the agent resumes a conversation that went quiet. Set in each persona."
+        },
+        "BOT_REPORTS": {
+          "TITLE": "Bot reports",
+          "DESCRIPTION": "How many conversations the bot handled on its own and how many it handed over."
+        },
+        "CONNECTIONS": {
+          "TITLE": "Connections",
+          "DESCRIPTION": "Every channel, whether it is connected, and whether the AI is really answering on it."
+        }
+      }
+    }
+  }
+}

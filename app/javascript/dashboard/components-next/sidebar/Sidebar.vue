@@ -7,6 +7,8 @@ import { useConfig } from 'dashboard/composables/useConfig';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
+import { usePolicy } from 'dashboard/composables/usePolicy';
 import { useI18n } from 'vue-i18n';
 import { useSidebarKeyboardShortcuts } from './useSidebarKeyboardShortcuts';
 import { vOnClickOutside } from '@vueuse/components';
@@ -385,7 +387,7 @@ const newReportRoutes = () => [
 
 const reportRoutes = computed(() => newReportRoutes());
 
-const menuItems = computed(() => {
+const baseMenuItems = computed(() => {
   return [
     {
       name: 'Inbox',
@@ -767,6 +769,7 @@ const menuItems = computed(() => {
       activeOn: ['connections_index'],
       getterKeys: {
         badge: 'connections/hasProblems',
+        badgeClass: 'bg-n-ruby-9',
       },
     },
     {
@@ -837,6 +840,38 @@ const menuItems = computed(() => {
           }),
         },
       ],
+    },
+    {
+      name: 'CrmHub',
+      label: t('SIDEBAR.VIEW_ALL_CRM'),
+      icon: 'i-lucide-arrow-right',
+      to: accountScopedRoute('crm_hub'),
+      activeOn: ['crm_hub'],
+    },
+    {
+      name: 'Personas',
+      label: t('SIDEBAR.PERSONAS'),
+      icon: 'i-lucide-bot',
+      to: accountScopedRoute('settings_integrations_botlayer'),
+      activeOn: [
+        'settings_integrations_botlayer',
+        'settings_integrations_botlayer_persona',
+        'settings_integrations_botlayer_knowledge',
+      ],
+    },
+    {
+      name: 'Jev',
+      label: t('SIDEBAR.JEV'),
+      icon: 'i-lucide-zap',
+      to: accountScopedRoute('settings_integrations_ai_providers'),
+      activeOn: ['settings_integrations_ai_providers'],
+    },
+    {
+      name: 'AiHub',
+      label: t('SIDEBAR.VIEW_ALL_AI'),
+      icon: 'i-lucide-arrow-right',
+      to: accountScopedRoute('ai_hub'),
+      activeOn: ['ai_hub'],
     },
     {
       name: 'Settings',
@@ -1008,6 +1043,70 @@ const menuItems = computed(() => {
     },
   ];
 });
+
+// O menu por jornada, como o do CRM (lib/navigation/catalogo.ts): o atendimento
+// no topo, sem título, e depois CRM, Agente de IA, Canais, Análise e Conta, cada
+// grupo com o seu "View all". A ordem e as seções vivem só aqui, para o bloco
+// de itens acima continuar igual ao do upstream. Item que o upstream criar e
+// não estiver na lista vai para o fim, sem seção.
+const MENU_LAYOUT = [
+  ['Inbox'],
+  ['Conversation'],
+  ['Radar'],
+  ['Calls'],
+  ['Pipeline', 'CRM'],
+  ['Contacts', 'CRM'],
+  ['Companies', 'CRM'],
+  ['Campaigns', 'CRM'],
+  ['CrmHub', 'CRM'],
+  ['Personas', 'AI'],
+  ['Jev', 'AI'],
+  ['Captain', 'AI'],
+  ['AiHub', 'AI'],
+  ['Connections', 'CHANNELS'],
+  ['Portals', 'CHANNELS'],
+  ['Reports', 'ANALYSIS'],
+  ['Settings', 'ACCOUNT'],
+];
+
+const router = useRouter();
+const { shouldShow } = usePolicy();
+const canOpen = to => {
+  const { meta } = router.resolve(to);
+  return shouldShow(
+    meta.featureFlag || '',
+    meta.permissions || [],
+    meta.installationTypes || []
+  );
+};
+const isVisible = item =>
+  item.to
+    ? canOpen(item.to)
+    : (item.children || []).some(child => !child.to || canOpen(child.to));
+
+// O título da seção sai antes do primeiro item visível dela: seção sem nada
+// que a pessoa possa abrir não aparece.
+const menuItems = computed(() => {
+  const byName = Object.fromEntries(
+    baseMenuItems.value.map(item => [item.name, item])
+  );
+  const ordered = [
+    ...MENU_LAYOUT.filter(([name]) => byName[name]).map(([name, section]) => ({
+      item: byName[name],
+      section,
+    })),
+    ...baseMenuItems.value
+      .filter(item => !MENU_LAYOUT.some(([name]) => name === item.name))
+      .map(item => ({ item })),
+  ];
+  let lastSection;
+  return ordered.map(({ item, section }) => {
+    const visible = isVisible(item);
+    const heading = visible && section && section !== lastSection;
+    if (visible) lastSection = section;
+    return { item, heading: heading ? section : null };
+  });
+});
 </script>
 
 <template>
@@ -1114,11 +1213,15 @@ const menuItems = computed(() => {
         class="flex flex-col gap-1 m-0 list-none min-w-0"
         :class="{ 'items-center': isEffectivelyCollapsed }"
       >
-        <SidebarGroup
-          v-for="item in menuItems"
-          :key="item.name"
-          v-bind="item"
-        />
+        <template v-for="entry in menuItems" :key="entry.item.name">
+          <li
+            v-if="entry.heading && !isEffectivelyCollapsed"
+            class="px-2 pt-3 text-xs font-medium tracking-wide uppercase text-n-slate-10"
+          >
+            {{ t(`SIDEBAR.SECTION.${entry.heading}`) }}
+          </li>
+          <SidebarGroup v-bind="entry.item" />
+        </template>
       </ul>
     </nav>
     <section

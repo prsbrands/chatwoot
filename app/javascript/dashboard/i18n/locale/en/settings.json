@@ -332,6 +332,17 @@
     "SALES_PIPELINE": "Pipeline",
     "CONNECTIONS": "Connections",
     "RADAR": "Risk radar",
+    "PERSONAS": "Personas",
+    "JEV": "Jev",
+    "VIEW_ALL_CRM": "View all in CRM",
+    "VIEW_ALL_AI": "View all in AI",
+    "SECTION": {
+      "CRM": "CRM",
+      "AI": "AI agent",
+      "CHANNELS": "Channels",
+      "ANALYSIS": "Analysis",
+      "ACCOUNT": "Account"
+    },
     "CAPTAIN": "CortexGen AI",
     "CALLS": "Calls",
     "CAPTAIN_ASSISTANTS": "Assistants",

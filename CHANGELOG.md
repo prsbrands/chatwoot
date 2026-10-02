@@ -14,6 +14,19 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.4.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **Menu por jornada**, como o do CRM. No topo fica o atendimento (Inbox, Conversations, Risk radar). Depois vêm as seções, com título:
+  - **CRM**: Pipeline, Contacts, Companies, Campaigns;
+  - **AI agent**: Personas, Jev;
+  - **Channels**: Connections, Help Center;
+  - **Analysis**: Reports;
+  - **Account**: Settings.
+- Personas e Jev saíram do fundo de Configurações → Integrações e ganharam item próprio no menu.
+- Novas páginas **View all in CRM** e **View all in AI**, com um card por tela, separado por jornada ("o dia a dia da venda", "preparar a venda", "montar / ensinar / acompanhar o agente") e uma linha dizendo para que serve cada uma. Cada pessoa vê só os cards das telas que pode abrir.
+- O ponto de alerta de Connections ficou vermelho.
+- A tela de Bot Personas abre direto na aba pedida (personas, knowledge ou channels).
+
 ## [1.3.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - Novo **Radar de risco**, no menu logo abaixo do Pipeline. Lista os negócios abertos que esfriaram, do mais urgente para o menos:

@@ -12,6 +12,7 @@ import chatlist from './chatlist.json';
 import companies from './companies.json';
 import salesPipeline from './salesPipeline.json';
 import connections from './connections.json';
+import hubs from './hubs.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -62,6 +63,7 @@ export default {
   ...companies,
   ...salesPipeline,
   ...connections,
+  ...hubs,
   ...components,
   ...contact,
   ...contactFilters,
