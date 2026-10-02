@@ -7,6 +7,8 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import LostReasonDialog from './LostReasonDialog.vue';
+import TaskDialog from './TaskDialog.vue';
+import TaskRow from './TaskRow.vue';
 import { useDealFormat } from '../useDealFormat';
 
 // Card do negocio no painel da conversa: o negocio aberto do contato (ou o
@@ -25,6 +27,8 @@ const pipelines = ref([]);
 const value = ref('');
 const isLoading = ref(false);
 const lostDialogRef = ref(null);
+const taskDialogRef = ref(null);
+const tasks = ref([]);
 let pendingStage = null;
 
 const allStages = computed(() =>
@@ -50,9 +54,16 @@ const stageName = id => allStages.value.find(stage => stage.id === id)?.name;
 const alertError = error =>
   useAlert(error.response?.data?.error || t('SALES_PIPELINE.API.ERROR'));
 
+// As tarefas pendentes do negócio: o próximo passo combinado.
+const loadTasks = async () => {
+  const { data } = await SalesPipelineAPI.tasks({ deal_id: deal.value.id });
+  tasks.value = data.payload;
+};
+
 const show = async id => {
   const { data } = await SalesPipelineAPI.deal(id);
   deal.value = data;
+  await loadTasks();
   value.value =
     data.value_cents === null ? '' : String(Math.round(data.value_cents / 100));
 };
@@ -273,6 +284,32 @@ watch(() => props.contactId, load, { immediate: true });
           </template>
         </span>
       </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-label-small text-n-slate-11">
+            {{ $t('SALES_PIPELINE.TASKS.NEXT_STEPS') }}
+          </span>
+          <Button
+            xs
+            ghost
+            slate
+            icon="i-lucide-plus"
+            :label="$t('SALES_PIPELINE.TASKS.ADD')"
+            @click="taskDialogRef.open({ dealId: deal.id })"
+          />
+        </div>
+        <span v-if="!tasks.length" class="text-label-small text-n-amber-11">
+          {{ $t('SALES_PIPELINE.TASKS.NO_NEXT_STEP') }}
+        </span>
+        <TaskRow
+          v-for="task in tasks"
+          :key="task.id"
+          :task="task"
+          compact
+          @changed="loadTasks"
+          @edit="item => taskDialogRef.open({ task: item })"
+        />
+      </div>
       <span v-if="deal.value_cents" class="text-label-small text-n-slate-11">
         {{ formatMoney(deal.value_cents, deal.currency) }}
       </span>
@@ -297,6 +334,7 @@ watch(() => props.contactId, load, { immediate: true });
         @click="create"
       />
     </template>
+    <TaskDialog ref="taskDialogRef" @saved="loadTasks" />
     <LostReasonDialog
       ref="lostDialogRef"
       @confirm="

@@ -132,7 +132,47 @@
       "NO_FOLLOWUP": "No follow-up scheduled",
       "TAKE_OVER": "Take over",
       "TAKEN_OVER": "The conversation is yours now: the AI stopped answering it.",
-      "TAKE_OVER_ERROR": "Could not take over the conversation. Try again."
+      "TAKE_OVER_ERROR": "Could not take over the conversation. Try again.",
+      "NO_NEXT_STEP": "{count} open deal has no next step | {count} open deals have no next step",
+      "NO_NEXT_STEP_HELP": "No pending task on the deal or the contact. Open it and add what comes next — this is the one number that should be zero."
+    },
+    "TASKS": {
+      "HEADER": "Tasks",
+      "DESCRIPTION": "What was agreed, with a due date — and what is already overdue with nobody on it.",
+      "NEW": "New task",
+      "EDIT": "Edit task",
+      "SAVE": "Save",
+      "DELETE": "Delete",
+      "ADD": "Task",
+      "COMPLETE": "Mark as done",
+      "REOPEN": "Reopen",
+      "TITLE": "What needs to be done",
+      "TITLE_PLACEHOLDER": "Send the proposal, call back, confirm the visit…",
+      "DUE": "Due",
+      "ASSIGNEE": "Who does it",
+      "NOTES": "Notes",
+      "NOBODY": "Nobody",
+      "NEXT_STEPS": "Next steps",
+      "NO_NEXT_STEP": "No next step yet. Add a task so this deal does not go quiet.",
+      "STATUS": {
+        "pending": "To do",
+        "done": "Done"
+      },
+      "OWNER": {
+        "me": "Mine",
+        "all": "Everyone's"
+      },
+      "GROUP": {
+        "OVERDUE": "Overdue",
+        "TODAY": "Today",
+        "UPCOMING": "Upcoming",
+        "NO_DATE": "No due date",
+        "DONE": "Done"
+      },
+      "EMPTY": {
+        "pending": "Nothing to do. Add a task from a deal in the conversation, or with New task.",
+        "done": "No task done yet."
+      }
     }
   }
 }

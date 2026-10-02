@@ -14,6 +14,15 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.5.0] — 2026-10-02 · base Chatwoot 4.18.0
+
+- **Tarefas** (Tasks, no menu em CRM): o que ficou combinado, com prazo e responsável, ligado a um negócio ou a um contato, ou avulso.
+  - A lista separa Atrasadas (em vermelho), Hoje, Próximas e Sem prazo, com abas A fazer e Feitas e o filtro Minhas / De todos.
+  - Dá para criar, editar, concluir, reabrir e excluir. Excluir é de quem criou ou de um admin.
+- **Próximos passos no card do negócio** na conversa: as tarefas pendentes do negócio e o botão "+ Task". Sem tarefa, o card avisa que falta o próximo passo.
+- **Radar: "sem próximo passo"**, um bloco com os negócios abertos que não têm nenhuma tarefa pendente, nem no negócio nem no contato. É o único número do Radar cujo alvo é zero.
+- Excluir um contato agora exclui também os negócios e as tarefas dele. Antes, o negócio ficava órfão e podia quebrar o Kanban.
+
 ## [1.4.0] — 2026-10-02 · base Chatwoot 4.18.0
 
 - **Menu por jornada**, como o do CRM. No topo fica o atendimento (Inbox, Conversations, Risk radar). Depois vêm as seções, com título:

@@ -9,5 +9,6 @@ module CortexgenAccount
     has_many :twilio_voice_calls, dependent: :destroy_async
     has_many :sales_pipelines, class_name: 'Sales::Pipeline', dependent: :destroy_async
     has_many :sales_deals, class_name: 'Sales::Deal', dependent: :destroy_async
+    has_many :sales_tasks, class_name: 'Sales::Task', dependent: :delete_all
   end
 end

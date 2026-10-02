@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_01_000004) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_02_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1610,6 +1610,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_01_000004) do
     t.index ["pipeline_id"], name: "index_sales_stages_on_pipeline_id"
     t.index ["pipeline_id"], name: "index_sales_stages_one_lost", unique: true, where: "(kind = 2)"
     t.index ["pipeline_id"], name: "index_sales_stages_one_won", unique: true, where: "(kind = 1)"
+  end
+
+  create_table "sales_tasks", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "title", null: false
+    t.text "notes"
+    t.datetime "due_at"
+    t.bigint "deal_id"
+    t.bigint "contact_id"
+    t.bigint "assignee_id"
+    t.bigint "created_by_id"
+    t.datetime "completed_at"
+    t.bigint "completed_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "completed_at", "due_at"], name: "index_sales_tasks_on_account_id_and_completed_at_and_due_at"
+    t.index ["assignee_id"], name: "index_sales_tasks_on_assignee_id"
+    t.index ["contact_id"], name: "index_sales_tasks_on_contact_id"
+    t.index ["deal_id"], name: "index_sales_tasks_on_deal_id"
   end
 
   create_table "sla_events", force: :cascade do |t|

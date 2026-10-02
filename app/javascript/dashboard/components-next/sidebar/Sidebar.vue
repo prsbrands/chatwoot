@@ -842,6 +842,13 @@ const baseMenuItems = computed(() => {
       ],
     },
     {
+      name: 'Tasks',
+      label: t('SIDEBAR.TASKS'),
+      icon: 'i-lucide-list-checks',
+      to: accountScopedRoute('sales_tasks_index'),
+      activeOn: ['sales_tasks_index'],
+    },
+    {
       name: 'CrmHub',
       label: t('SIDEBAR.VIEW_ALL_CRM'),
       icon: 'i-lucide-arrow-right',
@@ -1056,6 +1063,7 @@ const MENU_LAYOUT = [
   ['Calls'],
   ['Pipeline', 'CRM'],
   ['Contacts', 'CRM'],
+  ['Tasks', 'CRM'],
   ['Companies', 'CRM'],
   ['Campaigns', 'CRM'],
   ['CrmHub', 'CRM'],

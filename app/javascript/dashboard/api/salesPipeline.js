@@ -16,6 +16,22 @@ class SalesPipelineAPI extends ApiClient {
     return axios.get(`${this.url}/radar`);
   }
 
+  tasks(params) {
+    return axios.get(`${this.url}/tasks`, { params });
+  }
+
+  createTask(task) {
+    return axios.post(`${this.url}/tasks`, task);
+  }
+
+  updateTask(id, task) {
+    return axios.patch(`${this.url}/tasks/${id}`, task);
+  }
+
+  deleteTask(id) {
+    return axios.delete(`${this.url}/tasks/${id}`);
+  }
+
   createPipeline(name) {
     return axios.post(`${this.url}/pipelines`, { name });
   }

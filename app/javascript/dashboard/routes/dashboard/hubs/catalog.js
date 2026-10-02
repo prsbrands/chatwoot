@@ -22,6 +22,11 @@ export const HUBS = {
             query: { page: 1 },
           },
           {
+            id: 'TASKS',
+            icon: 'i-lucide-list-checks',
+            to: 'sales_tasks_index',
+          },
+          {
             id: 'COMPANIES',
             icon: 'i-lucide-building-2',
             to: 'companies_dashboard_index',

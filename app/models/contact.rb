@@ -68,6 +68,7 @@ class Contact < ApplicationRecord
   after_destroy_commit :dispatch_destroy_event
   before_save :sync_contact_attributes
   include ContactCompanyAssociation
+  include CortexgenContact
 
   enum contact_type: { visitor: 0, lead: 1, customer: 2 }
 

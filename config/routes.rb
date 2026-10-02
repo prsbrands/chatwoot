@@ -253,6 +253,7 @@ Rails.application.routes.draw do
               resources :stages, only: [:create, :update, :destroy]
             end
             resources :deals, only: [:index, :show, :create, :update, :destroy]
+            resources :tasks, only: [:index, :create, :update, :destroy]
             get :radar, to: 'radar#index'
           end
           resources :contacts, only: [:index, :show, :update, :create, :destroy] do

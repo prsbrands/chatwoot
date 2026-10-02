@@ -3,6 +3,7 @@ class Api::V1::Accounts::Sales::RadarController < Api::V1::Accounts::Sales::Base
   before_action -> { check_authorization(::Sales::Deal) }
 
   def index
-    @rows = ::Sales::Radar.new(Current.account).rows
+    @radar = ::Sales::Radar.new(Current.account)
+    @rows = @radar.rows
   end
 end

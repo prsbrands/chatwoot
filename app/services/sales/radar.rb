@@ -11,6 +11,7 @@
 # janela das 8h às 20h e o teto diário do número.
 class Sales::Radar
   SCAN_CAP = 300
+  NO_NEXT_STEP_CAP = 50
   MAX_SILENCE_AGE = 7.days
   BUCKETS = %w[critical at_risk in_flight].freeze
 
@@ -21,6 +22,20 @@ class Sales::Radar
   def rows
     @rows ||= deals.map { |deal| row(deal) }
                    .sort_by { |row| [BUCKETS.index(row[:bucket]), row[:last_activity_at] || 0] }
+  end
+
+  # Negócio aberto sem tarefa pendente, nem dele nem do contato (tarefa só do
+  # contato também é um próximo passo). É o único número do Radar cujo alvo é
+  # zero; os mais antigos na etapa primeiro. O `not nil` importa: um NULL na
+  # subconsulta do NOT IN zera a lista inteira (tarefa avulsa não tem contato).
+  def without_next_step
+    pending = @account.sales_tasks.pending
+    @account.sales_deals.open
+            .where.not(id: pending.where.not(deal_id: nil).select(:deal_id))
+            .where.not(contact_id: pending.where(deal_id: nil).where.not(contact_id: nil).select(:contact_id))
+            .preload(:contact, :stage, :pipeline, :conversation)
+            .order(stage_changed_at: :asc)
+            .limit(NO_NEXT_STEP_CAP)
   end
 
   private

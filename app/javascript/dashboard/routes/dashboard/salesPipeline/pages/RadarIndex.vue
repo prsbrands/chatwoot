@@ -26,6 +26,7 @@ const BUCKET_CLASSES = {
 };
 
 const rows = ref([]);
+const noNextStep = ref([]);
 const counts = ref({});
 const isLoading = ref(true);
 const takingOver = ref(null);
@@ -34,6 +35,7 @@ const fetchRadar = async () => {
   try {
     const { data } = await SalesPipelineAPI.radar();
     rows.value = data.payload;
+    noNextStep.value = data.no_next_step;
     counts.value = data.counts;
   } finally {
     isLoading.value = false;
@@ -127,12 +129,41 @@ onMounted(fetchRadar);
       {{ $t('SALES_PIPELINE.RADAR.LOADING') }}
     </div>
 
-    <p v-else-if="!rows.length" class="px-6 py-5 text-sm text-n-slate-11">
+    <section
+      v-if="!isLoading && noNextStep.length"
+      class="flex flex-col gap-2 px-4 py-3 mx-6 mt-5 rounded-xl bg-n-amber-2 outline outline-1 outline-n-amber-5"
+    >
+      <h2 class="text-sm font-medium text-n-amber-11">
+        {{
+          $t(
+            'SALES_PIPELINE.RADAR.NO_NEXT_STEP',
+            { count: noNextStep.length },
+            noNextStep.length
+          )
+        }}
+      </h2>
+      <p class="text-xs text-n-amber-11">
+        {{ $t('SALES_PIPELINE.RADAR.NO_NEXT_STEP_HELP') }}
+      </p>
+      <ul class="flex flex-wrap gap-2">
+        <li v-for="deal in noNextStep" :key="deal.id">
+          <button
+            type="button"
+            class="px-2 py-1 text-xs rounded-md bg-n-card text-n-slate-12 hover:bg-n-alpha-2"
+            @click="open({ deal })"
+          >
+            {{ deal.title }} · {{ deal.stage_name }}
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <p v-if="!isLoading && !rows.length" class="px-6 py-5 text-sm text-n-slate-11">
       {{ $t('SALES_PIPELINE.RADAR.EMPTY') }}
     </p>
 
     <ul
-      v-else
+      v-else-if="!isLoading"
       class="flex flex-col mx-6 my-5 divide-y rounded-xl divide-n-weak bg-n-card outline outline-1 outline-n-container"
     >
       <li

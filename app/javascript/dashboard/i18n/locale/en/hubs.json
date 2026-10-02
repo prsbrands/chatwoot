@@ -20,6 +20,10 @@
           "TITLE": "Contacts",
           "DESCRIPTION": "The people on the other side of the conversation and their history."
         },
+        "TASKS": {
+          "TITLE": "Tasks",
+          "DESCRIPTION": "What was agreed, with a due date — and what is already overdue with nobody on it."
+        },
         "COMPANIES": {
           "TITLE": "Companies",
           "DESCRIPTION": "The businesses your contacts work for."

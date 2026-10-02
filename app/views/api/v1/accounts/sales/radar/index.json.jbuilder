@@ -12,3 +12,12 @@ json.payload @rows do |row|
     json.stage_name row[:deal].stage.name
   end
 end
+json.no_next_step @radar.without_next_step do |deal|
+  json.id deal.id
+  json.title deal.title
+  json.contact_id deal.contact_id
+  json.pipeline_name deal.pipeline.name
+  json.stage_name deal.stage.name
+  json.stage_changed_at deal.stage_changed_at.to_i
+  json.conversation_id deal.conversation&.display_id
+end
