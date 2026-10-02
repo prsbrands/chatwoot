@@ -328,7 +328,7 @@ onBeforeUnmount(() => clearInterval(clock));
           <div
             v-if="column.nowTop !== null"
             class="absolute inset-x-0 h-px pointer-events-none bg-n-ruby-9"
-            :style="blockStyle({ top: column.nowTop, bottom: column.nowTop })"
+            :style="{ top: `${(column.nowTop / 60) * HOUR_REM}rem` }"
           />
         </div>
       </div>
