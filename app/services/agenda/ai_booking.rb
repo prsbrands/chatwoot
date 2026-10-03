@@ -47,8 +47,8 @@ class Agenda::AiBooking
     appointment = upcoming(conversation).find(appointment_id)
     appointment.update!(status: :cancelled, cancellation_reason: reason)
     owner_zone = ::Agenda::Availability.find_by(account: @account, user: appointment.owner)&.zone || Time.zone
-    mention(conversation, appointment.owner, 'agenda.ai_cancelled', title: appointment.title, reason: reason.presence || '-',
-                                                                     when: I18n.l(appointment.starts_at.in_time_zone(owner_zone), format: :long))
+    starts_at = I18n.l(appointment.starts_at.in_time_zone(owner_zone), format: :long)
+    mention(conversation, appointment.owner, 'agenda.ai_cancelled', title: appointment.title, when: starts_at, reason: reason.presence || '-')
     appointment
   end
 
