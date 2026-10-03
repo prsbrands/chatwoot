@@ -256,6 +256,7 @@ Rails.application.routes.draw do
             resources :free_slots, only: [:index]
             get 'bot/slots', to: 'bot#slots'
             post 'bot/bookings', to: 'bot#book'
+            post 'bot/cancellations', to: 'bot#cancel'
           end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do

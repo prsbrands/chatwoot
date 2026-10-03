@@ -27,9 +27,11 @@ const segue = () => [{ json: i }];
 // o horario esta confirmado, o cliente sairia achando que marcou sem nada na
 // Agenda (visto em 02/10). Vale com o agendamento decidindo, mesmo que a
 // revisao geral so observe.
-// Horario ja marcado no MontaPrompt (escolha do Jev): a confirmacao e verdadeira.
+// Horario ja marcado ou desmarcado no MontaPrompt (escolha do Jev): a
+// confirmacao e verdadeira.
 const ETIQUETA_BOOK = /\[\[BOOK [^\]]+\]\]/;
-const jaMarcado = Boolean($('MontaPrompt').first().json.booked);
+const agenda = $('MontaPrompt').first().json;
+const jaMarcado = Boolean(agenda.booked || agenda.cancelled);
 const conferirAgendamento = !jaMarcado && !ETIQUETA_BOOK.test(String(i.reply || '')) && g.jev && g.jev.activities.booking === 'deciding' &&
   Boolean(($('JevEntrada').first().json.jev || {}).booking);
 

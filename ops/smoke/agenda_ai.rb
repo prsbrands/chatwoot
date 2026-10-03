@@ -62,6 +62,21 @@ Agenda::EventType.find(tipo['id']).update!(requires_confirmation: true)
 _, pendente = api.(:post, 'bot/bookings', { conversation_id: c1.display_id, starts_at: slots['slots'][5] })
 ok 'tipo com confirmacao: a IA marca pendente', pendente['status'] == 'pending'
 
+# --- desmarcar ---------------------------------------------------------------
+_, com_conversa = api.(:get, "bot/slots?conversation_id=#{c1.display_id}")
+ok 'proximos do contato: os dois marcados pela IA, em ordem, no fuso', com_conversa['upcoming'].map { |a| a['id'] } ==
+                                                                        [compromisso.id, pendente['id']].sort_by { |id| Agenda::Appointment.find(id).starts_at } &&
+                                                                        com_conversa['upcoming'].first['starts_at'].end_with?('-05:00')
+ok 'sem conversa: upcoming vazio', api.(:get, 'bot/slots')[1]['upcoming'] == []
+outra = conversa(account, qr, 'Outro Cliente')
+ok 'compromisso de outro contato: 404', api.(:post, 'bot/cancellations', { conversation_id: outra.display_id, appointment_id: pendente['id'] }).first == 404
+st, cancelado_pela_ia = api.(:post, 'bot/cancellations', { conversation_id: c1.display_id, appointment_id: pendente['id'], reason: 'no podre ir' })
+nota = c1.messages.where(private: true).last
+ok 'desmarca: cancelado, com motivo', st == 200 && cancelado_pela_ia['status'] == 'cancelled' && cancelado_pela_ia['cancellation_reason'] == 'no podre ir'
+ok 'desmarca: mencao a Ana com o motivo', nota.content.include?("mention://user/#{ana.id}/") && nota.content.include?('no podre ir')
+ok 'desmarcado: horario volta para a lista', api.(:get, 'bot/slots')[1]['slots'].include?(slots['slots'][5])
+ok 'desmarcar de novo: 404', api.(:post, 'bot/cancellations', { conversation_id: c1.display_id, appointment_id: pendente['id'] }).first == 404
+
 # --- lembretes ---------------------------------------------------------------
 tipo_db = Agenda::EventType.find(tipo['id'])
 cedo = Agenda::Appointment.create!(account: account, owner: ana, event_type: tipo_db, contact: c1.contact, conversation: c1, title: 'Logo',

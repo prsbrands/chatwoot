@@ -60,6 +60,12 @@ const OCUPADO = {
   en: ['Sorry, that time was just taken. Would one of these work for you?', 'Sorry, that time was just taken. Someone from the team will write to you to confirm another one.'],
 };
 
+// Uma pessoa pode ter assumido enquanto o LLM escrevia (automação, ou alguém
+// na tela): o Guard só viu a conversa quando a mensagem chegou. Visto em
+// 03/10: a automação atribuiu ao Paulo e o bot respondeu 6 s depois.
+const conversa = await getJson('https://prs.cortexgen.cloud/api/v1/accounts/' + i.accountId + '/conversations/' + i.conversationId);
+if ((conversa.meta || {}).assignee_type === 'User') return [{ json: i }];
+
 // O horario marcado neste turno, no MontaPrompt ou pela etiqueta: o link da
 // reuniao vai logo depois da confirmacao (mandarLinkDaReuniao).
 let marcadoAgora = $('MontaPrompt').first().json.booked;

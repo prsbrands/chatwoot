@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.10.0] — 2026-10-03 · base Chatwoot 4.18.0
+
+- **A IA desmarca e muda de horário pelo WhatsApp.** "Desmarca mi reunión del martes" cancela o compromisso na Agenda e no Google, com o motivo do cliente, e quem atende é avisado por menção; a IA confirma e pergunta se o cliente quer outro horário. "Muévela al miércoles a las 10" marca o novo horário e só então cancela o antigo. Quando não fica claro qual compromisso ou o que fazer, a IA pergunta, sem pedir dados que não servem (ano, e-mail).
+- **O bot não fala depois que uma pessoa assumiu.** Se a conversa foi atribuída a alguém enquanto a IA escrevia (uma automação, ou alguém pela tela), a resposta não sai.
+
 ## [1.9.3] — 2026-10-03 · base Chatwoot 4.18.0
 
 - **Link do Meet logo depois da marcação.** Quando a IA marca um tipo com Google Meet, o cliente recebe o link da reunião numa mensagem logo após a confirmação, no idioma dele. Antes, o link só chegava no lembrete.

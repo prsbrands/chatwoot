@@ -85,6 +85,7 @@ en:
 
   agenda:
     ai_booked: '%{mention} the AI booked a %{type} with you for %{when}. It is in the Agenda and in your Google Calendar.'
+    ai_cancelled: '%{mention} the customer cancelled "%{title}" on %{when} through the AI. Reason: %{reason}'
     deal_moved: '%{type} booked'
   errors:
     account:

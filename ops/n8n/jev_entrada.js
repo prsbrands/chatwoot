@@ -216,14 +216,14 @@ if (act.language) {
     },
   };
 }
-// Marcar: vale também a resposta a uma oferta de horário ("pode ser às 10h"),
-// por isso a pergunta olha a conversa recente.
+// Marcar, desmarcar ou mudar de horario: vale também a resposta a uma oferta
+// de horário ("pode ser às 10h"), por isso a pergunta olha a conversa recente.
 if (act.booking) {
   perguntas.booking = {
     type: 'noul',
-    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer trying to book, schedule or reschedule an appointment, asking which times are available, or choosing or accepting a time the assistant offered?',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer trying to book, schedule, reschedule or cancel an appointment, asking which times are available, or choosing or accepting a time the assistant offered?',
     criteria: {
-      true: 'The customer asks to book, schedule, reschedule or meet, asks for available days or times, says which day or time suits them, or accepts an offered time.',
+      true: 'The customer asks to book, schedule, reschedule, move, cancel or meet, says they cannot attend an appointment, asks for available days or times, says which day or time suits them, or accepts an offered time.',
       false: 'Anything else, including questions about prices, services or opening hours with no wish to book.',
     },
   };

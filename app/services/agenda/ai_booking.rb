@@ -35,6 +35,23 @@ class Agenda::AiBooking
                                   .call.slots.first(MAX_SLOTS)
   end
 
+  # Os próximos compromissos do contato da conversa, que ele pode desmarcar.
+  def upcoming(conversation)
+    @account.agenda_appointments.where(contact: conversation.contact, status: %i[pending confirmed])
+            .where(starts_at: Time.current..).order(:starts_at)
+  end
+
+  # O cliente desmarca pela conversa: o compromisso cancela (o Google acompanha
+  # pelo GooglePushJob) e quem atende fica sabendo pela menção.
+  def cancel!(conversation, appointment_id, reason)
+    appointment = upcoming(conversation).find(appointment_id)
+    appointment.update!(status: :cancelled, cancellation_reason: reason)
+    owner_zone = ::Agenda::Availability.find_by(account: @account, user: appointment.owner)&.zone || Time.zone
+    mention(conversation, appointment.owner, 'agenda.ai_cancelled', title: appointment.title, reason: reason.presence || '-',
+                                                                     when: I18n.l(appointment.starts_at.in_time_zone(owner_zone), format: :long))
+    appointment
+  end
+
   def book!(conversation, starts_at)
     raise SlotTaken, slots.reject { |slot| slot < starts_at }.first(3) unless slots.any? { |slot| slot.to_i == starts_at.to_i }
 
@@ -49,10 +66,13 @@ class Agenda::AiBooking
   # Chatwoot (sino, e-mail e push, conforme as preferências da pessoa). Sem
   # remetente, como as notas do sistema; o Guard do bot ignora nota privada.
   def notify_owner(conversation, starts_at)
-    mention = "[@#{owner.available_name}](mention://user/#{owner.id}/#{ERB::Util.url_encode(owner.available_name)})"
+    mention(conversation, owner, 'agenda.ai_booked', type: @event_type.name, when: I18n.l(starts_at.in_time_zone(zone), format: :long))
+  end
+
+  def mention(conversation, user, key, **args)
+    tag = "[@#{user.available_name}](mention://user/#{user.id}/#{ERB::Util.url_encode(user.available_name)})"
     conversation.messages.create!(account: @account, inbox: conversation.inbox, message_type: :outgoing, private: true,
-                                  content: I18n.t('agenda.ai_booked', mention: mention, type: @event_type.name,
-                                                                      when: I18n.l(starts_at.in_time_zone(zone), format: :long)))
+                                  content: I18n.t(key, mention: tag, **args))
   end
 
   def create_appointment(conversation, starts_at)
