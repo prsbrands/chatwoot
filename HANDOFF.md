@@ -1,94 +1,138 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-02 · Instância: https://prs.cortexgen.cloud · Versão: **1.6.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-02/03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
 ## ▶️ PRÓXIMA SESSÃO — comece aqui
 
-**Estado em uma linha:** os blocos 1, 2 e 3 estão em produção (**1.0.2**). O CortexGen Chat tem bot com passagem para humano e briefing, follow-up por silêncio com anti-ban, vigilância das sessões de WhatsApp por QR e funil de vendas completo: Kanban, vários funis, o Jev movendo etapa, radar de risco e score. Falta terminar a **revisão cosmética** e conferir em uso real o que só foi testado em banco descartável.
+**Estado em uma linha:** em 02/10 entraram nove versões (1.1.0 → 1.9.1), seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`):
+- idioma do cliente;
+- tela Connections e WhatsApp oficial;
+- Risk radar;
+- menu por jornada;
+- Tarefas;
+- Agenda com Google Calendar por pessoa;
+- tipos de agendamento e horários livres;
+- **a IA marcando pelo WhatsApp**;
+- lembretes, Meet, negócio que anda ao marcar e presença no Radar.
+
+A primeira coisa da próxima sessão é **conferir em uso real o teste da 1.9.1** (item 1 da fila).
+
+O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`).
 
 ### O que está no ar (conta 1, PRS Global Business)
 
 | Versão | O quê | Ligado? |
 |---|---|---|
-| 0.9.0 | Briefing na passagem, bolhas, opt-out que bloqueia | Sim |
-| 0.10.0 | Follow-up por silêncio (workflow `1aloIF0zKm8pjpeK`) | `nathan-whatsapp` com **24 h** |
-| 0.11.x | Vigilância das sessões de WhatsApp + reconectar pelo Pair | Sim |
-| 0.12–0.13 | Funil de vendas, Kanban, vários funis (flag `sales_pipeline`) | Só na conta 1 |
-| 0.14.0 | O Jev move o negócio (atividade `deal_stage`) | **Observing** |
-| 1.0.0 | Radar de risco e score | Sim (score só com o Jev lendo) |
-| 1.0.1 | "Failed to send" falso no WhatsApp (timeout de 30 s no canal API) | Sim |
-| 1.0.2 | Revisão de código: rubocop e eslint zerados; seletor de etapa do card Deal | Sim |
-| 1.1.0 | Bot responde no idioma do cliente (regra no MontaPrompt + atividade `language` do Jev, que entra **decidindo**); negrito do OpenWA no formato do WhatsApp | Sim |
-| 1.2.0 | Tela **Connections**: canais, WhatsApp QR × oficial, saúde do bot por inbox (`botlayer/health`) e ponto de alerta no menu | Sim |
-| 1.3.0 | **Risk radar** (`Sales::Radar`, `GET /sales/radar`): crítico, esfriando, em voo (follow-up previsto), dono e Take over | Sim |
-| 1.4.0 | **Menu por jornada** (seções CRM / AI agent / Channels / Analysis / Account, ordem em `MENU_LAYOUT` no `Sidebar.vue`) e hubs **View all in CRM / AI** (`routes/dashboard/hubs/catalog.js`) | Sim |
-| 1.5.0 | **Tarefas** (`Sales::Task`, `/sales/tasks`), próximos passos no card do negócio e "sem próximo passo" no Radar | Sim |
-| 1.6.0 | **Agenda** em todas as contas (`Agenda::Appointment`) e **Google Calendar por pessoa** (`Agenda::GoogleConnection`, OAuth em Super Admin → Google Calendar, callback `/google_calendar/callback`) | Sim |
+| 0.9.0–1.0.2 | Briefing na passagem, bolhas, opt-out que bloqueia; follow-up por silêncio (`1aloIF0zKm8pjpeK`, `nathan-whatsapp` 24 h); vigilância das sessões QR; funil (Kanban, vários funis, flag `sales_pipeline`); Jev move negócio (`deal_stage`, **Observing**); radar de risco e score; timeout de 30 s no canal API; rubocop/eslint zerados | Sim |
+| 1.1.0 | Resposta no idioma do cliente: regra no fim do prompt e atividade `language` do Jev (**decidindo**); negrito do OpenWA no formato do WhatsApp | Sim |
+| 1.2.0 | **Connections**: canais, WhatsApp QR × oficial, saúde do bot por inbox (`GET botlayer/health`) e ponto vermelho no menu | Sim |
+| 1.3.0 | **Risk radar** (`Sales::Radar`, `GET /sales/radar`): crítico, esfriando, em voo, dono, Take over | Sim |
+| 1.4.0 | **Menu por jornada** (`MENU_LAYOUT` no `Sidebar.vue`) e hubs **View all in CRM / AI** (`routes/dashboard/hubs/catalog.js`) | Sim |
+| 1.5.0 | **Tarefas** (`Sales::Task`, `/sales/tasks`), próximos passos no card do negócio, "sem próximo passo" no Radar; excluir contato apaga negócios e tarefas | Sim |
+| 1.6.0 | **Agenda** em todas as contas (`Agenda::Appointment`) e **Google Calendar por pessoa** (`Agenda::GoogleConnection`, tokens cifrados) | Sim |
+| 1.7.0 | **Tipos de agendamento** (`Agenda::EventType`), **jornada** por pessoa (`Agenda::Availability`) e **horários livres** (`Agenda::FreeSlots`) | Sim |
+| 1.8.0 | **A IA marca** (atividade `booking` do Jev, **decidindo**; `GET/POST /agenda/bot/slots|bookings`; etiqueta `[[BOOK <iso>]]`) e **lembretes por QR** (`Agenda::ReminderJob`, a cada 5 min) | Sim |
+| 1.8.1 | Rolagem nos diálogos longos | Sim |
+| 1.9.0 | Menção ao responsável quando a IA marca; **Google Meet** por tipo (`{link}`); negócio anda para a etapa do tipo ao marcar; **presença** cobrada no Radar; mensagem de falta por QR (`Agenda::CustomerMessage`) | Sim |
+| 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
 
-Imagem `:v1` = `39bc8017aa8d` (commit `2727e7f10`, clone `src-b11`), rollback em `:v1-pre-b16`. Antes: 1.5.0 = `44d2d3dca3c4` (`:v1-pre-b16`), 1.4.0 = `71e649d4dce3` (`:v1-pre-b15`), 1.3.0 = `f952026f56d7` (`:v1-pre-b14`), 1.2.0 = `965314341baa` (`:v1-pre-b13`), 1.1.0 = `13a843a869bf` (`:v1-pre-b12`). Workflow do bot publicado em 02/10 (versão `2b232bd8`), gerado por `ops/n8n/patch_idioma.py`. A `cg-v1.1.0` depende do push do Paulo.
+- **Imagem:** `:v1` = `05e42f2551c9` (1.9.0, commit `710e8089a`, clone `src-b13`), rollback em `:v1-pre-b20` (1.8.1).
+- **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`.
+- **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1`:
+  ```
+  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1
+  ```
 
-**02/10 — WhatsApp oficial (Cloud API) testado:** inbox **34** (`+15055573540`), conta 1, bot e persona `nathan-whatsapp` respondendo. Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase e o Guard recusa ("sem secret de bot gravado"): ligue sempre por Bot Personas → Channels. As rotas do Instagram (8) e Messenger (9) estavam sem secret desde agosto, ou seja, mudas; foram salvas de novo em 02/10.
-- **Builds sem push:** `git bundle` do Mac → `scp` → `git pull ../bN.bundle` num clone novo do GitHub. Não use `pgrep -f "docker build"` para esperar o build: casa com o próprio comando de espera.
+### Configuração viva da Agenda (conta 1)
+
+- **Google Calendar:**
+  - O app OAuth é o do projeto Google Cloud `cortexgencrm`, o mesmo do CRM, com a callback `https://prs.cortexgen.cloud/google_calendar/callback` acrescentada. As credenciais ficam em Super Admin → Settings → **Google Calendar**, que não é a tela "Google", usada pelo Gmail e pelo login.
+  - A conta 1 está conectada como **prsglobalbusiness@gmail.com**.
+  - O app ainda está **"Em teste"**: a conexão vence em **7 dias**, por volta de 09/10, e só testadores conectam. **Publicar em produção** no Google Cloud.
+  - Desconectar **não revoga** no Google, de propósito: o cliente OAuth é compartilhado com o CRM, e revogar derrubaria a concessão do CRM também.
+- **Tipo "Consulta"** (id 1):
+  - 60 min, responsável Paullo (user 1), IA marca, Google Meet, etapa ao marcar = 3 ("Entendiendo la necesidad");
+  - lembrete 24 h antes;
+  - mensagem de falta: conferir se o Paulo preencheu.
+- **Jornada do Paulo:** seg–sex, fuso **America/Panama**.
+- **Compromisso 2:** "Consulta — Paullo Roberto", segunda 05/10 às 10:00 (15:00 UTC), marcado pela IA na conversa 89 **antes** da 1.9.0. Por isso está sem Meet e sem menção, e o negócio 2 não andou.
+  - O lembrete por QR sai no domingo, 04/10, por volta das 10:00 de Panamá.
+  - **Conferir que saiu.**
+- **Persona `nathan-whatsapp`:** a regra 10 diz "No confirmes agenda ni implementación si el flujo no lo permite". Se a IA voltar a fugir de marcar, trocar o texto (sugestão já passada ao Paulo).
 
 ### Regras de operação (leia antes de mexer)
 
 - **Deploy e publicação são do Paulo.** O classificador bloqueia para o Claude:
   - `db:migrate` em produção, `docker tag` + `--force-recreate`, publicar workflow no n8n e rodar workflow pelo MCP;
-  - escrever no `/tmp` da VPS, às vezes;
-  - ler o Supabase por `psql`. A API do próprio Chatwoot (com o token do admin) funciona para leitura.
-
-  O fluxo que funciona: o Claude builda (`:test-bN`), roda os testes e o boot na 3099 e passa **um comando por vez**. O Paulo roda e manda a saída. Na ordem: migration → tag de rollback (`v1-pre-bN`) → troca da imagem.
-- **Push:** o Mac não tem chave SSH no GitHub. Use `git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel <tags>`; o `gh` está logado por HTTPS. Quem roda o push é o Paulo.
-- **Clone de build:** o **`/opt/cortexgen-chat/src` está parado em `25e1472f0` (30/09)**. Desde então os builds saem dos clones `src-b1` a `src-b5`, e o `src-b5` está em `11c4a7d7a`. Buildar do `src` sem `git pull` **volta a produção para a 0.8.0**.
-  - O `src-b5` tem `node_modules` do lint. Por isso a imagem da 1.0.2 tem 3,38 GB, contra 2,72 GB.
-  - Daqui pra frente: build num clone limpo e lint num clone separado.
-- **Testar antes de subir:** Postgres e Redis **descartáveis** na rede `cortexgen-chat_default`, schema carregado e cenários num `rails runner`. Os scripts ficam em **`ops/smoke/`**: `sales_pipeline.rb` (25 cenários), `sales_stage_advisor.rb` (17) e `sales_insights.rb` (18). O `run.sh` sobe o banco e o Redis descartáveis e roda os três com a imagem que vai subir.
-  - Esse teste achou dois bugs antes da produção: o `GROUP BY` com o `default_scope` do `Message` e o motivo de perda que ficava no negócio reaberto.
-  - **Nunca use o Redis da produção** nesses testes: os jobs iriam para o sidekiq real.
-- **Lint:** em container na VPS. A receita está na memória `lint-em-container`. Use `--force-exclusion` no rubocop e `--quiet` no eslint.
-- **n8n, workflow agendado:** import → **recarregar a página** → Publish → `docker restart n8n-y4jd-n8n-1` → conferir pelo MCP (`active` e `activeVersionId` = `versionId`) e no `n8nEventLog.log` que sai **uma** execução por intervalo. Pular um passo deixa o workflow desligado ou rodando em dobro (os dois aconteceram em 01/10).
+  - ler o Supabase por `psql`. Para leitura, use a API do Chatwoot dentro de um `rails runner`, ou o PostgREST com a service key carregada **dentro** do container, sem imprimir a chave.
+- **O fluxo que funciona:**
+  - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
+    `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
+  - Roda o `ops/smoke/run.sh` e o boot na 3099.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b21`.
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 9 scripts em Postgres e Redis **descartáveis**, 187 cenários no total:
+  - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 17, `agenda_cycle` 11.
+  - O Google e o botlayer entram falsos (`class_eval`).
+  - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
+- **Armadilhas desta sessão:**
+  - `includes` + `joins`/`order` por outra tabela vira `eager_load`, e o polimórfico `inbox.channel` quebra. Use **`preload`**. Aconteceu duas vezes: no Radar e no `ReminderJob`.
+  - `NOT IN (subquery)` com NULL zera a lista: filtre `where.not(col: nil)`.
+  - Estilo inline anulando classe: a linha da hora atual tinha `height: 0`.
+  - `pgrep -f "docker build"` casa com o próprio comando de espera. Espere com o build em primeiro plano, num comando em segundo plano.
+  - Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase, e o Guard recusa toda mensagem. A tela Connections agora mostra isso.
+- **Lint:** em container, no clone `src-b5`. Faça `git fetch ../bN.bundle HEAD && git reset --hard FETCH_HEAD`, rode o `eslint --fix`, traga o `git diff` como patch para o Mac e faça `git checkout -- .` no clone. A receita está na memória `lint-em-container`.
+- **n8n:**
+  - Para o workflow do bot, exporte o publicado, rode `ops/n8n/patch_agenda.py <export> <saída> <commit publicado>` e copie para `/home/node/`. O Paulo faz import → **recarregar a página** → Publish.
+  - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
+  - Workflow agendado (follow-up): depois do Publish, também `docker restart` (ver 01/10).
 - **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, porque o Mac não roda migration.
-- **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão (Settings → Integrations → WhatsApp Sessions). Excluir e criar outra duplica o número. O WhatsApp vivo da conta 1 é a **inbox 33**, que é nova e tem teto de 20 follow-ups por dia até 04/10.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. As últimas são `20261002000001` a `…05`.
+- **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão. O WhatsApp QR vivo da conta 1 é a **inbox 33**. O **WhatsApp oficial** é a **inbox 34** (`+15055573540`).
 
 ### Fila, na ordem que eu seguiria
 
-**02/10 — comparação com o CRM (DeskComm, `/Volumes/KINGSTON/projetos_ia/crm`):** o plano combinado com o Paulo é Conexões ✅ → Radar ✅ → menu por jornada com hubs ✅ → Tarefas ✅ → Agenda + Google ✅ → **Agenda, 2ª parte**: tipos de agendamento, jornada de cada pessoa e horários livres; depois a IA marcando pelo WhatsApp e os lembretes.
-- **Google Calendar:** o app OAuth é o do projeto `cortexgencrm` (o mesmo do CRM), ainda **"Em teste"**: a conexão vence em 7 dias e só testadores conectam. Publicar em produção no Google Cloud. Desconectar **não revoga** no Google de propósito (revogaria a concessão do CRM também). A conta 1 está conectada como prsglobalbusiness@gmail.com; o 1º evento (`cgchat1`) foi ao Google em 02/10.
-- Commit `8226ba2cd` (linha da hora atual na Agenda) ainda não foi ao ar. O sistema ainda é de uso exclusivo do Paulo: navegação e telas podem mudar sem esboço prévio.
-- **SMS da inbox 15** aparece em Connections como "persona sem bot": decisão do Paulo se a IA responde SMS.
-- O Radar da conta 1 está vazio (2 negócios abertos, em dia); o teste com conteúdo está em `ops/smoke/sales_radar.rb` (14 cenários, roda no `run.sh`).
+1. **Conferir a 1.9.1 em uso real.** Peça ao Paulo um pedido de horário **exato** pelo WhatsApp, por exemplo "martes 6 a las 11am", e confira:
+   - o compromisso na Agenda e no Google, **com Meet** (`meeting_url`);
+   - a **menção** ao Paulo, na nota privada e no sino;
+   - o negócio indo para "Entendiendo la necesidad", com transição `actor_type: ai`;
+   - nenhuma confirmação em texto sem compromisso.
 
+   Se a IA ainda confirmar sem marcar, a rede de segurança deve segurar a resposta e abrir a conversa com uma nota `reply_review` ("tells the customer the appointment is booked…").
+2. **Lembrete de domingo** do compromisso 2: conferir que saiu na conversa 89, com `reminder_sent_at`.
+3. **Publicar o app OAuth do Google** (com o Paulo) antes de ~09/10.
+4. **Próximos módulos do CRM ainda sem equivalente**, para escolher com o Paulo:
+   - Casos (escalação com aviso no WhatsApp);
+   - Memória da IA;
+   - Uso e orçamento;
+   - Evolução da IA;
+   - Faturamento e comandas;
+   - Prospecção.
+5. **Lembretes no WhatsApp oficial:** dependem de um template aprovado no Meta. O Paulo não tem nenhum. Também falta o Meet na mensagem logo após a marcação: hoje o link só chega no lembrete.
+6. **Jev:** "Check the reply before sending" segue em Observing. A rede de segurança do agendamento age mesmo assim. Ler os números do cartão antes de recomendar passar outras atividades a decidir.
+7. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa, e Connections mostra o ponto vermelho. Decisão do Paulo: ligar o bot ou desligar a rota.
+8. **Limpeza da VPS:**
+   - clones `src-merge`, `src-f2`, `src-b1` a `src-b4`, `src-b6` a `src-b12`, e `src-b13` depois do próximo build;
+   - imagens `test-*` e `v1-pre-*` antigas: manter `v1`, `v1-pre-b20` e uma ou duas;
+   - bundles `/opt/cortexgen-chat/b*.bundle` e `wf-*.json`.
 
-1. **Conferir em uso real o que só foi testado em banco descartável.** Peça ao Paulo uma conversa nova pelo WhatsApp da inbox 33 e confira:
-   - o negócio nasce em "Nuevo contacto";
-   - o seletor de etapa do card Deal lista as etapas (era o bug da 1.0.2);
-   - depois de ~5 min, o ponto de risco aparece no Kanban;
-   - o score aparece quando o Jev ler a conversa (a atividade `deal_stage` em Observing já basta);
-   - nenhuma mensagem nova mostra "Failed to send".
-2. **2ª retomada da conversa 89.** Ela sai por volta das 8:00 de Bogotá de 02/10, pela regra das 24 h, se o Paulo não tiver respondido. É o primeiro envio com o prompt novo: confira se o texto cita a pendência concreta (proposta, perguntas sobre o negócio) e não um "¿cómo va todo?".
-3. **Revisão cosmética, a parte que falta:**
-   - **Comentários.** Parte do código do fork tem português sem acento ("nao", "negocio", "funil padrao") e parte com acento. Padronizar com acento, mexendo **só em comentário**: string, chave e texto de tela ficam como estão.
-   - **Telas.** Percorrer Pipeline, card Deal, Pipeline settings, cartão do Jev, WhatsApp Sessions e PersonaEditor, em modo claro e escuro e no celular. O Paulo faz o login no navegador embutido, ou manda prints.
-4. **Decidir o que o Jev passa a decidir.** Hoje há atividades em Observing que já mostraram acerto: "Notice a request for a person", "Check the reply before sending" e "Measure the customer's mood". Agora entra também "Move the deal along the pipeline". Leia os números do cartão do Jev antes de recomendar.
-5. **Limpeza da VPS** (disco em 66%):
-   - Clones antigos: `src-merge`, `src-f2` e `src-b1` a `src-b4`.
-   - As imagens `test-*` e `v1-pre-*` antigas são 25, de ~2,7 GB cada. Mantenha `v1`, `v1-pre-b10` e uma ou duas anteriores.
-   - Quem apaga é o Paulo; passe a lista para ele.
-6. **Atualizar o `src`** para o HEAD, ou oficializar um clone de build, para não depender de `src-bN`.
+   Quem apaga é o Paulo.
+9. **Revisão cosmética antiga:** acentos em comentários e telas no modo escuro e no celular.
 
 ### Pendências antigas que continuam valendo
 
-- **Testar no WhatsApp real:** o `stop` (opt-out que bloqueia) num número OpenWA. Conferir também se o bridge do OpenWA repassa o "digitando" ao WhatsApp. Se não repassar, o "digitando" só aparece no painel, mas a espera entre as bolhas vale do mesmo jeito.
-- **Monitorar:**
-  - a base sob medida: a conta 1 tem 76 seções, e o Jev mantém 71–72;
-  - o corte de "não precisa de resposta", hoje em 0,85 (um "ok, gracias" saiu 0,80).
-- **LLM lento:** 7–13 s no `LLMCustom` da persona `nathan-website`. A causa é do fornecedor.
+- **Testar no WhatsApp real:** o `stop` (opt-out) num número OpenWA, e se o bridge repassa o "digitando".
+- **Monitorar:** a base sob medida (76 seções; o Jev mantém 71–72) e o corte de "não precisa de resposta" (0,85).
+- **LLM lento:** 7–13 s no `LLMCustom` da `nathan-website`, por causa do fornecedor.
 - **Dívida antiga:** o `db/schema.rb` não tem as tabelas de voz.
-- **Inbox 31 (DaGente, conta 2):** o fuso está certo (`America/Sao_Paulo`), mas a persona dela não tem follow-up e a conta 2 não tem a flag do funil.
-- **Próximo merge do upstream:** use a memória `merge-upstream-migrations`. Agora deve ter menos conflito, porque o código do fork saiu das classes do Chatwoot (ver 1.0.2).
+- **Inbox 31 (DaGente, conta 2):** sem follow-up na persona, e a conta 2 sem a flag do funil.
+- **Próximo merge do upstream:** usar a memória `merge-upstream-migrations`. Os toques do fork em arquivos do upstream são poucos:
+  - os `include` no `Account` e no `Contact`;
+  - o `Sidebar.vue` (`MENU_LAYOUT`, `baseMenuItems`);
+  - a `badgeClass` no `SidebarGroupHeader`;
+  - o `overflow-y-auto` passado ao `Dialog`.
 
 ---
 
