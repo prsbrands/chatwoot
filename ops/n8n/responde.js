@@ -28,7 +28,9 @@ const paraWhatsapp = texto => texto
 // Rails confere de novo se o horario esta livre e marca. Ocupado no meio do
 // caminho (409): a resposta vira um pedido de desculpas com as proximas opcoes.
 const ETIQUETA = /\s*\[\[BOOK ([^\]]+)\]\]\s*/;
-const marcado = String(i.reply || '').match(ETIQUETA);
+// Horario ja marcado no MontaPrompt: uma etiqueta que o LLM escreva assim
+// mesmo so sai do texto, sem marcar de novo (daria 409 e um falso "ocupado").
+const marcado = $('MontaPrompt').first().json.booked ? null : String(i.reply || '').match(ETIQUETA);
 let texto = String(i.reply || '').replace(new RegExp(ETIQUETA.source, 'g'), '\n').trim();
 
 function agendar(startsAt) {

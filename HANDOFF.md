@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-02/03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -37,9 +37,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.8.1 | Rolagem nos diálogos longos | Sim |
 | 1.9.0 | Menção ao responsável quando a IA marca; **Google Meet** por tipo (`{link}`); negócio anda para a etapa do tipo ao marcar; **presença** cobrada no Radar; mensagem de falta por QR (`Agenda::CustomerMessage`) | Sim |
 | 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
+| 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | A publicar |
 
 - **Imagem:** `:v1` = `05e42f2551c9` (1.9.0, commit `710e8089a`, clone `src-b13`), rollback em `:v1-pre-b20` (1.8.1).
-- **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`.
+- **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`. A 1.9.2 sai de `patch_agenda.py <export> <saída> 363b68010`.
 - **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1`:
   ```
   git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1

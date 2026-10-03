@@ -53,7 +53,76 @@ function getJson(url, headers) {
   });
 }
 
+function postJson(url, headers, body, timeoutMs) {
+  return new Promise(resolve => {
+    const data = JSON.stringify(body);
+    const req = https.request(url, {
+      method: 'POST',
+      headers: Object.assign({ 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) }, headers),
+    }, res => {
+      let raw = '';
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: raw }));
+    });
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+    req.on('error', error => resolve({ statusCode: 0, body: error.message }));
+    req.end(data);
+  });
+}
+
+const quando = timeZone => new Intl.DateTimeFormat('en-US', {
+  weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: timeZone,
+});
+
+// O horario que o cliente pediu ou aceitou e marcado aqui, antes do LLM, por
+// uma escolha do Jev entre os horarios livres. Visto em 03/10: com a lista no
+// prompt e o horario livre, o LLM confirmou sem a etiqueta [[BOOK]] — o
+// historico so mostra confirmacoes sem ela, porque o Responde tira a etiqueta
+// do texto. A etiqueta continua valendo quando o Jev nao tem certeza.
+// Devolve o horario marcado (ISO) ou null; falha aqui so volta ao caminho da
+// etiqueta.
+const ESCOLHA_CONFIDENCE = 0.8;
+async function marcarOEscolhido(agenda) {
+  const scrub = text => String(text || '')
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]');
+  const anterior = messages.length > 1 ? messages[messages.length - 2] : null;
+  const criteria = {
+    none: 'The customer does not name or accept one specific time from this list: they ask what is available or whether a time is free, give only a day or a part of the day, ask something else, or want a time that is not listed.',
+  };
+  agenda.slots.forEach((slot, k) => { criteria['t' + k] = quando(agenda.time_zone).format(new Date(slot)) + '.'; });
+  const res = await postJson('https://api.typesafe.ai/v1/systemone', { authorization: 'Bearer ' + g.jev.key }, {
+    model: 'jev-1.13.0',
+    state: {
+      today: new Intl.DateTimeFormat('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: agenda.time_zone }).format(new Date()),
+      customer_last_message: scrub(messages[messages.length - 1].content),
+      previous_assistant_message: anterior && anterior.role === 'assistant' ? scrub(anterior.content) : '',
+    },
+    questions: {
+      time: {
+        type: 'choice',
+        instructions: 'Which time does the customer ask to book, or accept from `previous_assistant_message`, in `customer_last_message`? Use `today` to resolve words like "tomorrow" or "Tuesday".',
+        criteria: criteria,
+      },
+    },
+  }, 2500);
+  let escolha = null;
+  try { escolha = JSON.parse(res.body).answers.time; } catch (e) { escolha = null; }
+  if (res.statusCode !== 200 || !escolha || escolha.choice === 'none' || escolha.confidence < ESCOLHA_CONFIDENCE) return null;
+  const slot = agenda.slots[Number(String(escolha.choice).slice(1))];
+  if (!slot) return null;
+
+  const marcacao = await postJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/agenda/bot/bookings',
+    { api_access_token: g.chatUserToken }, { conversation_id: g.conversationId, starts_at: slot }, 20000);
+  if (marcacao.statusCode < 200 || marcacao.statusCode >= 300) {
+    console.error('MontaPrompt: marcar ' + slot + ' HTTP ' + marcacao.statusCode + ' ' + String(marcacao.body).slice(0, 200));
+    return null;
+  }
+  return slot;
+}
+
 let regraDeAgenda = '';
+let marcado = null;
 // A Agenda fora do ar nao pode calar o bot: ele responde e diz que a equipe
 // confirma o horario.
 let agenda = { available: false };
@@ -65,7 +134,13 @@ if (jev.booking) {
     console.error(error.message);
     regraDeAgenda = '\n\n---\n\n# BOOKING\n\nThe customer wants to book, but the calendar cannot be read right now. Do not offer or confirm any time: say that someone from the team will confirm a time shortly.';
   }
-  if (agenda.available) {
+  if (agenda.available && agenda.slots.length) marcado = await marcarOEscolhido(agenda);
+  if (marcado) {
+    regraDeAgenda = '\n\n---\n\n# BOOKING\n\n' +
+      'The customer\'s "' + agenda.event_type.name + '" is now booked for ' + quando(agenda.time_zone).format(new Date(marcado)) +
+      ' (' + agenda.time_zone + '). Confirm it in a short reply with the weekday, date and time. ' +
+      'Do not offer other times and do not write any [[BOOK ...]] line.';
+  } else if (agenda.available) {
     const diaDaSemana = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: agenda.time_zone });
     const lista = agenda.slots.map(slot => '- ' + slot + ' (' + diaDaSemana.format(new Date(slot)) + ')').join('\n');
     regraDeAgenda = '\n\n---\n\n# BOOKING\n\n' +
@@ -166,4 +241,5 @@ return [{ json: {
   provider: provider,
   handoffRules: rota.handoff_rules || {},
   turns: messages.filter(m => m.role === 'user').length,
+  booked: marcado,
 } }];

@@ -27,8 +27,10 @@ const segue = () => [{ json: i }];
 // o horario esta confirmado, o cliente sairia achando que marcou sem nada na
 // Agenda (visto em 02/10). Vale com o agendamento decidindo, mesmo que a
 // revisao geral so observe.
+// Horario ja marcado no MontaPrompt (escolha do Jev): a confirmacao e verdadeira.
 const ETIQUETA_BOOK = /\[\[BOOK [^\]]+\]\]/;
-const conferirAgendamento = !ETIQUETA_BOOK.test(String(i.reply || '')) && g.jev && g.jev.activities.booking === 'deciding' &&
+const jaMarcado = Boolean($('MontaPrompt').first().json.booked);
+const conferirAgendamento = !jaMarcado && !ETIQUETA_BOOK.test(String(i.reply || '')) && g.jev && g.jev.activities.booking === 'deciding' &&
   Boolean(($('JevEntrada').first().json.jev || {}).booking);
 
 if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento)) return segue();
@@ -103,12 +105,12 @@ async function gravar(row) {
 
 // ---- perguntas ---------------------------------------------------------------
 
-// Resposta que fecha um agendamento traz a etiqueta [[BOOK ...]] (MontaPrompt):
-// quem marca é o sistema (Responde), não uma pessoa. A etiqueta sai do texto
-// revisado e a pergunta de promessa fica de fora, senão toda confirmação de
-// horário seria retida.
+// Resposta que fecha um agendamento traz a etiqueta [[BOOK ...]] (MontaPrompt),
+// ou confirma o horario que o MontaPrompt ja marcou: quem marca é o sistema,
+// não uma pessoa. A etiqueta sai do texto revisado e a pergunta de promessa
+// fica de fora, senão toda confirmação de horário seria retida.
 const ETIQUETA = /\s*\[\[BOOK [^\]]+\]\]\s*/g;
-const agendando = ETIQUETA.test(String(i.reply || ''));
+const agendando = jaMarcado || ETIQUETA.test(String(i.reply || ''));
 const respostaRevisada = String(i.reply || '').replace(ETIQUETA, ' ').trim();
 
 const perguntas = {
