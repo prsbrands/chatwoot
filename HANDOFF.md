@@ -37,7 +37,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.8.1 | Rolagem nos diálogos longos | Sim |
 | 1.9.0 | Menção ao responsável quando a IA marca; **Google Meet** por tipo (`{link}`); negócio anda para a etapa do tipo ao marcar; **presença** cobrada no Radar; mensagem de falta por QR (`Agenda::CustomerMessage`) | Sim |
 | 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
-| 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | A publicar |
+| 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | Sim, 03/10: provado na conversa 89 (compromisso 3, terça 06/10 11:00, com Meet e menção) |
 
 - **Imagem:** `:v1` = `05e42f2551c9` (1.9.0, commit `710e8089a`, clone `src-b13`), rollback em `:v1-pre-b20` (1.8.1).
 - **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`. A 1.9.2 sai de `patch_agenda.py <export> <saída> 363b68010`.
@@ -61,7 +61,8 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 - **Compromisso 2:** "Consulta — Paullo Roberto", segunda 05/10 às 10:00 (15:00 UTC), marcado pela IA na conversa 89 **antes** da 1.9.0. Por isso está sem Meet e sem menção, e o negócio 2 não andou.
   - O lembrete por QR sai no domingo, 04/10, por volta das 10:00 de Panamá.
   - **Conferir que saiu.**
-- **Persona `nathan-whatsapp`:** a regra 10 diz "No confirmes agenda ni implementación si el flujo no lo permite". Se a IA voltar a fugir de marcar, trocar o texto (sugestão já passada ao Paulo).
+- **Persona `nathan-whatsapp`:** motor trocado pelo Paulo em 03/10 de DeepSeek para **GPT 5.6 Luna**. No 1º "Hola" depois da troca, o bot pediu mês, zona horária, nome e e-mail sem motivo: observar.
+- **Persona `nathan-whatsapp` (regra 10):** a regra 10 diz "No confirmes agenda ni implementación si el flujo no lo permite". Se a IA voltar a fugir de marcar, trocar o texto (sugestão já passada ao Paulo).
 
 ### Regras de operação (leia antes de mexer)
 
