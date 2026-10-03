@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.9.3] — 2026-10-03 · base Chatwoot 4.18.0
+
+- **Link do Meet logo depois da marcação.** Quando a IA marca um tipo com Google Meet, o cliente recebe o link da reunião numa mensagem logo após a confirmação, no idioma dele. Antes, o link só chegava no lembrete.
+
 ## [1.9.2] — 2026-10-03 · base Chatwoot 4.18.0
 
 - **A IA marca o horário que o cliente pede, sem depender de lembrar.** Quando o cliente pede ou aceita um horário livre ("martes 6 a las 11am", "10"), o sistema identifica qual é e marca antes de a IA escrever; a IA só confirma. Antes, a marcação dependia de uma linha escondida que a IA às vezes esquecia, e a conversa ia para a equipe sem horário marcado. Quando não há certeza do horário, segue o caminho de antes: a IA oferece opções.

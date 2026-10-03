@@ -60,9 +60,13 @@ const OCUPADO = {
   en: ['Sorry, that time was just taken. Would one of these work for you?', 'Sorry, that time was just taken. Someone from the team will write to you to confirm another one.'],
 };
 
+// O horario marcado neste turno, no MontaPrompt ou pela etiqueta: o link da
+// reuniao vai logo depois da confirmacao (mandarLinkDaReuniao).
+let marcadoAgora = $('MontaPrompt').first().json.booked;
 if (marcado) {
   const resultado = await agendar(marcado[1].trim());
-  if (!resultado.ok) {
+  if (resultado.ok) marcadoAgora = marcado[1].trim();
+  else {
     const idioma = ($('JevEntrada').first().json.jev || {}).language;
     const frases = OCUPADO[idioma] || OCUPADO.en;
     const opcoes = (resultado.conflict.alternatives || []).map(slot => '• ' + new Intl.DateTimeFormat(idioma || 'en', {
@@ -125,14 +129,52 @@ function bolhas(texto) {
   return juntas;
 }
 
-if (!g.splitReplies) {
-  await postar('/messages', { content: reply, message_type: 'outgoing' });
-  return [{ json: i }];
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { api_access_token: g.chatUserToken } }, res => {
+      let raw = '';
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => (res.statusCode >= 200 && res.statusCode < 300
+        ? resolve(JSON.parse(raw))
+        : reject(new Error('Responde: ' + url + ' HTTP ' + res.statusCode + ' ' + raw.slice(0, 200)))));
+    });
+    req.setTimeout(20000, () => req.destroy(new Error('Responde: ' + url + ' timeout')));
+    req.on('error', reject);
+  });
 }
 
-for (const bolha of bolhas(reply)) {
-  await postar('/toggle_typing_status', { typing_status: 'on' });
-  await espera(atraso(bolha));
-  await postar('/messages', { content: bolha, message_type: 'outgoing' });
+// O Meet nasce no GooglePushJob, segundos depois da marcacao, entao a IA nao
+// tem o link quando escreve. Depois da confirmacao ele ja existe; se o job
+// ainda nao rodou (google_synced_at vazio), espera uma vez. Tipo sem Meet nao
+// manda nada, e o lembrete leva o link de qualquer jeito.
+const LINK = { es: 'Enlace de la reunión:', pt: 'Link da reunião:', en: 'Meeting link:' };
+async function mandarLinkDaReuniao() {
+  const alvo = Math.floor(new Date(marcadoAgora).getTime() / 1000);
+  const url = 'https://prs.cortexgen.cloud/api/v1/accounts/' + i.accountId + '/agenda/appointments?contact_id=' + g.contactId;
+  const buscar = async () => ((await getJson(url)).payload || []).find(a => a.starts_at === alvo);
+  let compromisso = await buscar();
+  if (compromisso && !compromisso.google_synced_at) {
+    await espera(3000);
+    compromisso = await buscar();
+  }
+  if (!compromisso || !compromisso.meeting_url) return;
+  const idioma = ($('JevEntrada').first().json.jev || {}).language;
+  const texto = (LINK[idioma] || LINK.en) + ' ' + compromisso.meeting_url;
+  if (g.splitReplies) {
+    await postar('/toggle_typing_status', { typing_status: 'on' });
+    await espera(atraso(texto));
+  }
+  await postar('/messages', { content: texto, message_type: 'outgoing' });
 }
+
+if (!g.splitReplies) {
+  await postar('/messages', { content: reply, message_type: 'outgoing' });
+} else {
+  for (const bolha of bolhas(reply)) {
+    await postar('/toggle_typing_status', { typing_status: 'on' });
+    await espera(atraso(bolha));
+    await postar('/messages', { content: bolha, message_type: 'outgoing' });
+  }
+}
+if (marcadoAgora) await mandarLinkDaReuniao();
 return [{ json: i }];

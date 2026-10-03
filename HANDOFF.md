@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.3** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -38,6 +38,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.9.0 | Menção ao responsável quando a IA marca; **Google Meet** por tipo (`{link}`); negócio anda para a etapa do tipo ao marcar; **presença** cobrada no Radar; mensagem de falta por QR (`Agenda::CustomerMessage`) | Sim |
 | 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
 | 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | Sim, 03/10: provado na conversa 89 (compromisso 3, terça 06/10 11:00, com Meet e menção) |
+| 1.9.3 | **Link do Meet após a marcação:** o `Responde`, depois da confirmação, lê `GET /agenda/appointments?contact_id=` e manda `meeting_url` numa bolha final (espera 3 s uma vez se o `GooglePushJob` ainda não rodou). **Só n8n** | A publicar |
 
 - **Imagem:** `:v1` = `05e42f2551c9` (1.9.0, commit `710e8089a`, clone `src-b13`), rollback em `:v1-pre-b20` (1.8.1).
 - **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`. A 1.9.2 sai de `patch_agenda.py <export> <saída> 363b68010`.
@@ -112,7 +113,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
    - Evolução da IA;
    - Faturamento e comandas;
    - Prospecção.
-5. **Lembretes no WhatsApp oficial:** dependem de um template aprovado no Meta. O Paulo não tem nenhum. Também falta o Meet na mensagem logo após a marcação: hoje o link só chega no lembrete.
+5. **Lembretes no WhatsApp oficial:** dependem de um template aprovado no Meta. O Paulo não tem nenhum. O Meet logo após a marcação entrou na 1.9.3.
 6. **Jev:** "Check the reply before sending" segue em Observing. A rede de segurança do agendamento age mesmo assim. Ler os números do cartão antes de recomendar passar outras atividades a decidir.
 7. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa, e Connections mostra o ponto vermelho. Decisão do Paulo: ligar o bot ou desligar a rota.
 8. **Limpeza da VPS:**
