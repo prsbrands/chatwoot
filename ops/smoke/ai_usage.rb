@@ -50,8 +50,15 @@ account.enable_features!('bot_personas')
 # --- teto no Super Admin -----------------------------------------------------
 root = SuperAdmin.create!(name: 'Root', email: "root-#{SecureRandom.hex(3)}@uso.test", password: 'Senha-forte-1!', confirmed_at: Time.current)
 s.post '/super_admin/sign_in', params: { super_admin: { email: root.email, password: 'Senha-forte-1!' } }
+
+s.get "/super_admin/accounts/#{account.id}"
+pagina = s.response.body
+ok 'pagina da conta mostra o gasto e o campo do teto', s.response.status == 200 && pagina.include?('ai_budget[monthly_usd]') &&
+                                                      pagina.include?('1.51')
+# O token do formulario, como o navegador manda.
+token = pagina[%r{action="/super_admin/accounts/#{account.id}/ai_budget".*?name="authenticity_token" value="([^"]+)"}m, 1]
 teto = lambda do |valor|
-  s.patch "/super_admin/accounts/#{account.id}/ai_budget", params: { ai_budget: { monthly_usd: valor } }
+  s.patch "/super_admin/accounts/#{account.id}/ai_budget", params: { authenticity_token: token, ai_budget: { monthly_usd: valor } }
   s.response.status
 end
 
@@ -60,6 +67,3 @@ ok 'em branco: sem teto', teto.('') == 302 && GRAVADO.last[:ai_monthly_budget_us
 antes = GRAVADO.size
 ok 'negativo: 400 e nada gravado', teto.('-1') == 400 && GRAVADO.size == antes
 ok 'texto: 400 e nada gravado', teto.('dez') == 400 && GRAVADO.size == antes
-s.get "/super_admin/accounts/#{account.id}"
-ok 'pagina da conta mostra o gasto e o campo do teto', s.response.status == 200 && s.response.body.include?('ai_budget[monthly_usd]') &&
-                                                      s.response.body.include?('1.51')
