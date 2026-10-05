@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.9.3** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.10.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -39,12 +39,13 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
 | 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | Sim, 03/10: provado na conversa 89 (compromisso 3, terça 06/10 11:00, com Meet e menção) |
 | 1.9.3 | **Link do Meet após a marcação:** o `Responde`, depois da confirmação, lê `GET /agenda/appointments?contact_id=` e manda `meeting_url` numa bolha final (espera 3 s uma vez se o `GooglePushJob` ainda não rodou). **Só n8n** | Sim, 03/10 (falta ver em uso real) |
+| 1.10.0 | **A IA desmarca e muda de horário:** `bot/slots?conversation_id=` devolve `upcoming` (próximos do contato) e `POST bot/cancellations` cancela com motivo e menção (`AiBooking#cancel!`). No `MontaPrompt`, a mesma chamada do Jev tem 3 `choice`: `time`, `cancel` e `move`; mudar = marca o novo e só então cancela o antigo; `move` sem horário novo não cancela. O prompt proíbe pedir ano/e-mail para isso. O `Responde` relê a conversa e não envia (nem marca pela etiqueta) se `assignee_type` virou `User`. Rails + n8n | Sim, 05/10 (falta ver em uso real) |
 
-- **Imagem:** `:v1` = `05e42f2551c9` (1.9.0, commit `710e8089a`, clone `src-b13`), rollback em `:v1-pre-b20` (1.8.1).
-- **Workflow do bot:** publicado com os nós do commit `363b68010`, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`. A 1.9.2 sai de `patch_agenda.py <export> <saída> 363b68010`.
-- **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1`:
+- **Imagem:** `:v1` = `3debec5d7213` (1.10.0, commit `5ef9a20e1`, clone `src-b14`), rollback em `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b22`.
+- **Workflow do bot:** publicado com os nós do commit `5ef9a20e1` (1.10.0; gerar o próximo com `patch_agenda.py <export> <saída> 5ef9a20e1`). Antes:, gerado por `ops/n8n/patch_agenda.py wf.json out.json 710e8089a`. A 1.9.2 sai de `patch_agenda.py <export> <saída> 363b68010`.
+- **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0` a `cg-v1.10.0`:
   ```
-  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1
+  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0
   ```
 
 ### Configuração viva da Agenda (conta 1)
@@ -74,10 +75,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b21`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 9 scripts em Postgres e Redis **descartáveis**, 187 cenários no total:
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b22`.
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 9 scripts em Postgres e Redis **descartáveis**, 194 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 17, `agenda_cycle` 11.
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
 - **Armadilhas desta sessão:**
