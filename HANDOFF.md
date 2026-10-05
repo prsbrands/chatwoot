@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.12.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.13.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -43,12 +43,13 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.11.0 | **Uso de IA e teto mensal:** SQL `db/botlayer/bot_ai_usage.sql` (`bot_interactions` ganha `chatwoot_account_id` e `kind` reply/briefing/followup; `cost_usd` agora vem do `usage.cost` do OpenRouter, pedido com `usage: {include: true}`; teto em `bot_account_settings.ai_monthly_budget_usd`; RPCs `bot_ai_month_spend` e `bot_ai_usage`). Tela Settings → Integrations → **AI usage** (menu AI). Teto só no **Super Admin**, na página da conta (`SuperAdmin::AiBudgetsController`). No teto: o **Guard** deixa nota e abre a conversa sem chamar LLM; o **Candidatos** pula a conta. Passagem e Envia registram o LLM do resumo e da retomada. Workflows gerados por `ops/n8n/patch_uso.py bot|followup` | Sim, 05/10 |
 | 1.12.0 | **Comercial, fase 1** (flag `commerce`, ligada na conta 1): migration `20261005000001` (`commerce_categories`, `commerce_items`, `commerce_profiles`, `commerce_payment_methods`); models em `app/models/commerce/`, API `/commerce/{items,categories,payment_methods,profile}`, imagens e logo pelo `/upload` (blob_id, ActiveStorage local). Telas **Catalog** (`/catalog`) e **Company & payments** (`/company`). Fases seguintes: 2 orçamentos e faturas com PDF; 3 cobrança online (Stripe, Mercado Pago com Pix, Yappy — o Yappy do `cortex-tasty-hub-main` serve de base, mas tem falhas de segurança a corrigir: credenciais em texto puro, `handleWebhook` aberto, hash do IPN opcional); 4 catálogo na IA e vitrine. Decisões do Paulo: fatura comercial (não fiscal), um preço com uma moeda por item, multimoeda USD/BRL/EUR | Sim, 05/10 |
 | 1.12.1 | Company & payments em branco na 1.12.0: `@` cru no placeholder do `commerce.json` (vue-i18n: `Invalid linked format`). Escapado como `{'@'}`. Achado lendo o console pelo Claude in Chrome. Memória `vue-i18n-arroba-quebra-tela` | Sim, 05/10 |
+| 1.13.0 | **Comercial, fase 2: orçamentos e faturas.** Migration `20261005000002` (`commerce_documents`, `commerce_document_items`, `commerce_document_payments`; prefixos em `commerce_profiles`). Serviços em `app/services/commerce/`: `DocumentEditor` (salva cabeçalho, cliente e linhas; renova a cópia da empresa enquanto editável; lembra RUC/endereço no `additional_attributes` do contato como `billing_*`), `DocumentTotals` (exclusive/inclusive/exempt), `DocumentPdf` (Prawn 2.4 + `matrix`, fontes embutidas Windows-1252, logo via vips), `DocumentFlow` (PDF arquivado em `pdfs`, aceitar/recusar, anular, gerar fatura, pagamentos, negócio ganho), `DocumentSender` (conversa via `MessageBuilder` com o blob do PDF; e-mail via `Commerce::DocumentMailer`), `DocumentLabels` (textos do documento em es/pt/en — de propósito fora do i18n da interface). Página pública `/d/:token` (`CommercePublicDocumentsController < PublicController`). Busca sem acento por `translate()` (`Commerce::Search`). Telas `/documents` e `/documents/:id`. **Não testado em uso real ainda: o anexo do PDF no WhatsApp por QR (OpenWA) e o e-mail pelo SMTP de produção** | Sim, 05/10 |
 
-- **Imagem:** `:v1` = `abc240d4fa00` (1.12.1, commit da correção do `@`, clone `src-b14`), rollback em `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b25`.
+- **Imagem:** `:v1` = `0ee41a036f9c` (1.13.0, commit `85c11aa64`, clone `src-b14`), rollback em `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b26`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0` a `cg-v1.10.0`:
   ```
-  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1
+  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1 cg-v1.13.0
   ```
 
 ### Configuração viva da Agenda (conta 1)
@@ -78,12 +79,13 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b25`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 11 scripts em Postgres e Redis **descartáveis**, 210 cenários no total:
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b26`.
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 238 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25.
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 28.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
+- **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
 - **Armadilhas desta sessão:**
   - `includes` + `joins`/`order` por outra tabela vira `eager_load`, e o polimórfico `inbox.channel` quebra. Use **`preload`**. Aconteceu duas vezes: no Radar e no `ReminderJob`.
   - `NOT IN (subquery)` com NULL zera a lista: filtre `where.not(col: nil)`.
@@ -96,7 +98,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
   - Workflow agendado (follow-up): depois do Publish, também `docker restart` (ver 01/10).
 - **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261005000001`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261005000002`.
 - **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão. O WhatsApp QR vivo da conta 1 é a **inbox 33**. O **WhatsApp oficial** é a **inbox 34** (`+15055573540`).
 
 ### Fila, na ordem que eu seguiria

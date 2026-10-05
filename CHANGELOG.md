@@ -14,6 +14,15 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.13.0] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Orçamentos e faturas** (menu CRM → Quotes & invoices). Cliente puxado de um contato (os dados fiscais ficam lembrados no contato), idioma do documento (espanhol, português ou inglês), moeda, data e validade ou vencimento, linhas do catálogo ou livres com quantidade, unidade, desconto e alíquota de imposto por linha. Três modos de imposto: preço sem imposto (soma por fora), preço com imposto incluso ou isento. Numeração COT-2026-0001 e FAT-2026-0001, com o prefixo editável em Company & payments.
+- **PDF com a sua marca**: logo, dados da empresa e do cliente, itens, totais, formas de pagamento com as instruções, condições e rodapé. Cada PDF gerado fica arquivado no documento, para consultar, reimprimir e reenviar.
+- **Envio** pela conversa (o PDF vai anexo, com o link) ou por e-mail (PDF anexo). Em branco, a mensagem sai no idioma do documento.
+- **Link público** para o cliente ver o documento e baixar o PDF; no orçamento, os botões Aceitar e Recusar.
+- **Orçamento → fatura** com um clique. Pagamentos recebidos (inclusive parciais) com forma de pagamento; fatura paga por inteiro marca o negócio do cliente como ganho, com o valor da fatura.
+- Busca do catálogo e dos documentos sem diferenciar acento ("maria" acha "María").
+
 ## [1.12.1] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **A tela Company & payments abre.** Na 1.12.0 ela ficava em branco: o exemplo de e-mail num dos campos tinha um "@", que o sistema de traduções da tela lê como comando.
