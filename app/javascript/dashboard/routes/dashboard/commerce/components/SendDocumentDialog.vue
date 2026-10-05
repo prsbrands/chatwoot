@@ -57,7 +57,9 @@ const open = async document => {
         };
       })
       .sort((a, b) => b.lastActivityAt - a.lastActivityAt);
-    const own = conversations.value.find(c => c.id === document.conversation_id);
+    const own = conversations.value.find(
+      c => c.id === document.conversation_id
+    );
     conversationId.value = (own || conversations.value[0])?.id || '';
   }
   channel.value = conversations.value.length ? 'conversation' : 'email';
@@ -74,7 +76,12 @@ const send = async () => {
             conversation_id: conversationId.value,
             content: content.value,
           }
-        : { channel: 'email', to: to.value.trim(), subject: subject.value, body: body.value };
+        : {
+            channel: 'email',
+            to: to.value.trim(),
+            subject: subject.value,
+            body: body.value,
+          };
     const { data } = await CommerceAPI.deliverDocument(doc.value.id, delivery);
     emit('sent', data);
     useAlert(t('COMMERCE.DOCUMENTS.SENT_OK'));
