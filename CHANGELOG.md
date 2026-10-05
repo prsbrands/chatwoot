@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.13.1] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Arquivar documentos**: o orçamento ou a fatura só sai da lista quando você pede (perdido, vencido...) e vai para **Arquivados**, de onde pode voltar.
+- **Reabrir para edição**: orçamento aceito ou recusado, ou documento anulado, volta a rascunho para ser editado; os PDFs antigos ficam no arquivo. Fatura com pagamento não reabre. Excluir continua só para rascunhos.
+- Corrigido: depois de "Create invoice" a tela continuava mostrando o orçamento, e o "Generate PDF" dava erro.
+
 ## [1.13.0] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Orçamentos e faturas** (menu CRM → Quotes & invoices). Cliente puxado de um contato (os dados fiscais ficam lembrados no contato), idioma do documento (espanhol, português ou inglês), moeda, data e validade ou vencimento, linhas do catálogo ou livres com quantidade, unidade, desconto e alíquota de imposto por linha. Três modos de imposto: preço sem imposto (soma por fora), preço com imposto incluso ou isento. Numeração COT-2026-0001 e FAT-2026-0001, com o prefixo editável em Company & payments.
