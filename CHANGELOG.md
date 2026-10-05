@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.13.3] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Política de privacidade e Termos de serviço públicos** em `/privacy` e `/terms` (espanhol, inglês e português), em nome da PRS Global Business LLC (Santa Fe, NM, EUA). São as páginas exigidas pelo Google para publicar o app OAuth do Google Agenda: dizem quais permissões são pedidas, para quê, o compromisso de Uso limitado e como revogar.
+
 ## [1.13.2] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Anexos chegam no WhatsApp por QR.** Nenhum anexo enviado do Chatwoot (PDF, foto do atendente) chegava: o adaptador do OpenWA, por segurança, não segue o endereço que redireciona para o arquivo, e descartava a mensagem inteira. Agora vai o endereço direto do arquivo.
