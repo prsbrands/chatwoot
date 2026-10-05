@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.13.2] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Anexos chegam no WhatsApp por QR.** Nenhum anexo enviado do Chatwoot (PDF, foto do atendente) chegava: o adaptador do OpenWA, por segurança, não segue o endereço que redireciona para o arquivo, e descartava a mensagem inteira. Agora vai o endereço direto do arquivo.
+- **Enviar documento pela conversa**: a lista mostra a caixa, a última mensagem e quando foi, da mais recente para a mais antiga; caixas que não entregam ao cliente (a de voz) ficam fora, e o servidor recusa o envio para elas.
+- **E-mail do orçamento ou fatura com a marca da empresa**: logo, a mensagem, quadro com número, total e prazo, botão para o link público, assinatura e rodapé, no idioma do documento, com o PDF anexo.
+- Desligado nas 3 contas (Super Admin) o "Email Continuity on API Channel" do Chatwoot, que mandava ao cliente, por e-mail, cópias da conversa do WhatsApp por QR.
+
 ## [1.13.1] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Arquivar documentos**: o orçamento ou a fatura só sai da lista quando você pede (perdido, vencido...) e vai para **Arquivados**, de onde pode voltar.
