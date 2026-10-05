@@ -76,8 +76,11 @@ direto = msg.webhook_data[:attachments].first[:data_url]
 ok 'webhook leva o endereco direto do PDF, sem redirecionar', direto.include?('/rails/active_storage/disk/') && !direto.include?('redirect')
 st, = api.(:post, "documents/#{cot['id']}/deliver", { channel: 'email', to: 'maria@cliente.test' })
 mail = ActionMailer::Base.deliveries.last
-ok 'enviado por e-mail com o PDF', st == 200 && mail.to == ['maria@cliente.test'] && mail.attachments.first&.filename == "COT-#{Date.current.year}-0001.pdf" &&
-                                   mail.subject.start_with?('Cotización')
+html = mail.html_part&.body.to_s
+ok 'enviado por e-mail com o PDF', st == 200 && mail.to == ['maria@cliente.test'] && mail.subject.start_with?('Cotización') &&
+                                   mail.attachments.map(&:filename).include?("COT-#{Date.current.year}-0001.pdf")
+ok 'e-mail em HTML com o botao para o link e o total', html.include?('Ver cotización') && html.include?('/d/') && html.include?('294,25') &&
+                                                      mail.text_part&.body.to_s.include?('/d/')
 
 link = enviado['public_url'].sub(%r{\Ahttps?://[^/]+}, '')
 s.get link

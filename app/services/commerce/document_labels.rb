@@ -12,7 +12,8 @@ module Commerce::DocumentLabels
       on_quote: 'A cotizar', accept: 'Aceptar cotización', decline: 'Rechazar', download: 'Descargar PDF',
       accepted: 'Cotización aceptada. ¡Gracias!', declined: 'Cotización rechazada.', status_paid: 'Pagada',
       status_void: 'Anulada', page: 'Página', email_greeting: 'Hola %<name>s,', email_body: 'Adjuntamos %<document>s %<number>s.',
-      email_link: 'También puede verla en línea:', email_thanks: 'Gracias.', message: '%<document>s %<number>s: %<url>s'
+      email_thanks: 'Gracias.',
+      view_document: 'Ver %<document>s', regards: 'Saludos,', message: '%<document>s %<number>s: %<url>s'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -23,7 +24,8 @@ module Commerce::DocumentLabels
       on_quote: 'Sob orçamento', accept: 'Aceitar orçamento', decline: 'Recusar', download: 'Baixar PDF',
       accepted: 'Orçamento aceito. Obrigado!', declined: 'Orçamento recusado.', status_paid: 'Paga',
       status_void: 'Anulada', page: 'Página', email_greeting: 'Olá %<name>s,', email_body: 'Segue %<document>s %<number>s em anexo.',
-      email_link: 'Você também pode ver online:', email_thanks: 'Obrigado.', message: '%<document>s %<number>s: %<url>s'
+      email_thanks: 'Obrigado.',
+      view_document: 'Ver %<document>s', regards: 'Atenciosamente,', message: '%<document>s %<number>s: %<url>s'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -34,7 +36,8 @@ module Commerce::DocumentLabels
       on_quote: 'Price on request', accept: 'Accept quote', decline: 'Decline', download: 'Download PDF',
       accepted: 'Quote accepted. Thank you!', declined: 'Quote declined.', status_paid: 'Paid',
       status_void: 'Void', page: 'Page', email_greeting: 'Hello %<name>s,', email_body: 'Please find attached %<document>s %<number>s.',
-      email_link: 'You can also view it online:', email_thanks: 'Thank you.', message: '%<document>s %<number>s: %<url>s'
+      email_thanks: 'Thank you.',
+      view_document: 'View %<document>s', regards: 'Best regards,', message: '%<document>s %<number>s: %<url>s'
     }
   }.freeze
 

@@ -1,0 +1,46 @@
+<% l = @labels %>
+<% kind = l[@document.quote? ? :quote : :invoice] %>
+<% money = Commerce::DocumentLabels.money(@document.total, @document.currency, @document.language) %>
+<% name = @company['trade_name'].presence || @company['legal_name'] %>
+<!DOCTYPE html>
+<html lang="<%= @document.language %>">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;">
+        <tr><td style="padding:28px 32px 8px;">
+          <% if @logo %><img src="<%= @logo %>" alt="<%= name %>" style="max-height:64px;max-width:220px;display:block;"><% else %><div style="font-size:18px;font-weight:700;"><%= name %></div><% end %>
+        </td></tr>
+        <tr><td style="padding:16px 32px 8px;font-size:15px;line-height:23px;">
+          <% @body.to_s.split(/\n{2,}/).each do |paragraph| %><p style="margin:0 0 12px;"><%= safe_join(paragraph.split("\n"), tag.br) %></p><% end %>
+        </td></tr>
+        <tr><td style="padding:8px 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f7fc;border:1px solid #ebe7f7;border-radius:10px;">
+            <tr><td style="padding:16px 20px;">
+              <div style="font-size:13px;color:#71717a;"><%= kind %></div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px;"><%= @document.number %></div>
+              <div style="font-size:14px;margin-top:10px;"><%= l[:total] %>: <strong><%= money %></strong></div>
+              <% if @document.due_date %>
+                <div style="font-size:14px;color:#52525b;margin-top:2px;"><%= l[@document.quote? ? :valid_until : :due_date] %>: <%= Commerce::DocumentLabels.date(@document.due_date, @document.language) %></div>
+              <% end %>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td align="center" style="padding:20px 32px 8px;">
+          <a href="<%= @public_url %>" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px;"><%= format(l[:view_document], document: kind.downcase) %></a>
+          <div style="font-size:12px;color:#71717a;margin-top:10px;">PDF: <%= @document.number %>.pdf</div>
+        </td></tr>
+        <tr><td style="padding:16px 32px 28px;font-size:14px;line-height:21px;color:#3f3f46;border-top:1px solid #f4f4f5;">
+          <div><%= l[:regards] %></div>
+          <div style="font-weight:600;margin-top:4px;"><%= name %></div>
+          <% [@company['phone'], @company['email'], @company['website']].compact_blank.each do |line| %><div style="color:#71717a;"><%= line %></div><% end %>
+        </td></tr>
+      </table>
+      <% if @document.footer.present? %>
+        <div style="max-width:600px;font-size:12px;color:#71717a;padding:14px 8px 0;text-align:center;"><%= @document.footer %></div>
+      <% end %>
+    </td></tr>
+  </table>
+</body>
+</html>

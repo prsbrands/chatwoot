@@ -1,0 +1,8 @@
+<%= @body %>
+
+<%= @labels[@document.quote? ? :quote : :invoice] %> <%= @document.number %> — <%= @labels[:total] %>: <%= Commerce::DocumentLabels.money(@document.total, @document.currency, @document.language) %>
+<%= format(@labels[:view_document], document: @labels[@document.quote? ? :quote : :invoice].downcase) %>: <%= @public_url %>
+
+<%= @labels[:regards] %>
+<%= @company['trade_name'].presence || @company['legal_name'] %>
+<%= [@company['phone'], @company['email'], @company['website']].compact_blank.join("\n") %>

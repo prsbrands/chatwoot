@@ -27,8 +27,9 @@ class Commerce::DocumentSender
 
   def to_email!(to, subject: nil, body: nil)
     pdf = pdf_attachment
-    Commerce::DocumentMailer.document(pdf: pdf, to: to, subject: subject.presence || default_subject,
-                                      body: body.presence || default_email_body, reply_to: @document.company['email']).deliver_now
+    Commerce::DocumentMailer.document(document: @document, pdf: pdf, to: to,
+                                      subject: subject.presence || default_subject,
+                                      body: body.presence || default_email_body).deliver_now
     @flow.mark_sent!
   end
 
@@ -50,10 +51,11 @@ class Commerce::DocumentSender
     format(@labels[:message], document: document_name, number: @document.number, url: @flow.public_url)
   end
 
+  # O link vai no botão do e-mail (Commerce::DocumentMailer), não no texto.
   def default_email_body
     name = @document.customer['name'].presence || ''
     [format(@labels[:email_greeting], name: name).sub(' ,', ','), '',
      format(@labels[:email_body], document: document_name.downcase, number: @document.number), '',
-     @labels[:email_link], @flow.public_url, '', @labels[:email_thanks]].join("\n")
+     @labels[:email_thanks]].join("\n")
   end
 end
