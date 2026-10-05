@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-05 · Instância: https://prs.cortexgen.cloud · Versão: **1.13.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-05 · Instância: https://prs.cortexgen.cloud · Versão: **1.13.3** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -40,12 +40,13 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.13.0 | **Comercial, fase 2: orçamentos e faturas.** Migration `20261005000002` (`commerce_documents`, `commerce_document_items`, `commerce_document_payments`; prefixos em `commerce_profiles`). Serviços em `app/services/commerce/`: `DocumentEditor` (salva cabeçalho, cliente e linhas; renova a cópia da empresa enquanto editável; lembra RUC/endereço no `additional_attributes` do contato como `billing_*`), `DocumentTotals` (exclusive/inclusive/exempt), `DocumentPdf` (Prawn 2.4 + `matrix`, fontes embutidas Windows-1252, logo via vips), `DocumentFlow` (PDF arquivado em `pdfs`, aceitar/recusar, anular, gerar fatura, pagamentos, negócio ganho), `DocumentSender` (conversa via `MessageBuilder` com o blob do PDF; e-mail via `Commerce::DocumentMailer`), `DocumentLabels` (textos do documento em es/pt/en — de propósito fora do i18n da interface). Página pública `/d/:token` (`CommercePublicDocumentsController < PublicController`). Busca sem acento por `translate()` (`Commerce::Search`). Telas `/documents` e `/documents/:id`. WhatsApp (depois da 1.13.2) e e-mail provados em uso real em 05/10 | Sim, 05/10 |
 | 1.13.1 | Migration `20261005000003` (`commerce_documents.archived_at`); ações `reopen`, `archive`, `unarchive` (`DocumentFlow`); lista com `archived=true`. Corrigido o editor que não relia o documento ao passar do orçamento para a fatura (mesma rota, outro id: `watch` no `documentId`). A `test-b22n` (só essa correção) nunca foi ao ar | Sim, 05/10 |
 | 1.13.2 | **Anexo no WhatsApp por QR:** o webhook levava `data_url` = `file_url` (redireciona) e o SSRF guard do OpenWA (`/app/dist/common/security/ssrf-guard.js`, `assertNoRedirect`) recusa redirecionamento — toda mensagem com anexo morria ("Destination address is not allowed"). `CortexgenMessage` (prepend no `Message`, novo toque no upstream) troca por `download_url` só no webhook. Envio de documento: lista de conversas com caixa/última mensagem/tempo; canal API sem webhook (caixa de voz) fora e recusado no `DocumentSender`. E-mail do documento em HTML próprio (`app/views/commerce/document_mailer/`, `layout false`, logo `cid:`). **`email_continuity_on_api_channel` estava ligado nas 3 contas** (clientes recebiam a conversa do WhatsApp por e-mail): o Paulo desligou no Super Admin em 05/10 | Sim, 05/10 |
+| 1.13.3 | **Política de privacidade e Termos** estáticos em `public/privacy.html` e `public/terms.html` (`/privacy`, `/terms`), es/en/pt, em nome da **PRS Global Business LLC, Santa Fe, NM 87505-4139, EUA**, lei do Novo México. Exigidos pelo Google para publicar o app OAuth (`cortexgencrm`). Contato `prsglobalbusiness@gmail.com` | Sim, 05/10 |
 
-- **Imagem:** `:v1` = `dcaecb10a6c5` (1.13.2, commit `24abbbcf6`, clone `src-b14`), rollback em `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b29`.
+- **Imagem:** `:v1` = `f8b15c65b5df` (1.13.3, commit `bd1673e46`, clone `src-b15`, imagem `test-b29n`), rollback em `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b30`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0` a `cg-v1.10.0`:
   ```
-  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1 cg-v1.13.0 cg-v1.13.1 cg-v1.13.2
+  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1 cg-v1.13.0 cg-v1.13.1 cg-v1.13.2 cg-v1.13.3
   ```
 
 ### Configuração viva (conta 1)
@@ -72,7 +73,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b29`.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b30`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 246 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 36.
@@ -97,7 +98,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
-1. **Publicar o app OAuth do Google** (projeto `cortexgencrm`, com o Paulo) antes de ~09/10, senão a Agenda perde o Google da conta 1. Depois, reconectar se pedir.
+1. **Publicar o app OAuth do Google** (projeto `cortexgencrm`, com o Paulo) antes de ~09/10. Páginas prontas desde a 1.13.3: Branding → início `https://cortexgen.cloud`, privacidade `https://prs.cortexgen.cloud/privacy`, termos `https://prs.cortexgen.cloud/terms`, domínio autorizado `cortexgen.cloud`, senão a Agenda perde o Google da conta 1. Depois, reconectar se pedir.
 2. **Fechar a Fase 2 do Comercial em uso real** (o Paulo está testando):
    - o **e-mail HTML** do documento (logo, quadro, botão "Ver cotización") — 1.13.2, ainda não visto pelo Paulo;
    - fatura do começo ao fim: Create invoice → Generate PDF → Send → Record payment parcial e total → negócio "ganho" com o valor;
@@ -115,7 +116,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 8. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
 9. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
 10. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
-    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b13` (o vivo é `src-b14`);
+    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b14` (o vivo é `src-b15`);
     - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b25`; manter `v1`, `v1-pre-b28` e `v1-pre-b27`;
     - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
 11. **Push para o GitHub** (comando acima) e revisão cosmética antiga (acentos, modo escuro, celular).
