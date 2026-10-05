@@ -20,6 +20,9 @@ class Commerce::DocumentPdf
   end
 
   def to_pdf
+    # O aviso da Prawn é sobre a falta de UTF-8 nas fontes embutidas; o texto já
+    # passa por t(), que troca o que não cabe em Windows-1252.
+    Prawn::Fonts::AFM.hide_m17n_warning = true
     font('Helvetica', size: 9)
     header
     customer

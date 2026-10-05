@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
@@ -96,6 +96,15 @@ const fetchDocument = async () => {
   const { data } = await CommerceAPI.document(route.params.documentId);
   load(data);
 };
+
+// Do orçamento para a fatura a rota muda só o id: o Vue reaproveita esta tela,
+// então o documento é lido de novo (senão a tela seguia mostrando o orçamento).
+watch(
+  () => route.params.documentId,
+  id => {
+    if (id) fetchDocument();
+  }
+);
 
 const payload = () => ({
   ...form.value,
