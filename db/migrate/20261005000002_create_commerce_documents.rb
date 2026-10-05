@@ -24,21 +24,28 @@ class CreateCommerceDocuments < ActiveRecord::Migration[7.1]
       t.string :language, null: false, default: 'es'
       t.string :currency, null: false, default: 'USD'
       t.integer :tax_mode, null: false, default: 0
-      t.references :contact, index: true
-      t.references :deal, index: true
-      t.references :appointment, index: false
-      t.references :conversation, index: false
-      t.references :source_document, index: true
       t.date :issue_date, null: false
       t.date :due_date
       t.string :public_token, null: false
       t.bigint :created_by_id
       t.timestamps
     end
+    add_document_links
     add_document_contents
     add_index :commerce_documents, [:account_id, :kind, :year, :sequence], unique: true, name: 'index_commerce_documents_on_number'
     add_index :commerce_documents, [:account_id, :kind, :status]
     add_index :commerce_documents, :public_token, unique: true
+  end
+
+  # Cliente, negócio, compromisso, conversa e o orçamento de onde a fatura veio.
+  def add_document_links
+    change_table :commerce_documents, bulk: true do |t|
+      t.references :contact, index: true
+      t.references :deal, index: true
+      t.references :appointment, index: false
+      t.references :conversation, index: false
+      t.references :source_document, index: true
+    end
   end
 
   # Cópias da empresa e do cliente, totais, textos e as datas de cada passo.

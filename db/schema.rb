@@ -888,17 +888,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
     t.string "language", default: "es", null: false
     t.string "currency", default: "USD", null: false
     t.integer "tax_mode", default: 0, null: false
-    t.bigint "contact_id"
-    t.bigint "deal_id"
-    t.bigint "appointment_id"
-    t.bigint "conversation_id"
-    t.bigint "source_document_id"
     t.date "issue_date", null: false
     t.date "due_date"
     t.string "public_token", null: false
     t.bigint "created_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "contact_id"
+    t.bigint "deal_id"
+    t.bigint "appointment_id"
+    t.bigint "conversation_id"
+    t.bigint "source_document_id"
     t.jsonb "customer", default: {}, null: false
     t.jsonb "company", default: {}, null: false
     t.decimal "subtotal", precision: 14, scale: 2, default: "0.0", null: false
