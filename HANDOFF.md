@@ -1,25 +1,19 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-03 · Instância: https://prs.cortexgen.cloud · Versão: **1.13.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-05 · Instância: https://prs.cortexgen.cloud · Versão: **1.13.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
 ## ▶️ PRÓXIMA SESSÃO — comece aqui
 
-**Estado em uma linha:** em 02/10 entraram nove versões (1.1.0 → 1.9.1), seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`):
-- idioma do cliente;
-- tela Connections e WhatsApp oficial;
-- Risk radar;
-- menu por jornada;
-- Tarefas;
-- Agenda com Google Calendar por pessoa;
-- tipos de agendamento e horários livres;
-- **a IA marcando pelo WhatsApp**;
-- lembretes, Meet, negócio que anda ao marcar e presença no Radar.
+**Estado em uma linha:** entre 02 e 05/10 saíram 1.1.0 → 1.13.2, seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`). Os grandes blocos:
+- **Agenda com a IA** (1.6–1.10): Google Calendar por pessoa, tipos e horários livres, a IA marca, desmarca e muda horário pelo WhatsApp, lembretes, Meet;
+- **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
+- **Comercial** (1.12–1.13): catálogo, empresa e formas de pagamento; orçamentos e faturas com PDF, link público, envio por WhatsApp e e-mail, pagamentos, arquivar e reabrir.
 
-A primeira coisa da próxima sessão é **conferir em uso real o teste da 1.9.1** (item 1 da fila).
+A primeira coisa da próxima sessão é o **item 1 da fila** (o app OAuth do Google vence por volta de 09/10). Depois, o **desenho da Fase 3 do Comercial (cobrança online)** para o Paulo comentar **antes** de criar — ele pede sempre o desenho primeiro.
 
-O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`).
+O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`.
 
 ### O que está no ar (conta 1, PRS Global Business)
 
@@ -39,11 +33,11 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.9.1 | A IA não confirma horário sem marcar: prompt mais firme e rede de segurança no `JevRevisao` (`false_booking` segura a resposta e passa para a equipe). **Só n8n** | Publicado em 02/10 |
 | 1.9.2 | **O horário pedido é marcado antes do LLM:** no `MontaPrompt`, com o agendamento decidindo, um `choice` do Jev entre os horários livres (+ `none`, confiança ≥ 0,8) marca pelo `POST /agenda/bot/bookings` e o prompt só pede a confirmação. Saída `booked` lida pelo `JevRevisao` (sem `false_booking`/`promises`) e pelo `Responde` (ignora etiqueta). Visto em 03/10: horário livre na lista e o LLM confirmou sem `[[BOOK]]`. **Só n8n** | Sim, 03/10: provado na conversa 89 (compromisso 3, terça 06/10 11:00, com Meet e menção) |
 | 1.9.3 | **Link do Meet após a marcação:** o `Responde`, depois da confirmação, lê `GET /agenda/appointments?contact_id=` e manda `meeting_url` numa bolha final (espera 3 s uma vez se o `GooglePushJob` ainda não rodou). **Só n8n** | Sim, 03/10 (falta ver em uso real) |
-| 1.10.0 | **A IA desmarca e muda de horário:** `bot/slots?conversation_id=` devolve `upcoming` (próximos do contato) e `POST bot/cancellations` cancela com motivo e menção (`AiBooking#cancel!`). No `MontaPrompt`, a mesma chamada do Jev tem 3 `choice`: `time`, `cancel` e `move`; mudar = marca o novo e só então cancela o antigo; `move` sem horário novo não cancela. O prompt proíbe pedir ano/e-mail para isso. O `Responde` relê a conversa e não envia (nem marca pela etiqueta) se `assignee_type` virou `User`. Rails + n8n | Sim, 05/10 (falta ver em uso real) |
+| 1.10.0 | **A IA desmarca e muda de horário:** `bot/slots?conversation_id=` devolve `upcoming` (próximos do contato) e `POST bot/cancellations` cancela com motivo e menção (`AiBooking#cancel!`). No `MontaPrompt`, a mesma chamada do Jev tem 3 `choice`: `time`, `cancel` e `move`; mudar = marca o novo e só então cancela o antigo; `move` sem horário novo não cancela. O prompt proíbe pedir ano/e-mail para isso. O `Responde` relê a conversa e não envia (nem marca pela etiqueta) se `assignee_type` virou `User`. Rails + n8n | Sim, 05/10: desmarcar provado na conversa 89 (compromisso 3); mudar de horário ainda não visto |
 | 1.11.0 | **Uso de IA e teto mensal:** SQL `db/botlayer/bot_ai_usage.sql` (`bot_interactions` ganha `chatwoot_account_id` e `kind` reply/briefing/followup; `cost_usd` agora vem do `usage.cost` do OpenRouter, pedido com `usage: {include: true}`; teto em `bot_account_settings.ai_monthly_budget_usd`; RPCs `bot_ai_month_spend` e `bot_ai_usage`). Tela Settings → Integrations → **AI usage** (menu AI). Teto só no **Super Admin**, na página da conta (`SuperAdmin::AiBudgetsController`). No teto: o **Guard** deixa nota e abre a conversa sem chamar LLM; o **Candidatos** pula a conta. Passagem e Envia registram o LLM do resumo e da retomada. Workflows gerados por `ops/n8n/patch_uso.py bot|followup` | Sim, 05/10 |
 | 1.12.0 | **Comercial, fase 1** (flag `commerce`, ligada na conta 1): migration `20261005000001` (`commerce_categories`, `commerce_items`, `commerce_profiles`, `commerce_payment_methods`); models em `app/models/commerce/`, API `/commerce/{items,categories,payment_methods,profile}`, imagens e logo pelo `/upload` (blob_id, ActiveStorage local). Telas **Catalog** (`/catalog`) e **Company & payments** (`/company`). Fases seguintes: 2 orçamentos e faturas com PDF; 3 cobrança online (Stripe, Mercado Pago com Pix, Yappy — o Yappy do `cortex-tasty-hub-main` serve de base, mas tem falhas de segurança a corrigir: credenciais em texto puro, `handleWebhook` aberto, hash do IPN opcional); 4 catálogo na IA e vitrine. Decisões do Paulo: fatura comercial (não fiscal), um preço com uma moeda por item, multimoeda USD/BRL/EUR | Sim, 05/10 |
 | 1.12.1 | Company & payments em branco na 1.12.0: `@` cru no placeholder do `commerce.json` (vue-i18n: `Invalid linked format`). Escapado como `{'@'}`. Achado lendo o console pelo Claude in Chrome. Memória `vue-i18n-arroba-quebra-tela` | Sim, 05/10 |
-| 1.13.0 | **Comercial, fase 2: orçamentos e faturas.** Migration `20261005000002` (`commerce_documents`, `commerce_document_items`, `commerce_document_payments`; prefixos em `commerce_profiles`). Serviços em `app/services/commerce/`: `DocumentEditor` (salva cabeçalho, cliente e linhas; renova a cópia da empresa enquanto editável; lembra RUC/endereço no `additional_attributes` do contato como `billing_*`), `DocumentTotals` (exclusive/inclusive/exempt), `DocumentPdf` (Prawn 2.4 + `matrix`, fontes embutidas Windows-1252, logo via vips), `DocumentFlow` (PDF arquivado em `pdfs`, aceitar/recusar, anular, gerar fatura, pagamentos, negócio ganho), `DocumentSender` (conversa via `MessageBuilder` com o blob do PDF; e-mail via `Commerce::DocumentMailer`), `DocumentLabels` (textos do documento em es/pt/en — de propósito fora do i18n da interface). Página pública `/d/:token` (`CommercePublicDocumentsController < PublicController`). Busca sem acento por `translate()` (`Commerce::Search`). Telas `/documents` e `/documents/:id`. **Não testado em uso real ainda: o anexo do PDF no WhatsApp por QR (OpenWA) e o e-mail pelo SMTP de produção** | Sim, 05/10 |
+| 1.13.0 | **Comercial, fase 2: orçamentos e faturas.** Migration `20261005000002` (`commerce_documents`, `commerce_document_items`, `commerce_document_payments`; prefixos em `commerce_profiles`). Serviços em `app/services/commerce/`: `DocumentEditor` (salva cabeçalho, cliente e linhas; renova a cópia da empresa enquanto editável; lembra RUC/endereço no `additional_attributes` do contato como `billing_*`), `DocumentTotals` (exclusive/inclusive/exempt), `DocumentPdf` (Prawn 2.4 + `matrix`, fontes embutidas Windows-1252, logo via vips), `DocumentFlow` (PDF arquivado em `pdfs`, aceitar/recusar, anular, gerar fatura, pagamentos, negócio ganho), `DocumentSender` (conversa via `MessageBuilder` com o blob do PDF; e-mail via `Commerce::DocumentMailer`), `DocumentLabels` (textos do documento em es/pt/en — de propósito fora do i18n da interface). Página pública `/d/:token` (`CommercePublicDocumentsController < PublicController`). Busca sem acento por `translate()` (`Commerce::Search`). Telas `/documents` e `/documents/:id`. WhatsApp (depois da 1.13.2) e e-mail provados em uso real em 05/10 | Sim, 05/10 |
 | 1.13.1 | Migration `20261005000003` (`commerce_documents.archived_at`); ações `reopen`, `archive`, `unarchive` (`DocumentFlow`); lista com `archived=true`. Corrigido o editor que não relia o documento ao passar do orçamento para a fatura (mesma rota, outro id: `watch` no `documentId`). A `test-b22n` (só essa correção) nunca foi ao ar | Sim, 05/10 |
 | 1.13.2 | **Anexo no WhatsApp por QR:** o webhook levava `data_url` = `file_url` (redireciona) e o SSRF guard do OpenWA (`/app/dist/common/security/ssrf-guard.js`, `assertNoRedirect`) recusa redirecionamento — toda mensagem com anexo morria ("Destination address is not allowed"). `CortexgenMessage` (prepend no `Message`, novo toque no upstream) troca por `download_url` só no webhook. Envio de documento: lista de conversas com caixa/última mensagem/tempo; canal API sem webhook (caixa de voz) fora e recusado no `DocumentSender`. E-mail do documento em HTML próprio (`app/views/commerce/document_mailer/`, `layout false`, logo `cid:`). **`email_continuity_on_api_channel` estava ligado nas 3 contas** (clientes recebiam a conversa do WhatsApp por e-mail): o Paulo desligou no Super Admin em 05/10 | Sim, 05/10 |
 
@@ -54,23 +48,20 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1 cg-v1.13.0 cg-v1.13.1 cg-v1.13.2
   ```
 
-### Configuração viva da Agenda (conta 1)
+### Configuração viva (conta 1)
 
 - **Google Calendar:**
   - O app OAuth é o do projeto Google Cloud `cortexgencrm`, o mesmo do CRM, com a callback `https://prs.cortexgen.cloud/google_calendar/callback` acrescentada. As credenciais ficam em Super Admin → Settings → **Google Calendar**, que não é a tela "Google", usada pelo Gmail e pelo login.
   - A conta 1 está conectada como **prsglobalbusiness@gmail.com**.
-  - O app ainda está **"Em teste"**: a conexão vence em **7 dias**, por volta de 09/10, e só testadores conectam. **Publicar em produção** no Google Cloud.
+  - O app ainda está **"Em teste"**: a conexão vence em **7 dias**, por volta de **09/10**, e só testadores conectam. **Publicar em produção** no Google Cloud.
   - Desconectar **não revoga** no Google, de propósito: o cliente OAuth é compartilhado com o CRM, e revogar derrubaria a concessão do CRM também.
-- **Tipo "Consulta"** (id 1):
-  - 60 min, responsável Paullo (user 1), IA marca, Google Meet, etapa ao marcar = 3 ("Entendiendo la necesidad");
-  - lembrete 24 h antes;
-  - mensagem de falta: conferir se o Paulo preencheu.
+- **Tipo "Consulta"** (id 1): 60 min, responsável Paullo (user 1), IA marca, Google Meet, etapa ao marcar = 3 ("Entendiendo la necesidad"), lembrete 24 h antes.
 - **Jornada do Paulo:** seg–sex, fuso **America/Panama**.
-- **Compromisso 2:** "Consulta — Paullo Roberto", segunda 05/10 às 10:00 (15:00 UTC), marcado pela IA na conversa 89 **antes** da 1.9.0. Por isso está sem Meet e sem menção, e o negócio 2 não andou.
-  - O lembrete por QR sai no domingo, 04/10, por volta das 10:00 de Panamá.
-  - **Conferir que saiu.**
-- **Persona `nathan-whatsapp`:** motor trocado pelo Paulo em 03/10 de DeepSeek para **GPT 5.6 Luna**. No 1º "Hola" depois da troca, o bot pediu mês, zona horária, nome e e-mail sem motivo: observar.
-- **Persona `nathan-whatsapp` (regra 10):** a regra 10 diz "No confirmes agenda ni implementación si el flujo no lo permite". Se a IA voltar a fugir de marcar, trocar o texto (sugestão já passada ao Paulo).
+- **Compromissos:** o 2 (segunda 05/10 10:00) teve o lembrete por QR enviado em 04/10 e **já passou: falta registrar presença** (o Radar cobra). O 3 (terça 06/10 11:00) foi **desmarcado pela IA** em 05/10 (1.10.0 provada em uso real).
+- **Persona `nathan-whatsapp`:** o Paulo testou GPT 5.6 Luna em 03/10 e **voltou para DeepSeek 4.1** em 05/10; ele ainda vai comparar os dois. A regra 10 ("No confirmes agenda…") pode atrapalhar marcações; sugestão de texto já passada a ele.
+- **Comercial:** flag `commerce` ligada na conta 1. Empresa "PRS" cadastrada com logo PNG; 2 itens no catálogo; documentos COT-2026-0001 (enviado) e FAT-2026-0001 (rascunho, de teste). Prefixos COT/FAT.
+- **E-mail:** SMTP da **Resend** (`smtp.resend.com:465`, remetente `no-reply@cortexgen.cloud`). O ApplicationMailer do Chatwoot **engole falha de SMTP** (só loga "Failed to send Email"): a tela diz "Sent" mesmo se não saiu.
+- **`email_continuity_on_api_channel` desligado nas 3 contas** (05/10). Ligado, todo cliente de WhatsApp por QR com e-mail recebia a conversa por e-mail. Não religar.
 
 ### Regras de operação (leia antes de mexer)
 
@@ -94,7 +85,8 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Estilo inline anulando classe: a linha da hora atual tinha `height: 0`.
   - `pgrep -f "docker build"` casa com o próprio comando de espera. Espere com o build em primeiro plano, num comando em segundo plano.
   - Ligar o bot pela tela nativa da caixa (Configuração do bot) **não cria a rota** no Supabase, e o Guard recusa toda mensagem. A tela Connections agora mostra isso.
-- **Lint:** em container, no clone `src-b5`. Faça `git fetch ../bN.bundle HEAD && git reset --hard FETCH_HEAD`, rode o `eslint --fix`, traga o `git diff` como patch para o Mac e faça `git checkout -- .` no clone. A receita está na memória `lint-em-container`.
+- **Lint:** em container, no clone vivo (`src-b14`, já com o bundle mais recente): `rubocop --force-exclusion <arquivos>` em `ruby:3.4.4` e `eslint --fix <arquivos>` em `node:24`; traga o `git diff` como patch para o Mac e faça `git checkout -- .` no clone. A receita está na memória `lint-em-container`. Os avisos `no-dynamic-keys` do eslint e os do `ops/smoke` são do estilo de sempre.
+- **i18n:** `@`, `|`, `{`, `}` crus num texto do `en.json` deixam a tela **em branco** em produção (memória `vue-i18n-arroba-quebra-tela`). Escape `{'@'}`. Depure tela em branco lendo o console pelo Claude in Chrome (o Paulo autoriza).
 - **n8n:**
   - Para o workflow do bot, exporte o publicado, rode `ops/n8n/patch_agenda.py <export> <saída> <commit publicado>` e copie para `/home/node/`. O Paulo faz import → **recarregar a página** → Publish.
   - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
@@ -105,32 +97,28 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
-1. **Conferir a 1.9.1 em uso real.** Peça ao Paulo um pedido de horário **exato** pelo WhatsApp, por exemplo "martes 6 a las 11am", e confira:
-   - o compromisso na Agenda e no Google, **com Meet** (`meeting_url`);
-   - a **menção** ao Paulo, na nota privada e no sino;
-   - o negócio indo para "Entendiendo la necesidad", com transição `actor_type: ai`;
-   - nenhuma confirmação em texto sem compromisso.
-
-   Se a IA ainda confirmar sem marcar, a rede de segurança deve segurar a resposta e abrir a conversa com uma nota `reply_review` ("tells the customer the appointment is booked…").
-2. **Lembrete de domingo** do compromisso 2: conferir que saiu na conversa 89, com `reminder_sent_at`.
-3. **Publicar o app OAuth do Google** (com o Paulo) antes de ~09/10.
-4. **Próximos módulos do CRM ainda sem equivalente**, para escolher com o Paulo:
-   - Casos (escalação com aviso no WhatsApp);
-   - Memória da IA;
-   - Uso e orçamento;
-   - Evolução da IA;
-   - Faturamento e comandas;
-   - Prospecção.
-5. **Lembretes no WhatsApp oficial:** dependem de um template aprovado no Meta. O Paulo não tem nenhum. O Meet logo após a marcação entrou na 1.9.3.
-6. **Jev:** "Check the reply before sending" segue em Observing. A rede de segurança do agendamento age mesmo assim. Ler os números do cartão antes de recomendar passar outras atividades a decidir.
-7. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa, e Connections mostra o ponto vermelho. Decisão do Paulo: ligar o bot ou desligar a rota.
-8. **Limpeza da VPS:**
-   - clones `src-merge`, `src-f2`, `src-b1` a `src-b4`, `src-b6` a `src-b12`, e `src-b13` depois do próximo build;
-   - imagens `test-*` e `v1-pre-*` antigas: manter `v1`, `v1-pre-b20` e uma ou duas;
-   - bundles `/opt/cortexgen-chat/b*.bundle` e `wf-*.json`.
-
-   Quem apaga é o Paulo.
-9. **Revisão cosmética antiga:** acentos em comentários e telas no modo escuro e no celular.
+1. **Publicar o app OAuth do Google** (projeto `cortexgencrm`, com o Paulo) antes de ~09/10, senão a Agenda perde o Google da conta 1. Depois, reconectar se pedir.
+2. **Fechar a Fase 2 do Comercial em uso real** (o Paulo está testando):
+   - o **e-mail HTML** do documento (logo, quadro, botão "Ver cotización") — 1.13.2, ainda não visto pelo Paulo;
+   - fatura do começo ao fim: Create invoice → Generate PDF → Send → Record payment parcial e total → negócio "ganho" com o valor;
+   - página pública: Aceptar/Rechazar.
+3. **Fase 3 do Comercial — cobrança online. Trazer o desenho ao Paulo antes de codar.** Proposta a apresentar:
+   - provedores por conta, com **credencial cifrada** (`encrypts`, como o Google): **Stripe** (Checkout Session; USD/EUR/BRL), **Mercado Pago** (Checkout Pro com cartão/boleto e **Pix** por QR; BRL), **Yappy** (Botón de Pago V2; USD). A forma de pagamento (`commerce_payment_methods`) ganha o provedor;
+   - botão **"Pagar"** na página pública `/d/:token` e no e-mail da fatura; saldo em aberto como valor; moeda do documento decide quais provedores aparecem;
+   - **webhooks com assinatura verificada** (Stripe `Stripe-Signature`; MP `x-signature` HMAC; Yappy hash HMAC-SHA256 de `orderId+status+domain` com a 1ª parte da chave secreta decodificada) e **idempotência** pelo id do provedor; o pagamento confirmado entra em `commerce_document_payments` (colunas novas: provider, external_id, status) e reaproveita o `settle!` (paga → negócio ganho);
+   - o Yappy do `/Users/paulo/Desktop/cortex-tasty-hub-main/supabase/functions/payment-gateway/index.ts` serve de **referência**, não de cópia: lá as credenciais ficam em texto puro, o `handleWebhook` aceita qualquer payload sem assinatura, o hash do IPN é opcional e o retorno do PagueloFacil confia na URL;
+   - perguntas ao Paulo: quais contas/credenciais existem (Stripe, MP, Yappy comercial); Payment Link × Checkout; Pix só pelo MP?; quem paga taxa; recibo automático por WhatsApp/e-mail ao confirmar.
+4. **Fase 4 do Comercial:** catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
+5. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
+6. **Outros módulos do DeskComm ainda sem equivalente** (para o Paulo escolher depois do Comercial): Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
+7. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
+8. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
+9. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
+10. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
+    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b13` (o vivo é `src-b14`);
+    - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b25`; manter `v1`, `v1-pre-b28` e `v1-pre-b27`;
+    - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
+11. **Push para o GitHub** (comando acima) e revisão cosmética antiga (acentos, modo escuro, celular).
 
 ### Pendências antigas que continuam valendo
 
