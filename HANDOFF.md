@@ -76,7 +76,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
   - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b22`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 9 scripts em Postgres e Redis **descartáveis**, 194 cenários no total:
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 9 scripts em Postgres e Redis **descartáveis**, 174 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11.
   - O Google e o botlayer entram falsos (`class_eval`).
