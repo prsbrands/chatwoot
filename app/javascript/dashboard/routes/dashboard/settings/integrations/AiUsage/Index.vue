@@ -46,7 +46,9 @@ const fetchUsage = async () => {
     });
     usage.value = data;
   } catch (error) {
-    useAlert(error.response?.data?.error || t('INTEGRATION_SETTINGS.AI_USAGE.ERROR'));
+    useAlert(
+      error.response?.data?.error || t('INTEGRATION_SETTINGS.AI_USAGE.ERROR')
+    );
   } finally {
     isLoading.value = false;
   }
@@ -148,7 +150,9 @@ onMounted(fetchUsage);
     </template>
     <template #body>
       <div v-if="usage" class="flex flex-col w-full gap-6">
-        <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <section
+          class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak"
+        >
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-heading-3 text-n-slate-12">
               {{ $t('INTEGRATION_SETTINGS.AI_USAGE.CAP.TITLE') }}
@@ -214,7 +218,9 @@ onMounted(fetchUsage);
           }}
         </p>
 
-        <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <section
+          class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak"
+        >
           <h2 class="text-heading-3 text-n-slate-12">
             {{ $t('INTEGRATION_SETTINGS.AI_USAGE.BY_DAY') }}
           </h2>
@@ -230,7 +236,9 @@ onMounted(fetchUsage);
         </section>
 
         <div class="grid gap-6 lg:grid-cols-2">
-          <section class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak">
+          <section
+            class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak"
+          >
             <h2 class="text-heading-3 text-n-slate-12">
               {{ $t('INTEGRATION_SETTINGS.AI_USAGE.BY_KIND') }}
             </h2>
@@ -266,7 +274,9 @@ onMounted(fetchUsage);
             </div>
           </section>
 
-          <section class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak">
+          <section
+            class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak"
+          >
             <h2 class="text-heading-3 text-n-slate-12">
               {{ $t('INTEGRATION_SETTINGS.AI_USAGE.BY_MODEL') }}
             </h2>
