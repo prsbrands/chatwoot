@@ -72,9 +72,12 @@ class Commerce::DocumentFlow
 
   def settle!
     paid = @document.payments.sum(:amount)
-    status = if paid >= @document.total && paid.positive? then :paid
-             elsif paid.positive? then :partially_paid
-             else :sent
+    status = if paid.positive? && paid >= @document.total
+               :paid
+             elsif paid.positive?
+               :partially_paid
+             else
+               :sent
              end
     @document.update!(amount_paid: paid, status: status, paid_at: status == :paid ? (@document.paid_at || Time.current) : nil)
     win_deal if @document.paid?

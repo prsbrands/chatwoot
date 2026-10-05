@@ -1,6 +1,8 @@
 # PDF do orçamento ou da fatura (Prawn), no idioma do documento. As fontes
 # embutidas da Prawn só conhecem Windows-1252 (cobre espanhol, português, inglês
 # e €): o que ficar fora disso vira "?" em vez de derrubar a geração.
+# Layout: um método por bloco do papel; as métricas de tamanho não ajudam aqui.
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
 class Commerce::DocumentPdf
   include Prawn::View
 
@@ -107,7 +109,8 @@ class Commerce::DocumentPdf
     head << @l[:tax] if show_tax
     head << @l[:amount]
     rows = @doc.items.map { |line| line_row(line, show_discount, show_tax) }
-    table([head.map { |h| t(h) }] + rows, header: true, width: bounds.width, cell_style: { borders: [:bottom], border_color: LINE, padding: [6, 4] }) do |tbl|
+    style = { borders: [:bottom], border_color: LINE, padding: [6, 4] }
+    table([head.map { |h| t(h) }] + rows, header: true, width: bounds.width, cell_style: style) do |tbl|
       tbl.row(0).font_style = :bold
       tbl.row(0).background_color = 'F3F3F3'
       tbl.columns(1..-1).align = :right
@@ -118,8 +121,8 @@ class Commerce::DocumentPdf
 
   def line_row(line, show_discount, show_tax)
     priced = !line.unit_price.nil?
-    name = make_cell(content: "<b>#{escape(line.name)}</b>#{line.description.present? ? "\n<color rgb='#{MUTED}'>#{escape(line.description)}</color>" : ''}",
-                     inline_format: true)
+    description = line.description.present? ? "\n<color rgb='#{MUTED}'>#{escape(line.description)}</color>" : ''
+    name = make_cell(content: "<b>#{escape(line.name)}</b>#{description}", inline_format: true)
     row = [name, t("#{format_quantity(line.quantity)} #{Commerce::DocumentLabels.unit(@doc.language, line.unit)}"),
            t(priced ? money(line.unit_price) : @l[:on_quote])]
     row << (line.discount_percent.to_d.positive? ? "#{format_quantity(line.discount_percent)}%" : '') if show_discount
@@ -201,3 +204,4 @@ class Commerce::DocumentPdf
     number_pages("#{page_label} <page>/<total>", at: [bounds.right - 100, -20], width: 100, align: :right, size: 7, color: MUTED)
   end
 end
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity

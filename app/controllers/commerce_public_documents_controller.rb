@@ -1,7 +1,8 @@
 # A página do documento para o cliente, sem login: o token aleatório do link é a
-# chave. Mostra o orçamento ou a fatura no idioma dele, baixa o PDF e, no
-# orçamento ainda aberto, deixa aceitar ou recusar.
-class CommercePublicDocumentsController < ActionController::Base
+# chave (por isso sem CSRF, como os outros PublicController). Mostra o orçamento
+# ou a fatura no idioma do cliente, baixa o PDF e, no orçamento ainda aberto,
+# deixa aceitar ou recusar.
+class CommercePublicDocumentsController < PublicController
   layout false
   before_action :fetch_document
 

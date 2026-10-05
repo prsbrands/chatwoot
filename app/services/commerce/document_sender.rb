@@ -21,7 +21,7 @@ class Commerce::DocumentSender
 
   def to_email!(to, subject: nil, body: nil)
     pdf = pdf_attachment
-    Commerce::DocumentMailer.document(document: @document, pdf: pdf, to: to, subject: subject.presence || default_subject,
+    Commerce::DocumentMailer.document(pdf: pdf, to: to, subject: subject.presence || default_subject,
                                       body: body.presence || default_email_body, reply_to: @document.company['email']).deliver_now
     @flow.mark_sent!
   end

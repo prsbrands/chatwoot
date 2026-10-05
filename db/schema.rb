@@ -895,6 +895,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
     t.bigint "source_document_id"
     t.date "issue_date", null: false
     t.date "due_date"
+    t.string "public_token", null: false
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.jsonb "customer", default: {}, null: false
     t.jsonb "company", default: {}, null: false
     t.decimal "subtotal", precision: 14, scale: 2, default: "0.0", null: false
@@ -905,15 +909,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
     t.text "notes"
     t.text "terms"
     t.text "footer"
-    t.string "public_token", null: false
-    t.bigint "created_by_id"
     t.datetime "sent_at"
     t.datetime "accepted_at"
     t.datetime "declined_at"
     t.datetime "paid_at"
     t.datetime "voided_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.index ["account_id", "kind", "status"], name: "index_commerce_documents_on_account_id_and_kind_and_status"
     t.index ["account_id", "kind", "year", "sequence"], name: "index_commerce_documents_on_number", unique: true
     t.index ["contact_id"], name: "index_commerce_documents_on_contact_id"

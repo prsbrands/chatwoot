@@ -43,8 +43,9 @@ class Commerce::Document < ApplicationRecord
   # Situação para a tela: enviado depois da validade (orçamento) ou do
   # vencimento (fatura) aparece como vencido.
   def display_status
-    return 'expired' if sent? && quote? && due_date&.past?
-    return 'overdue' if (sent? || partially_paid?) && invoice? && due_date&.past?
+    return status unless due_date&.past?
+    return 'expired' if quote? && sent?
+    return 'overdue' if invoice? && (sent? || partially_paid?)
 
     status
   end

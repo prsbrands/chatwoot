@@ -31,24 +31,25 @@ class CreateCommerceDocuments < ActiveRecord::Migration[7.1]
       t.references :source_document, index: true
       t.date :issue_date, null: false
       t.date :due_date
-      t.jsonb :customer, null: false, default: {}
-      t.jsonb :company, null: false, default: {}
-      t.decimal :subtotal, :discount_total, :tax_total, :total, :amount_paid, precision: 14, scale: 2, null: false, default: 0
-      t.text :notes
-      t.text :terms
-      t.text :footer
       t.string :public_token, null: false
       t.bigint :created_by_id
-      t.datetime :sent_at
-      t.datetime :accepted_at
-      t.datetime :declined_at
-      t.datetime :paid_at
-      t.datetime :voided_at
       t.timestamps
     end
+    add_document_contents
     add_index :commerce_documents, [:account_id, :kind, :year, :sequence], unique: true, name: 'index_commerce_documents_on_number'
     add_index :commerce_documents, [:account_id, :kind, :status]
     add_index :commerce_documents, :public_token, unique: true
+  end
+
+  # Cópias da empresa e do cliente, totais, textos e as datas de cada passo.
+  def add_document_contents
+    change_table :commerce_documents, bulk: true do |t|
+      t.jsonb :customer, null: false, default: {}
+      t.jsonb :company, null: false, default: {}
+      t.decimal :subtotal, :discount_total, :tax_total, :total, :amount_paid, precision: 14, scale: 2, null: false, default: 0
+      t.text :notes, :terms, :footer
+      t.datetime :sent_at, :accepted_at, :declined_at, :paid_at, :voided_at
+    end
   end
 
   def create_document_items
