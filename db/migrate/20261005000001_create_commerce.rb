@@ -4,6 +4,15 @@
 # imagens dos itens e o logo da empresa ficam no ActiveStorage.
 class CreateCommerce < ActiveRecord::Migration[7.1]
   def change
+    create_categories
+    create_items
+    create_profiles
+    create_payment_methods
+  end
+
+  private
+
+  def create_categories
     create_table :commerce_categories do |t|
       t.references :account, null: false, index: false
       t.string :name, null: false
@@ -11,7 +20,9 @@ class CreateCommerce < ActiveRecord::Migration[7.1]
       t.timestamps
     end
     add_index :commerce_categories, [:account_id, :position]
+  end
 
+  def create_items
     create_table :commerce_items do |t|
       t.references :account, null: false, index: false
       t.references :category, index: true
@@ -27,24 +38,21 @@ class CreateCommerce < ActiveRecord::Migration[7.1]
       t.timestamps
     end
     add_index :commerce_items, [:account_id, :kind, :name]
+  end
 
+  def create_profiles
     create_table :commerce_profiles do |t|
       t.references :account, null: false, index: { unique: true }
-      t.string :trade_name
-      t.string :legal_name
-      t.string :tax_id_label
-      t.string :tax_id
+      %i[trade_name legal_name tax_id_label tax_id phone whatsapp email website].each { |column| t.string column }
       t.text :address
-      t.string :phone
-      t.string :whatsapp
-      t.string :email
-      t.string :website
       t.string :default_currency, null: false, default: 'USD'
       t.text :default_terms
       t.text :footer
       t.timestamps
     end
+  end
 
+  def create_payment_methods
     create_table :commerce_payment_methods do |t|
       t.references :account, null: false, index: false
       t.string :name, null: false

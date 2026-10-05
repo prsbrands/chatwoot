@@ -881,11 +881,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000001) do
     t.string "legal_name"
     t.string "tax_id_label"
     t.string "tax_id"
-    t.text "address"
     t.string "phone"
     t.string "whatsapp"
     t.string "email"
     t.string "website"
+    t.text "address"
     t.string "default_currency", default: "USD", null: false
     t.text "default_terms"
     t.text "footer"
