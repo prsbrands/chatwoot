@@ -8,7 +8,7 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
   def index
     @documents = Current.account.commerce_documents.order(issue_date: :desc, id: :desc)
     %i[kind status contact_id deal_id].each { |key| @documents = @documents.where(key => params[key]) if params[key].present? }
-    @documents = @documents.where("number ILIKE :q OR customer->>'name' ILIKE :q", q: "%#{params[:q]}%") if params[:q].present?
+    @documents = ::Commerce::Search.where(@documents, ['number', "customer->>'name'"], params[:q]) if params[:q].present?
     @documents = @documents.page(params[:page]).per(RESULTS_PER_PAGE)
   end
 

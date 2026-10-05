@@ -7,7 +7,7 @@ class Api::V1::Accounts::Commerce::ItemsController < Api::V1::Accounts::Commerce
     @items = Current.account.commerce_items.includes(:category, images_attachments: :blob).order(:position, :name)
     @items = @items.where(kind: params[:kind]) if params[:kind].present?
     @items = @items.where(category_id: params[:category_id]) if params[:category_id].present?
-    @items = @items.where('name ILIKE :q OR sku ILIKE :q OR description ILIKE :q', q: "%#{params[:q]}%") if params[:q].present?
+    @items = ::Commerce::Search.where(@items, %w[name sku description], params[:q]) if params[:q].present?
   end
 
   def show
