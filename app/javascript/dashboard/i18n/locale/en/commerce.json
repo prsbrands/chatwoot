@@ -91,7 +91,9 @@
         "address": "Address",
         "default_currency": "Default currency",
         "default_terms": "Default terms",
-        "footer": "Footer"
+        "footer": "Footer",
+        "quote_prefix": "Quote prefix",
+        "invoice_prefix": "Invoice prefix"
       },
       "PLACEHOLDERS": {
         "trade_name": "PRS Global",
@@ -103,7 +105,9 @@
         "email": "billing{'@'}company.com",
         "website": "https://",
         "default_terms": "Validity, delivery time, payment conditions…",
-        "footer": "Thank you for your business."
+        "footer": "Thank you for your business.",
+        "quote_prefix": "COT",
+        "invoice_prefix": "FAT"
       }
     },
     "PAYMENT_METHODS": {
@@ -120,6 +124,117 @@
       "ACTIVE": "Active",
       "INACTIVE": "Inactive",
       "DELETE": "Delete payment method"
+    },
+    "DOCUMENTS": {
+      "HEADER": "Quotes & invoices",
+      "DESCRIPTION": "Create quotes and invoices with your branding, send them by chat or email and record the payments received.",
+      "LOADING": "Loading",
+      "EMPTY": "Nothing here yet.",
+      "SEARCH": "Search by number or customer",
+      "ALL_STATUSES": "All statuses",
+      "NEW_QUOTE": "New quote",
+      "NEW_INVOICE": "New invoice",
+      "NO_CUSTOMER": "No customer yet",
+      "BACK": "Back to the list",
+      "KIND": {
+        "quote": "Quote",
+        "invoice": "Invoice"
+      },
+      "KIND_PLURAL": {
+        "quote": "Quotes",
+        "invoice": "Invoices"
+      },
+      "STATUS": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "expired": "Expired",
+        "overdue": "Overdue",
+        "partially_paid": "Partially paid",
+        "paid": "Paid",
+        "void": "Void"
+      },
+      "SAVED": "Saved.",
+      "GENERATE_PDF": "Generate PDF",
+      "SEND": "Send",
+      "OPEN_LINK": "Customer link",
+      "MARK_ACCEPTED": "Mark accepted",
+      "MARK_DECLINED": "Mark declined",
+      "TO_INVOICE": "Create invoice",
+      "VOID": "Void",
+      "DELETE": "Delete draft",
+      "CUSTOMER": "Customer",
+      "SEARCH_CONTACT": "Search a contact to fill in",
+      "SETTINGS": "Document",
+      "CUSTOMER_FIELDS": {
+        "name": "Name",
+        "tax_id_label": "Tax ID type",
+        "tax_id": "Tax ID",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "DOCUMENT_LANGUAGE": "Document language",
+      "LANGUAGE": {
+        "es": "Spanish",
+        "pt": "Portuguese",
+        "en": "English"
+      },
+      "TAX_MODE_LABEL": "Prices and taxes",
+      "TAX_MODE": {
+        "exclusive": "Prices without tax (tax is added)",
+        "inclusive": "Prices include tax",
+        "exempt": "Tax exempt"
+      },
+      "ISSUE_DATE": "Issue date",
+      "VALID_UNTIL": "Valid until",
+      "DUE_DATE": "Due date",
+      "LINES": "Items",
+      "ADD_FROM_CATALOG": "Add from catalog…",
+      "ADD_LINE": "Add line",
+      "NO_LINES": "No items yet. Add from the catalog or a free line.",
+      "QUANTITY": "Qty",
+      "UNIT_PRICE": "Unit price",
+      "DISCOUNT": "Disc. %",
+      "TAX_RATE": "Tax %",
+      "REMOVE_LINE": "Remove line",
+      "SUBTOTAL": "Subtotal",
+      "DISCOUNT_TOTAL": "Discount",
+      "TAX_TOTAL": "Tax",
+      "TAX_INCLUDED": "Tax included",
+      "TOTAL": "Total",
+      "PAID": "Paid",
+      "BALANCE": "Balance due",
+      "PAYMENTS": "Payments received",
+      "ADD_PAYMENT": "Record payment",
+      "NO_PAYMENTS": "No payments recorded yet.",
+      "NO_METHOD": "Not specified",
+      "REMOVE_PAYMENT": "Remove payment",
+      "AMOUNT": "Amount",
+      "PAID_ON": "Paid on",
+      "PAYMENT_NOTE": "Note",
+      "NOTES": "Notes",
+      "ARCHIVE": "PDF archive",
+      "NO_PDFS": "No PDF generated yet. Every generated PDF is kept here.",
+      "SEND_TITLE": "Send {number}",
+      "CHANNEL": {
+        "conversation": "Chat",
+        "email": "Email"
+      },
+      "CONVERSATION": "Conversation",
+      "CONVERSATION_STATUS": {
+        "open": "open",
+        "pending": "pending",
+        "resolved": "resolved",
+        "snoozed": "snoozed"
+      },
+      "NO_CONVERSATIONS": "This customer has no conversation yet. Pick a contact on the document or send by email.",
+      "MESSAGE": "Message",
+      "MESSAGE_PLACEHOLDER": "Leave blank to use the default text in the document language",
+      "EMAIL_TO": "To",
+      "EMAIL_SUBJECT": "Subject",
+      "SENT_OK": "Sent."
     }
   }
 }

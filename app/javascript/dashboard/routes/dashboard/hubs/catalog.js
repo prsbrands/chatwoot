@@ -38,6 +38,11 @@ export const HUBS = {
             to: 'campaigns_whatsapp_index',
           },
           {
+            id: 'DOCUMENTS',
+            icon: 'i-lucide-receipt-text',
+            to: 'commerce_documents',
+          },
+          {
             id: 'CATALOG',
             icon: 'i-lucide-package',
             to: 'commerce_catalog',

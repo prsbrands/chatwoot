@@ -1,6 +1,8 @@
 import { frontendURL } from '../../../helper/URLHelper';
 import CatalogIndex from './pages/CatalogIndex.vue';
 import CompanyIndex from './pages/CompanyIndex.vue';
+import DocumentsIndex from './pages/DocumentsIndex.vue';
+import DocumentEditor from './pages/DocumentEditor.vue';
 import { FEATURE_FLAGS } from '../../../featureFlags';
 
 export const routes = [
@@ -20,6 +22,24 @@ export const routes = [
     meta: {
       featureFlag: FEATURE_FLAGS.COMMERCE,
       permissions: ['administrator'],
+    },
+  },
+  {
+    path: frontendURL('accounts/:accountId/documents'),
+    name: 'commerce_documents',
+    component: DocumentsIndex,
+    meta: {
+      featureFlag: FEATURE_FLAGS.COMMERCE,
+      permissions: ['administrator', 'agent'],
+    },
+  },
+  {
+    path: frontendURL('accounts/:accountId/documents/:documentId'),
+    name: 'commerce_document',
+    component: DocumentEditor,
+    meta: {
+      featureFlag: FEATURE_FLAGS.COMMERCE,
+      permissions: ['administrator', 'agent'],
     },
   },
 ];

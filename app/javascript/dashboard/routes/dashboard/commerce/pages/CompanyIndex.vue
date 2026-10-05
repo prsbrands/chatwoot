@@ -26,6 +26,8 @@ const PROFILE_FIELDS = [
   'whatsapp',
   'email',
   'website',
+  'quote_prefix',
+  'invoice_prefix',
 ];
 
 const profile = ref({});

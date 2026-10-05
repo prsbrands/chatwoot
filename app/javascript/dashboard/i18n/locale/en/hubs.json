@@ -32,6 +32,10 @@
           "TITLE": "Campaigns",
           "DESCRIPTION": "Message a list of contacts you choose, on WhatsApp, SMS or the website chat."
         },
+        "DOCUMENTS": {
+          "TITLE": "Quotes & invoices",
+          "DESCRIPTION": "Branded quotes and invoices in Spanish, Portuguese or English, sent by chat or email, with payments received."
+        },
         "CATALOG": {
           "TITLE": "Catalog",
           "DESCRIPTION": "Products and services you sell, with photos and prices — or marked as priced on request."

@@ -856,6 +856,13 @@ const baseMenuItems = computed(() => {
       activeOn: ['sales_tasks_index'],
     },
     {
+      name: 'Documents',
+      label: t('SIDEBAR.DOCUMENTS'),
+      icon: 'i-lucide-receipt-text',
+      to: accountScopedRoute('commerce_documents'),
+      activeOn: ['commerce_documents', 'commerce_document'],
+    },
+    {
       name: 'Catalog',
       label: t('SIDEBAR.CATALOG'),
       icon: 'i-lucide-package',
@@ -1088,6 +1095,7 @@ const MENU_LAYOUT = [
   ['Tasks', 'CRM'],
   ['Companies', 'CRM'],
   ['Campaigns', 'CRM'],
+  ['Documents', 'CRM'],
   ['Catalog', 'CRM'],
   ['CrmHub', 'CRM'],
   ['Personas', 'AI'],

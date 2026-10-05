@@ -64,6 +64,43 @@ class CommerceAPI extends ApiClient {
     return axios.delete(`${this.url}/payment_methods/${id}`);
   }
 
+  documents(params) {
+    return axios.get(`${this.url}/documents`, { params });
+  }
+
+  document(id) {
+    return axios.get(`${this.url}/documents/${id}`);
+  }
+
+  createDocument(document) {
+    return axios.post(`${this.url}/documents`, document);
+  }
+
+  updateDocument(id, document) {
+    return axios.patch(`${this.url}/documents/${id}`, document);
+  }
+
+  deleteDocument(id) {
+    return axios.delete(`${this.url}/documents/${id}`);
+  }
+
+  // action: pdf | accept | decline | void | to_invoice
+  documentAction(id, action) {
+    return axios.post(`${this.url}/documents/${id}/${action}`);
+  }
+
+  deliverDocument(id, delivery) {
+    return axios.post(`${this.url}/documents/${id}/deliver`, delivery);
+  }
+
+  addDocumentPayment(id, payment) {
+    return axios.post(`${this.url}/documents/${id}/payments`, payment);
+  }
+
+  removeDocumentPayment(id, paymentId) {
+    return axios.delete(`${this.url}/documents/${id}/payments/${paymentId}`);
+  }
+
   profile() {
     return axios.get(`${this.url}/profile`);
   }
