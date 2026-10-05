@@ -104,6 +104,16 @@ ok 'apagar rascunho', api.(:delete, "documents/#{outro['id']}").first == 200
 _, lista = api.(:get, "documents?kind=quote&q=maria")
 ok 'lista com busca pelo cliente', lista['payload'].map { |d| d['id'] } == [cot['id']]
 
+ok 'fatura com pagamento nao reabre: 422', api.(:post, "documents/#{fat['id']}/reopen").first == 422
+_, reaberto = api.(:post, "documents/#{cot['id']}/reopen")
+ok 'orcamento aceito reabre como rascunho editavel', reaberto['status'] == 'draft' && reaberto['editable'] &&
+                                                     api.(:patch, "documents/#{cot['id']}", { notes: 'revisado' }).first == 200
+api.(:post, "documents/#{cot['id']}/archive")
+ok 'arquivado sai da lista principal', api.(:get, 'documents?kind=quote')[1]['payload'].none? { |d| d['id'] == cot['id'] }
+ok 'e aparece em Arquivados', api.(:get, 'documents?kind=quote&archived=true')[1]['payload'].map { |d| d['id'] } == [cot['id']]
+api.(:post, "documents/#{cot['id']}/unarchive")
+ok 'desarquivado volta para a lista', api.(:get, 'documents?kind=quote')[1]['payload'].any? { |d| d['id'] == cot['id'] }
+
 account.commerce_profile.update!(quote_prefix: 'PRE')
 _, ingles = api.(:post, 'documents', { kind: 'quote', language: 'en', items: [{ name: 'Café ☕ e acentuação', quantity: '1', unit: 'unit', unit_price: '9.9' }] })
 api.(:post, "documents/#{ingles['id']}/pdf")

@@ -234,7 +234,13 @@
       "MESSAGE_PLACEHOLDER": "Leave blank to use the default text in the document language",
       "EMAIL_TO": "To",
       "EMAIL_SUBJECT": "Subject",
-      "SENT_OK": "Sent."
+      "SENT_OK": "Sent.",
+      "ARCHIVED": "Archived",
+      "ARCHIVED_BADGE": "Archived",
+      "EMPTY_ARCHIVED": "No archived documents.",
+      "ARCHIVE_ACTION": "Archive",
+      "UNARCHIVE": "Unarchive",
+      "REOPEN": "Reopen for editing"
     }
   }
 }

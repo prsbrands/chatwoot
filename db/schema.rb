@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -914,6 +914,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
     t.datetime "declined_at"
     t.datetime "paid_at"
     t.datetime "voided_at"
+    t.datetime "archived_at"
     t.index ["account_id", "kind", "status"], name: "index_commerce_documents_on_account_id_and_kind_and_status"
     t.index ["account_id", "kind", "year", "sequence"], name: "index_commerce_documents_on_number", unique: true
     t.index ["contact_id"], name: "index_commerce_documents_on_contact_id"

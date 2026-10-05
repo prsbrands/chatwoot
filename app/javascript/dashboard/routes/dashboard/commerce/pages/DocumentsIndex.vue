@@ -24,6 +24,7 @@ const STATUSES = {
 const kind = ref('quote');
 const status = ref(ALL);
 const search = ref('');
+const archived = ref(false);
 const documents = ref([]);
 const isLoading = ref(true);
 const isCreating = ref(false);
@@ -42,6 +43,7 @@ const fetchDocuments = async () => {
       kind: kind.value,
       status: status.value || undefined,
       q: search.value.trim() || undefined,
+      archived: archived.value || undefined,
     });
     documents.value = data.payload;
   } catch (error) {
@@ -60,7 +62,7 @@ watch(kind, () => {
   status.value = ALL;
   fetchDocuments();
 });
-watch(status, fetchDocuments);
+watch([status, archived], fetchDocuments);
 
 const open = document =>
   router.push(
@@ -133,6 +135,15 @@ onMounted(fetchDocuments);
         </button>
       </div>
       <Select v-model="status" :options="statusOptions" class="w-44" />
+      <Button
+        sm
+        :slate="!archived"
+        :blue="archived"
+        :outline="!archived"
+        icon="i-lucide-archive"
+        :label="$t('COMMERCE.DOCUMENTS.ARCHIVED')"
+        @click="archived = !archived"
+      />
       <Input
         v-model="search"
         class="w-64"
@@ -148,7 +159,11 @@ onMounted(fetchDocuments);
       {{ $t('COMMERCE.DOCUMENTS.LOADING') }}
     </div>
     <p v-else-if="!documents.length" class="px-6 py-5 text-sm text-n-slate-11">
-      {{ $t('COMMERCE.DOCUMENTS.EMPTY') }}
+      {{
+        archived
+          ? $t('COMMERCE.DOCUMENTS.EMPTY_ARCHIVED')
+          : $t('COMMERCE.DOCUMENTS.EMPTY')
+      }}
     </p>
     <div v-else class="flex flex-col px-6 py-4">
       <button

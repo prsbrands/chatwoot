@@ -32,6 +32,21 @@ class Commerce::DocumentFlow
     @document.update!(status: :declined, declined_at: Time.current)
   end
 
+  # Reabrir para edição: volta a rascunho (desfaz aceito, recusado ou anulado).
+  # Fatura com pagamento não reabre; os PDFs gerados continuam no arquivo.
+  def reopen!
+    raise_unless(!@document.editable? && @document.payments.none? && !@document.paid? && !@document.partially_paid?)
+    @document.update!(status: :draft, accepted_at: nil, declined_at: nil, voided_at: nil)
+  end
+
+  def archive!
+    @document.update!(archived_at: Time.current)
+  end
+
+  def unarchive!
+    @document.update!(archived_at: nil)
+  end
+
   def void!
     raise_unless(!@document.void? && @document.payments.none?)
     @document.update!(status: :void, voided_at: Time.current)

@@ -274,6 +274,9 @@ Rails.application.routes.draw do
                 post :decline
                 post :void
                 post :to_invoice
+                post :reopen
+                post :archive
+                post :unarchive
                 post :payments, action: :add_payment
                 delete 'payments/:payment_id', action: :remove_payment
               end

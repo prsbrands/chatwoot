@@ -7,6 +7,7 @@ json.due_date resource.due_date
 %i[subtotal discount_total tax_total total amount_paid].each { |column| json.set! column, resource.public_send(column).to_s }
 json.balance resource.balance.to_s
 json.sent_at resource.sent_at&.to_i
+json.archived_at resource.archived_at&.to_i
 json.public_url "#{ENV.fetch('FRONTEND_URL')}/d/#{resource.public_token}"
 if local_assigns[:full]
   json.items resource.items do |line|

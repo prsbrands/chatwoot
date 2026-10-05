@@ -48,6 +48,15 @@ const sendDialog = ref(null);
 const paymentDialog = ref(null);
 
 const editable = computed(() => doc.value?.editable);
+// Reabrir: aceito, recusado ou anulado volta a rascunho; fatura com
+// pagamento não (o servidor tem a mesma regra).
+const canReopen = computed(
+  () =>
+    doc.value &&
+    !doc.value.editable &&
+    !doc.value.payments?.length &&
+    !['paid', 'partially_paid'].includes(doc.value.status)
+);
 const isQuote = computed(() => doc.value?.kind === 'quote');
 const totals = computed(() =>
   documentTotals(lines.value, form.value.tax_mode)
@@ -281,8 +290,24 @@ onMounted(async () => {
           >
             {{ $t(`COMMERCE.DOCUMENTS.STATUS.${doc.display_status}`) }}
           </span>
+          <span
+            v-if="doc.archived_at"
+            class="px-2 py-0.5 text-xs font-medium rounded-md bg-n-slate-3 text-n-slate-11"
+          >
+            {{ $t('COMMERCE.DOCUMENTS.ARCHIVED_BADGE') }}
+          </span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <Button
+            v-if="canReopen"
+            sm
+            amber
+            outline
+            icon="i-lucide-pencil"
+            :label="$t('COMMERCE.DOCUMENTS.REOPEN')"
+            :is-loading="busy === 'reopen'"
+            @click="run('reopen')"
+          />
           <Button
             v-if="editable"
             sm
@@ -698,6 +723,19 @@ onMounted(async () => {
         </section>
 
         <div class="flex justify-end gap-3">
+          <Button
+            sm
+            slate
+            link
+            :icon="doc.archived_at ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
+            :label="
+              doc.archived_at
+                ? $t('COMMERCE.DOCUMENTS.UNARCHIVE')
+                : $t('COMMERCE.DOCUMENTS.ARCHIVE_ACTION')
+            "
+            :is-loading="busy === 'archive' || busy === 'unarchive'"
+            @click="run(doc.archived_at ? 'unarchive' : 'archive')"
+          />
           <Button
             v-if="isAdmin && doc.status !== 'void' && !doc.payments?.length"
             sm
