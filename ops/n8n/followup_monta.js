@@ -62,7 +62,11 @@ return $input.all().map(item => {
       max_tokens: maxTokens,
       temperature: Number(rota.temperature),
     };
-    if ((rota.provider || 'openrouter') === 'openrouter') body.reasoning = { enabled: false };
+    if ((rota.provider || 'openrouter') === 'openrouter') {
+      body.reasoning = { enabled: false };
+      // Custo em dolar na resposta (usage.cost), gravado pelo Envia.
+      body.usage = { include: true };
+    }
   }
 
   // Sem a rota inteira (prompt e chave) daqui em diante: o Envia so precisa do
@@ -71,6 +75,8 @@ return $input.all().map(item => {
   delete ctx.rota;
   delete ctx.jevKey;
   ctx.maxFollowups = Number(rota.max_followups);
+  ctx.personaId = rota.persona_id;
+  ctx.provider = rota.provider || 'openrouter';
 
   return { json: {
     url: url,

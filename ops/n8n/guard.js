@@ -15,6 +15,22 @@ function getJson(url, headers) {
   });
 }
 
+function sendJson(method, url, headers, payload) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload);
+    const req = https.request(url, {
+      method: method,
+      headers: Object.assign({ 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) }, headers),
+    }, res => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+    });
+    req.on('error', reject);
+    req.end(data);
+  });
+}
+
 const raw = $input.first().json;
 const b = raw.body || raw;
 const headers = raw.headers || {};
@@ -91,7 +107,7 @@ if (!botAccessToken) throw new Error('sem access_token de bot gravado para conta
 // com 401"). Token fixo de uma unica conta quebraria toda conta que nao
 // fosse essa (mesma classe de bug do secret acima); resolve por conta aqui
 // e passa adiante, em vez de credential fixo no proprio no Historico.
-const tokenUrl = supabaseUrl + '/bot_account_settings?chatwoot_account_id=eq.' + accountId + '&select=chat_user_token,jev_api_key,jev';
+const tokenUrl = supabaseUrl + '/bot_account_settings?chatwoot_account_id=eq.' + accountId + '&select=chat_user_token,jev_api_key,jev,ai_monthly_budget_usd';
 const tokenResponse = await getJson(tokenUrl, { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey });
 if (tokenResponse.statusCode < 200 || tokenResponse.statusCode >= 300) {
   throw new Error('falha ao consultar bot_account_settings: HTTP ' + tokenResponse.statusCode);
@@ -157,6 +173,36 @@ if (sender.blocked === true) return [];
 // gravado, liga nos canais de mensageria pelo tipo. O OpenWA e canal API, o
 // mesmo tipo da voz e do site da DaGente, entao ele liga pela rota
 // (bot_split_replies.sql e o provision do OpenWA gravam true).
+// Teto mensal de IA da conta (Super Admin, bot_ai_usage.sql): com o mes no
+// teto, a mensagem vai para a equipe sem chamar LLM nenhum, nem o do resumo da
+// passagem. Conversa ja aberta para a equipe so segue sem o bot.
+const teto = tokenRows[0].ai_monthly_budget_usd;
+if (teto !== null && teto !== undefined) {
+  const supa = { apikey: supabaseKey, Authorization: 'Bearer ' + supabaseKey };
+  const gasto = await sendJson('POST', supabaseUrl + '/rpc/bot_ai_month_spend', supa, { p_account: accountId });
+  if (gasto.statusCode < 200 || gasto.statusCode >= 300) throw new Error('falha ao consultar bot_ai_month_spend: HTTP ' + gasto.statusCode);
+  if (Number(gasto.body) >= Number(teto)) {
+    if (conv.status === 'pending') {
+      const chatwoot = 'https://prs.cortexgen.cloud/api/v1/accounts/' + accountId;
+      const conta = await getJson(chatwoot, { api_access_token: chatUserToken });
+      const locale = String((JSON.parse(conta.body || '{}').locale) || 'en').slice(0, 2);
+      const AVISO = {
+        es: 'Traspaso · El bot no respondió: la cuenta alcanzó el tope mensual de gasto de IA. Atiende esta conversación.',
+        pt: 'Passagem · O bot não respondeu: a conta atingiu o teto mensal de gasto com IA. Atenda esta conversa.',
+        en: 'Handoff · The bot did not reply: the account reached its monthly AI spending cap. Please take this conversation.',
+      };
+      const bot = { api_access_token: botAccessToken };
+      const nota = await sendJson('POST', chatwoot + '/conversations/' + conv.id + '/messages', bot,
+        { content: AVISO[locale] || AVISO.en, message_type: 'outgoing', private: true });
+      const abrir = await sendJson('POST', chatwoot + '/conversations/' + conv.id + '/toggle_status', bot, { status: 'open' });
+      if (nota.statusCode >= 300 || abrir.statusCode >= 300) {
+        throw new Error('teto de IA: falha ao passar a conversa ' + conv.id + ' (HTTP ' + nota.statusCode + '/' + abrir.statusCode + ')');
+      }
+    }
+    return [];
+  }
+}
+
 const BOLHAS_POR_TIPO = ['Channel::Whatsapp', 'Channel::Instagram', 'Channel::FacebookPage', 'Channel::TwilioSms', 'Channel::Sms', 'Channel::Telegram', 'Channel::Line'];
 const splitReplies = typeof rows[0].split_replies === 'boolean' ? rows[0].split_replies : BOLHAS_POR_TIPO.includes(conv.channel);
 

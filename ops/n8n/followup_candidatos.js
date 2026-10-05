@@ -59,8 +59,17 @@ const rotas = await supabase('GET', 'bot_route_resolved?split_replies=is.true&is
 if (!rotas.length) return [];
 
 const contas = [...new Set(rotas.map(r => r.chatwoot_account_id))];
-const ajustes = await supabase('GET', 'bot_account_settings?chatwoot_account_id=in.(' + contas.join(',') + ')&select=chatwoot_account_id,chat_user_token,jev_api_key,jev');
+const ajustes = await supabase('GET', 'bot_account_settings?chatwoot_account_id=in.(' + contas.join(',') + ')&select=chatwoot_account_id,chat_user_token,jev_api_key,jev,ai_monthly_budget_usd');
 const tokens = await supabase('GET', 'bot_channel_routes?chatwoot_account_id=in.(' + contas.join(',') + ')&select=chatwoot_account_id,chatwoot_inbox_id,chatwoot_agent_bot_access_token');
+
+// Teto mensal de IA (Super Admin, bot_ai_usage.sql): conta no teto fica sem
+// follow-up ate o mes virar ou o teto subir.
+const noTeto = new Set();
+for (const ajuste of ajustes) {
+  if (ajuste.ai_monthly_budget_usd === null || ajuste.ai_monthly_budget_usd === undefined) continue;
+  const gasto = await supabase('POST', 'rpc/bot_ai_month_spend', { p_account: ajuste.chatwoot_account_id });
+  if (Number(gasto) >= Number(ajuste.ai_monthly_budget_usd)) noTeto.add(ajuste.chatwoot_account_id);
+}
 
 const agora = Date.now();
 const itens = [];
@@ -68,6 +77,7 @@ const itens = [];
 for (const rota of rotas) {
   const conta = rota.chatwoot_account_id;
   const inbox = rota.chatwoot_inbox_id;
+  if (noTeto.has(conta)) continue;
   const ajuste = ajustes.find(a => a.chatwoot_account_id === conta) || {};
   const userToken = ajuste.chat_user_token;
   const botToken = (tokens.find(t => t.chatwoot_account_id === conta && t.chatwoot_inbox_id === inbox) || {}).chatwoot_agent_bot_access_token;

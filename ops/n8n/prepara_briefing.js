@@ -56,7 +56,10 @@ function buildSpec(apiStyle, baseUrl, apiKey, model) {
     max_tokens: maxTokens,
     temperature: 0,
   };
-  if ((rota.provider || 'openrouter') === 'openrouter') body.reasoning = { enabled: false };
+  if ((rota.provider || 'openrouter') === 'openrouter') {
+    body.reasoning = { enabled: false };
+    body.usage = { include: true };
+  }
   return { url: base + '/chat/completions', headers: headers, body: body };
 }
 

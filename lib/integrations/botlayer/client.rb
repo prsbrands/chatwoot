@@ -140,6 +140,11 @@ class Integrations::Botlayer::Client
     )
   end
 
+  # Uso de IA da conta num intervalo e o teto do mês (db/botlayer/bot_ai_usage.sql).
+  def ai_usage(account_id, from, to)
+    post('rpc/bot_ai_usage', { p_account: account_id.to_i, p_from: from.iso8601, p_to: to.iso8601 })
+  end
+
   def account_settings(account_id)
     get("bot_account_settings?chatwoot_account_id=eq.#{account_id.to_i}&select=*").first || {}
   end

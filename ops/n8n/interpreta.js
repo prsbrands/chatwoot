@@ -29,6 +29,9 @@ if (isAnthropic) {
   tokensIn = usage.prompt_tokens || 0;
   tokensOut = usage.completion_tokens || 0;
 }
+// Custo em dolar que o OpenRouter devolve (pedido com usage.include no
+// MontaPrompt); provedor proprio nao devolve, e a chamada fica sem preco.
+const costUsd = typeof usage.cost === 'number' ? usage.cost : null;
 if (!reply) return [];
 
 // Handoff determinístico: palavra-chave do cliente, limite de turnos ou
@@ -50,6 +53,7 @@ return [{ json: {
   model: res.model || null,
   tokensIn: tokensIn,
   tokensOut: tokensOut,
+  costUsd: costUsd,
   latencyMs: Date.now() - Number(g.startedAt || Date.now()),
   accountId: g.accountId,
   conversationId: g.conversationId,

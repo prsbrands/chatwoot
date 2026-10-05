@@ -58,6 +58,10 @@ class BotlayerAPI extends ApiClient {
     return axios.post(`${this.url}/providers/${id}/sync_models`);
   }
 
+  aiUsage(params) {
+    return axios.get(`${this.url}/ai_usage`, { params });
+  }
+
   jev() {
     return axios.get(`${this.url}/jev`);
   }

@@ -881,6 +881,13 @@ const baseMenuItems = computed(() => {
       activeOn: ['settings_integrations_ai_providers'],
     },
     {
+      name: 'AiUsage',
+      label: t('SIDEBAR.AI_USAGE'),
+      icon: 'i-lucide-gauge',
+      to: accountScopedRoute('settings_integrations_ai_usage'),
+      activeOn: ['settings_integrations_ai_usage'],
+    },
+    {
       name: 'AiHub',
       label: t('SIDEBAR.VIEW_ALL_AI'),
       icon: 'i-lucide-arrow-right',
@@ -1078,6 +1085,7 @@ const MENU_LAYOUT = [
   ['Personas', 'AI'],
   ['Jev', 'AI'],
   ['Captain', 'AI'],
+  ['AiUsage', 'AI'],
   ['AiHub', 'AI'],
   ['Connections', 'CHANNELS'],
   ['Portals', 'CHANNELS'],

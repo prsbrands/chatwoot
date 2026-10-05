@@ -13,6 +13,7 @@ import Openwa from './Openwa/Index.vue';
 import Twilio from './Twilio/Index.vue';
 import Botlayer from './Botlayer/Index.vue';
 import AiProviders from './AiProviders/Index.vue';
+import AiUsage from './AiUsage/Index.vue';
 import BotlayerPersonaEditor from './Botlayer/PersonaEditor.vue';
 import BotlayerKnowledgeEditor from './Botlayer/KnowledgeEditor.vue';
 
@@ -72,6 +73,15 @@ export default {
           path: 'ai_providers',
           component: AiProviders,
           name: 'settings_integrations_ai_providers',
+          meta: {
+            featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+            permissions: ['administrator'],
+          },
+        },
+        {
+          path: 'ai_usage',
+          component: AiUsage,
+          name: 'settings_integrations_ai_usage',
           meta: {
             featureFlag: FEATURE_FLAGS.INTEGRATIONS,
             permissions: ['administrator'],

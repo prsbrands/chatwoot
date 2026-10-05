@@ -87,6 +87,10 @@
           "TITLE": "Jev",
           "DESCRIPTION": "Quick decisions the AI makes on every message — language, handoff, follow-up — with how often it was right and what it cost."
         },
+        "AI_USAGE": {
+          "TITLE": "AI usage",
+          "DESCRIPTION": "What the AI spent this month — answers, handoff summaries, follow-ups and Jev — against the monthly cap."
+        },
         "FOLLOWUPS": {
           "TITLE": "Follow-ups",
           "DESCRIPTION": "How the agent resumes a conversation that went quiet. Set in each persona."

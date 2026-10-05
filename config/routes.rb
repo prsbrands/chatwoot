@@ -477,6 +477,7 @@ Rails.application.routes.draw do
                   post :sync_models
                 end
               end
+              resource :ai_usage, only: [:show], controller: 'ai_usage'
               resource :jev, only: [:show, :update], controller: 'jev' do
                 put :key
                 delete :key, action: :destroy_key
@@ -840,6 +841,7 @@ Rails.application.routes.draw do
       resources :accounts, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
         post :seed, on: :member
         post :reset_cache, on: :member
+        resource :ai_budget, only: [:update], controller: 'ai_budgets'
       end
       resources :users, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
         delete :avatar, on: :member, action: :destroy_avatar

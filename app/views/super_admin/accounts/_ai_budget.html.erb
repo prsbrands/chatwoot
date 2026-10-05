@@ -1,0 +1,21 @@
+<% if Integrations::Botlayer::Client.configured? %>
+  <% botlayer = Integrations::Botlayer::Client.new %>
+  <% budget = botlayer.account_settings(page.resource.id)['ai_monthly_budget_usd'] %>
+  <% usage = botlayer.ai_usage(page.resource.id, Time.current.beginning_of_month, Time.current) %>
+  <section class="main-content__body">
+    <hr/>
+    <%= form_with(url: super_admin_account_ai_budget_path(page.resource), scope: :ai_budget, method: :patch, html: { class: "form" }) do |f| %>
+      <div class="form-actions">
+        <p class="pb-3">
+          <%= t('super_admin.ai_budget.spent', usd: number_to_currency(usage['month_spend_usd'], precision: 4)) %><br>
+          <%= t('super_admin.ai_budget.hint') %>
+        </p>
+        <div class="field-unit">
+          <%= f.label :monthly_usd, t('super_admin.ai_budget.label'), class: "field-unit__label" %>
+          <div class="field-unit__field"><%= f.number_field :monthly_usd, value: budget, step: '0.01', min: 0 %></div>
+        </div>
+        <%= f.submit t('super_admin.ai_budget.save') %>
+      </div>
+    <% end %>
+  </section>
+<% end %>

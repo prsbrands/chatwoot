@@ -66,7 +66,7 @@ const TEXTOS = {
       keyword: 'the customer used a handoff keyword', max_turns: 'the conversation reached the turn limit',
       content_filter: 'the model refused to answer', human_request: 'the customer asked for a person',
       mood: 'the customer seems upset', manipulation: 'the message tried to manipulate the bot',
-      opt_out: 'the customer asked to stop receiving messages', reply_review: 'the bot reply was held before sending',
+      opt_out: 'the customer asked to stop receiving messages', reply_review: 'Jev held the bot reply',
     },
   },
   pt: {
@@ -78,7 +78,7 @@ const TEXTOS = {
       keyword: 'o cliente usou uma palavra de passagem', max_turns: 'a conversa chegou ao limite de turnos',
       content_filter: 'o modelo se recusou a responder', human_request: 'o cliente pediu uma pessoa',
       mood: 'o cliente parece irritado', manipulation: 'a mensagem tentou manipular o bot',
-      opt_out: 'o cliente pediu para não receber mais mensagens', reply_review: 'a resposta do bot foi retida antes de sair',
+      opt_out: 'o cliente pediu para não receber mais mensagens', reply_review: 'o Jev reteve a resposta do bot',
     },
   },
   es: {
@@ -90,7 +90,7 @@ const TEXTOS = {
       keyword: 'el cliente usó una palabra de traspaso', max_turns: 'la conversación llegó al límite de turnos',
       content_filter: 'el modelo se negó a responder', human_request: 'el cliente pidió una persona',
       mood: 'el cliente parece molesto', manipulation: 'el mensaje intentó manipular al bot',
-      opt_out: 'el cliente pidió no recibir más mensajes', reply_review: 'la respuesta del bot se retuvo antes de salir',
+      opt_out: 'el cliente pidió no recibir más mensajes', reply_review: 'Jev retuvo la respuesta del bot',
     },
   },
 };
@@ -143,5 +143,36 @@ if (optOut) {
 
 await exigir('POST', conversa + '/messages', g.botAccessToken, { content: blocos.join('\n\n'), message_type: 'outgoing', private: true });
 await exigir('POST', conversa + '/toggle_status', g.botAccessToken, { status: 'open' });
+
+// O LLM do resumo entra no Uso de IA da conta (bot_ai_usage.sql). O registro
+// e para a tela e para o teto; perder uma linha nao desfaz a passagem.
+if (!res.error && res.type !== 'error') {
+  const usage = res.usage || {};
+  const linha = JSON.stringify({
+    chatwoot_account_id: g.accountId,
+    chatwoot_conversation_id: g.conversationId,
+    chatwoot_message_id: g.messageId,
+    persona_id: $('Persona').first().json.persona_id,
+    kind: 'briefing',
+    provider: $('Persona').first().json.provider || 'openrouter',
+    model: res.model || null,
+    tokens_in: usage.prompt_tokens || usage.input_tokens || 0,
+    tokens_out: usage.completion_tokens || usage.output_tokens || 0,
+    cost_usd: typeof usage.cost === 'number' ? usage.cost : null,
+    status: 'ok',
+  });
+  await new Promise(resolve => {
+    const req = https.request($env.SUPABASE_REST_URL + '/bot_interactions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json', 'content-length': Buffer.byteLength(linha), prefer: 'return=minimal',
+        apikey: $env.SUPABASE_SERVICE_ROLE_KEY, authorization: 'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    }, r => { r.resume(); r.on('end', resolve); });
+    req.setTimeout(5000, () => req.destroy(new Error('timeout')));
+    req.on('error', resolve);
+    req.end(linha);
+  });
+}
 
 return [];

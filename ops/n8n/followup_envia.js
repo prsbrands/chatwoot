@@ -136,6 +136,18 @@ const relatorio = [];
 
 for (const { res, ctx } of fila) {
   const nota = r => relatorio.push({ conversa: ctx.accountId + '/' + ctx.conversationId, resultado: r });
+  // O LLM da retomada entra no Uso de IA da conta (bot_ai_usage.sql), tenha
+  // saido mensagem ou nao. O registro e para a tela e para o teto: perder uma
+  // linha nao para a rodada.
+  if (!res.error && res.type !== 'error') {
+    const usage = res.usage || {};
+    await pedir('POST', SB + 'bot_interactions', Object.assign({ prefer: 'return=minimal' }, sbHeaders), {
+      chatwoot_account_id: ctx.accountId, chatwoot_conversation_id: ctx.conversationId, chatwoot_message_id: ctx.lastMessageId,
+      persona_id: ctx.personaId, kind: 'followup', provider: ctx.provider, model: res.model || null,
+      tokens_in: usage.prompt_tokens || usage.input_tokens || 0, tokens_out: usage.completion_tokens || usage.output_tokens || 0,
+      cost_usd: typeof usage.cost === 'number' ? usage.cost : null, status: 'ok',
+    });
+  }
   const lido = lerResposta(res);
   if (!lido) { nota('LLM sem resposta legivel; tenta na proxima varredura'); continue; }
 

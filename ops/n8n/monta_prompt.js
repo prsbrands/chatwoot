@@ -251,7 +251,11 @@ function buildSpec(provider, apiStyle, baseUrl, apiKey, model, extraModels) {
     } else {
       body.model = model;
     }
-    if (provider === 'openrouter') body.reasoning = { enabled: false };
+    if (provider === 'openrouter') {
+      body.reasoning = { enabled: false };
+      // Custo em dolar na resposta (usage.cost), gravado pelo Log.
+      body.usage = { include: true };
+    }
     if (apiKey) headers.authorization = 'Bearer ' + apiKey;
   }
   return { url: url, headers: headers, body: body };

@@ -198,6 +198,47 @@
         "ERROR": "Could not reach the OpenWA gateway"
       }
     },
+    "AI_USAGE": {
+      "HEADER": "AI usage",
+      "DESCRIPTION": "What the AI spent on this account: answers to customers, handoff summaries, follow-ups and Jev decisions.",
+      "LOADING": "Loading AI usage",
+      "ERROR": "Could not load the AI usage. Try again.",
+      "PERIOD": {
+        "THIS_MONTH": "This month",
+        "LAST_30_DAYS": "Last 30 days",
+        "LAST_MONTH": "Last month"
+      },
+      "CAP": {
+        "TITLE": "Monthly cap",
+        "SPENT": "{spent} of {cap} spent this month.",
+        "HELP": "When the month reaches the cap, the bot stops calling the AI and hands new messages to your team. The cap is set by the platform administrator.",
+        "NONE": "No monthly cap. {spent} spent this month.",
+        "STATE": {
+          "ok": "Within the cap",
+          "near": "Close to the cap",
+          "reached": "Cap reached"
+        }
+      },
+      "TILES": {
+        "TOTAL": "Total spent",
+        "CALLS": "AI calls",
+        "CONVERSATIONS": "Conversations answered",
+        "PER_CONVERSATION": "Cost per conversation"
+      },
+      "UNPRICED": "{count} calls used your own provider key, which does not report a price; they are not in the totals.",
+      "BY_DAY": "Spend per day",
+      "BY_KIND": "Where it went",
+      "BY_MODEL": "By model",
+      "KIND": {
+        "reply": "Answers to customers",
+        "briefing": "Handoff summaries",
+        "followup": "Follow-ups"
+      },
+      "LLM": "Language model",
+      "JEV": "Jev decisions",
+      "CALLS_AND_COST": "{calls} calls · {cost}",
+      "EMPTY": "No AI calls in this period."
+    },
     "AI_PROVIDERS": {
       "HEADER": "AI Providers",
       "DESCRIPTION": "API keys your AI agents use to answer conversations. Keys are stored on the server and never sent back to the browser. Each provider syncs its own model catalog.",

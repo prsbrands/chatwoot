@@ -113,6 +113,11 @@ export const HUBS = {
             to: 'settings_integrations_ai_providers',
           },
           {
+            id: 'AI_USAGE',
+            icon: 'i-lucide-gauge',
+            to: 'settings_integrations_ai_usage',
+          },
+          {
             id: 'FOLLOWUPS',
             icon: 'i-lucide-repeat',
             to: 'settings_integrations_botlayer',
