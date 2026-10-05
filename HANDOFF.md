@@ -97,7 +97,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 1. **Publicar o app OAuth do Google** (projeto `cortexgencrm`, com o Paulo) antes de ~09/10. Páginas prontas desde a 1.13.3: Branding → início `https://cortexgen.cloud`, privacidade `https://prs.cortexgen.cloud/privacy`, termos `https://prs.cortexgen.cloud/terms`, domínio autorizado `cortexgen.cloud`, senão a Agenda perde o Google da conta 1. Depois, reconectar se pedir.
 2. **Fechar a Fase 2 do Comercial em uso real** (o Paulo está testando):
-   - o **e-mail HTML** do documento (logo, quadro, botão "Ver cotización") — 1.13.2, ainda não visto pelo Paulo;
+   - ~~o **e-mail HTML** do documento~~ — aprovado pelo Paulo em 05/10;
    - fatura do começo ao fim: Create invoice → Generate PDF → Send → Record payment parcial e total → negócio "ganho" com o valor;
    - página pública: Aceptar/Rechazar.
 3. **Fase 3 do Comercial — cobrança online. Trazer o desenho ao Paulo antes de codar.** Proposta a apresentar:
