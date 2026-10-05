@@ -14,6 +14,7 @@ import salesPipeline from './salesPipeline.json';
 import connections from './connections.json';
 import hubs from './hubs.json';
 import agenda from './agenda.json';
+import commerce from './commerce.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -66,6 +67,7 @@ export default {
   ...connections,
   ...hubs,
   ...agenda,
+  ...commerce,
   ...components,
   ...contact,
   ...contactFilters,

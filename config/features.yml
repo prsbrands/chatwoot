@@ -327,3 +327,9 @@
   display_name: Sales Pipeline
   enabled: false
   column: feature_flags_ext_1
+# CortexGen: comercial (catálogo, empresa, formas de pagamento; depois
+# orçamentos, faturas e cobrança). Sempre no fim, pelo mesmo motivo.
+- name: commerce
+  display_name: Commerce
+  enabled: false
+  column: feature_flags_ext_1

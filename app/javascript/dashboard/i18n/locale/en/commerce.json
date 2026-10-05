@@ -1,0 +1,125 @@
+{
+  "COMMERCE": {
+    "SAVE": "Save",
+    "CLOSE": "Close",
+    "API": {
+      "ERROR": "Something went wrong. Try again."
+    },
+    "KIND": {
+      "product": "Product",
+      "service": "Service"
+    },
+    "UNIT": {
+      "unit": "unit",
+      "hour": "hour",
+      "day": "day",
+      "week": "week",
+      "month": "month",
+      "m": "m",
+      "m2": "m²",
+      "m3": "m³",
+      "kg": "kg",
+      "liter": "liter",
+      "package": "package",
+      "project": "project",
+      "service": "service"
+    },
+    "PAYMENT_KIND": {
+      "cash": "Cash",
+      "bank_transfer": "Bank transfer",
+      "pix": "Pix",
+      "yappy": "Yappy",
+      "card": "Card",
+      "payment_link": "Payment link",
+      "other": "Other"
+    },
+    "CATALOG": {
+      "HEADER": "Catalog",
+      "DESCRIPTION": "Description",
+      "LOADING": "Loading catalog",
+      "EMPTY": "No items yet.",
+      "SEARCH": "Search by name, code or description",
+      "ALL_KINDS": "Products and services",
+      "ALL_CATEGORIES": "All categories",
+      "NO_CATEGORY": "No category",
+      "NEW": "New item",
+      "EDIT": "Edit item",
+      "KIND": "Type",
+      "CATEGORY": "Category",
+      "NAME": "Name",
+      "SKU": "Code (SKU)",
+      "PRICE": "Price",
+      "PRICE_HELP": "Leave blank when it is quoted, measured or made to order.",
+      "CURRENCY": "Currency",
+      "UNIT": "Unit",
+      "AVAILABLE": "Available",
+      "UNAVAILABLE": "Unavailable",
+      "ON_QUOTE": "Price on request",
+      "PRICE_PER_UNIT": "{price} / {unit}",
+      "IMAGES": "Images ({count} of {max})",
+      "ADD_IMAGES": "Add images",
+      "REMOVE_IMAGE": "Remove image",
+      "CREATED_ADD_IMAGES": "Item created. You can add images now.",
+      "DELETE": "Delete item",
+      "DELETE_CONFIRM": "Click again to delete"
+    },
+    "CATEGORIES": {
+      "TITLE": "Categories",
+      "DESCRIPTION": "Rename a category by editing its name. Items of a deleted category stay without a category.",
+      "NEW_PLACEHOLDER": "New category",
+      "ADD": "Add",
+      "DELETE": "Delete category"
+    },
+    "COMPANY": {
+      "HEADER": "Company & payments",
+      "DESCRIPTION": "The details printed on your quotes and invoices, and the payment methods you accept.",
+      "LOADING": "Loading company details",
+      "DATA": "Company details",
+      "LOGO": "Logo",
+      "UPLOAD_LOGO": "Upload logo",
+      "REMOVE_LOGO": "Remove logo",
+      "SAVED": "Company details saved.",
+      "FIELDS": {
+        "trade_name": "Trade name",
+        "legal_name": "Legal name",
+        "tax_id_label": "Tax ID type",
+        "tax_id": "Tax ID",
+        "phone": "Phone",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "website": "Website",
+        "address": "Address",
+        "default_currency": "Default currency",
+        "default_terms": "Default terms",
+        "footer": "Footer"
+      },
+      "PLACEHOLDERS": {
+        "trade_name": "PRS Global",
+        "legal_name": "PRS Global Business S.A.",
+        "tax_id_label": "RUC, CNPJ, EIN…",
+        "tax_id": "",
+        "phone": "+507 …",
+        "whatsapp": "+507 …",
+        "email": "billing@company.com",
+        "website": "https://",
+        "default_terms": "Validity, delivery time, payment conditions…",
+        "footer": "Thank you for your business."
+      }
+    },
+    "PAYMENT_METHODS": {
+      "TITLE": "Payment methods",
+      "DESCRIPTION": "What you accept and what the customer needs to pay you (bank details, Pix key, Yappy number…).",
+      "EMPTY": "No payment methods yet.",
+      "NEW": "New payment method",
+      "EDIT": "Edit payment method",
+      "NAME": "Name",
+      "NAME_PLACEHOLDER": "Bank transfer — Banco General",
+      "KIND": "Type",
+      "INSTRUCTIONS": "Instructions for the customer",
+      "INSTRUCTIONS_PLACEHOLDER": "Account number, Pix key, Yappy number…",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "DELETE": "Delete payment method"
+    }
+  }
+}

@@ -258,6 +258,18 @@ Rails.application.routes.draw do
             post 'bot/bookings', to: 'bot#book'
             post 'bot/cancellations', to: 'bot#cancel'
           end
+          # CortexGen: comercial (flag commerce)
+          namespace :commerce do
+            resources :items, only: [:index, :show, :create, :update, :destroy] do
+              member do
+                post :images, action: :add_image
+                delete 'images/:attachment_id', action: :remove_image
+              end
+            end
+            resources :categories, only: [:index, :create, :update, :destroy]
+            resources :payment_methods, only: [:index, :create, :update, :destroy]
+            resource :profile, only: [:show, :update]
+          end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do
               resources :stages, only: [:create, :update, :destroy]

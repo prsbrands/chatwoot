@@ -5,6 +5,7 @@ import { routes as callRoutes } from './calls/routes';
 import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
 import { routes as salesPipelineRoutes } from './salesPipeline/routes';
+import { routes as commerceRoutes } from './commerce/routes';
 import { routes as connectionsRoutes } from './connections/routes';
 import { routes as hubRoutes } from './hubs/routes';
 import { routes as agendaRoutes } from './agenda/routes';
@@ -33,6 +34,7 @@ export default {
         ...contactRoutes,
         ...companyRoutes,
         ...salesPipelineRoutes,
+        ...commerceRoutes,
         ...connectionsRoutes,
         ...hubRoutes,
         ...agendaRoutes,

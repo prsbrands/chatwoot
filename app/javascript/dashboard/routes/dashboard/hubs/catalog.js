@@ -38,6 +38,11 @@ export const HUBS = {
             to: 'campaigns_whatsapp_index',
           },
           {
+            id: 'CATALOG',
+            icon: 'i-lucide-package',
+            to: 'commerce_catalog',
+          },
+          {
             id: 'CANNED',
             icon: 'i-lucide-message-square-quote',
             to: 'canned_list',
@@ -47,6 +52,11 @@ export const HUBS = {
       {
         id: 'PREPARE',
         items: [
+          {
+            id: 'COMPANY',
+            icon: 'i-lucide-building-2',
+            to: 'commerce_company',
+          },
           { id: 'LABELS', icon: 'i-lucide-tags', to: 'labels_list' },
           {
             id: 'ATTRIBUTES',

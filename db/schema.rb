@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_02_000005) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_05_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -834,6 +834,64 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_02_000005) do
     t.string "phone_number_health_error", limit: 500
     t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
+  end
+
+  create_table "commerce_categories", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "position"], name: "index_commerce_categories_on_account_id_and_position"
+  end
+
+  create_table "commerce_items", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "category_id"
+    t.integer "kind", default: 0, null: false
+    t.string "name", null: false
+    t.text "description"
+    t.string "sku"
+    t.decimal "price", precision: 14, scale: 2
+    t.string "currency", default: "USD", null: false
+    t.string "unit", default: "unit", null: false
+    t.boolean "available", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "kind", "name"], name: "index_commerce_items_on_account_id_and_kind_and_name"
+    t.index ["category_id"], name: "index_commerce_items_on_category_id"
+  end
+
+  create_table "commerce_payment_methods", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.integer "kind", default: 0, null: false
+    t.text "instructions"
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "position"], name: "index_commerce_payment_methods_on_account_id_and_position"
+  end
+
+  create_table "commerce_profiles", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "trade_name"
+    t.string "legal_name"
+    t.string "tax_id_label"
+    t.string "tax_id"
+    t.text "address"
+    t.string "phone"
+    t.string "whatsapp"
+    t.string "email"
+    t.string "website"
+    t.string "default_currency", default: "USD", null: false
+    t.text "default_terms"
+    t.text "footer"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_commerce_profiles_on_account_id", unique: true
   end
 
   create_table "companies", force: :cascade do |t|

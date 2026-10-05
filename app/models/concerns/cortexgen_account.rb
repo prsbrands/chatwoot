@@ -1,4 +1,4 @@
-# Associacoes do CortexGen na conta (Twilio proprio e funil de vendas), fora do
+# Associacoes do CortexGen na conta (Twilio proprio, funil, agenda e comercial), fora do
 # model do upstream: o Account fica como o do Chatwoot e o merge sem conflito.
 module CortexgenAccount
   extend ActiveSupport::Concern
@@ -14,5 +14,9 @@ module CortexgenAccount
     has_many :agenda_google_connections, class_name: 'Agenda::GoogleConnection', dependent: :delete_all
     has_many :agenda_event_types, class_name: 'Agenda::EventType', dependent: :delete_all
     has_many :agenda_availabilities, class_name: 'Agenda::Availability', dependent: :delete_all
+    has_many :commerce_categories, class_name: 'Commerce::Category', dependent: :delete_all
+    has_many :commerce_items, class_name: 'Commerce::Item', dependent: :destroy_async
+    has_one :commerce_profile, class_name: 'Commerce::Profile', dependent: :destroy
+    has_many :commerce_payment_methods, class_name: 'Commerce::PaymentMethod', dependent: :delete_all
   end
 end
