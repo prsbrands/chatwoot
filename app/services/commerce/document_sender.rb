@@ -10,6 +10,12 @@ class Commerce::DocumentSender
   end
 
   def to_conversation!(conversation, content = nil)
+    # Canal API sem webhook (a caixa de voz) não entrega nada ao cliente.
+    if conversation.inbox.api? && conversation.inbox.channel.webhook_url.blank?
+      @document.errors.add(:base, "#{conversation.inbox.name} does not deliver messages to the customer")
+      raise ActiveRecord::RecordInvalid, @document
+    end
+
     pdf = pdf_attachment
     Messages::MessageBuilder.new(@user, conversation, {
                                    message_type: 'outgoing',

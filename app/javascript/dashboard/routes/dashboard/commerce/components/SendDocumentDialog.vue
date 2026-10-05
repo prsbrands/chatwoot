@@ -44,7 +44,14 @@ const open = async document => {
     const { data } = await ContactAPI.getConversations(document.contact_id);
     // A mais recente primeiro, com a caixa (nome dado pela conta) e a última
     // mensagem: só o número da conversa não diz qual é.
+    // Caixa API sem webhook (a de voz, que só guarda a transcrição da
+    // ligação) não entrega nada ao cliente: fica fora da lista.
+    const delivers = conversation => {
+      const inbox = getInbox.value(conversation.inbox_id);
+      return inbox?.channel_type !== 'Channel::Api' || Boolean(inbox.webhook_url);
+    };
     conversations.value = data.payload
+      .filter(delivers)
       .map(conversation => {
         const last = conversation.last_non_activity_message;
         return {

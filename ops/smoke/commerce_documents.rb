@@ -12,7 +12,8 @@ ana = User.create!(name: 'Ana', email: "ana-#{SecureRandom.hex(3)}@loja.test", p
 AccountUser.create!(account: account, user: ana, role: :administrator)
 beto = User.create!(name: 'Beto', email: "beto-#{SecureRandom.hex(3)}@loja.test", password: 'Senha-forte-1!', confirmed_at: Time.current)
 AccountUser.create!(account: account, user: beto, role: :agent)
-inbox = account.inboxes.create!(name: 'WA', channel: Channel::Api.create!(account: account))
+inbox = account.inboxes.create!(name: 'WA', channel: Channel::Api.create!(account: account, webhook_url: 'https://wa.test/hook'))
+voz = account.inboxes.create!(name: 'Voz', channel: Channel::Api.create!(account: account))
 contact = account.contacts.create!(name: 'María Pérez', email: 'maria@cliente.test')
 ci = ContactInbox.create!(contact: contact, inbox: inbox, source_id: SecureRandom.uuid)
 conversa = Conversation.create!(account: account, inbox: inbox, contact: contact, contact_inbox: ci)
@@ -67,6 +68,12 @@ st, enviado = api.(:post, "documents/#{cot['id']}/deliver", { channel: 'conversa
 msg = conversa.messages.outgoing.last
 ok 'enviado pela conversa: PDF anexo e link', st == 200 && enviado['status'] == 'sent' && msg.attachments.count == 1 &&
                                                msg.content.include?('/d/')
+ci_voz = ContactInbox.create!(contact: contact, inbox: voz, source_id: SecureRandom.uuid)
+conversa_voz = Conversation.create!(account: account, inbox: voz, contact: contact, contact_inbox: ci_voz)
+ok 'caixa sem webhook (voz) recusa o envio: 422',
+   api.(:post, "documents/#{cot['id']}/deliver", { channel: 'conversation', conversation_id: conversa_voz.display_id }).first == 422
+direto = msg.webhook_data[:attachments].first[:data_url]
+ok 'webhook leva o endereco direto do PDF, sem redirecionar', direto.include?('/rails/active_storage/disk/') && !direto.include?('redirect')
 st, = api.(:post, "documents/#{cot['id']}/deliver", { channel: 'email', to: 'maria@cliente.test' })
 mail = ActionMailer::Base.deliveries.last
 ok 'enviado por e-mail com o PDF', st == 200 && mail.to == ['maria@cliente.test'] && mail.attachments.first&.filename == "COT-#{Date.current.year}-0001.pdf" &&

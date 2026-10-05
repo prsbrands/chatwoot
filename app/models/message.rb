@@ -468,4 +468,6 @@ class Message < ApplicationRecord
 end
 
 Message.prepend_mod_with('Message')
+# CortexGen: anexo no webhook com o endereço direto (CortexgenMessage)
+Message.prepend(CortexgenMessage)
 Message.include_mod_with('Concerns::Message')
