@@ -7,12 +7,7 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
   # Filtros: kind, status, contact_id, deal_id e q (número ou nome do cliente).
   # Sem archived, a lista principal (sem os arquivados); archived=true, só eles.
   def index
-    @documents = Current.account.commerce_documents.order(issue_date: :desc, id: :desc)
-    archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
-    @documents = archived ? @documents.where.not(archived_at: nil) : @documents.where(archived_at: nil)
-    %i[kind status contact_id deal_id].each { |key| @documents = @documents.where(key => params[key]) if params[key].present? }
-    @documents = ::Commerce::Search.where(@documents, ['number', "customer->>'name'"], params[:q]) if params[:q].present?
-    @documents = @documents.page(params[:page]).per(RESULTS_PER_PAGE)
+    @documents = filtered_documents.order(issue_date: :desc, id: :desc).page(params[:page]).per(RESULTS_PER_PAGE)
   end
 
   def show; end
@@ -104,6 +99,14 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
   end
 
   private
+
+  def filtered_documents
+    archived = ActiveModel::Type::Boolean.new.cast(params[:archived])
+    documents = Current.account.commerce_documents
+    documents = archived ? documents.where.not(archived_at: nil) : documents.where(archived_at: nil)
+    %i[kind status contact_id deal_id].each { |key| documents = documents.where(key => params[key]) if params[key].present? }
+    params[:q].present? ? ::Commerce::Search.where(documents, ['number', "customer->>'name'"], params[:q]) : documents
+  end
 
   def fetch_document
     @document = Current.account.commerce_documents.includes(:items, :payments).find(params[:id])
