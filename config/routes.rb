@@ -266,6 +266,18 @@ Rails.application.routes.draw do
                 delete 'images/:attachment_id', action: :remove_image
               end
             end
+            resources :documents, only: [:index, :show, :create, :update, :destroy] do
+              member do
+                post :pdf
+                post :deliver
+                post :accept
+                post :decline
+                post :void
+                post :to_invoice
+                post :payments, action: :add_payment
+                delete 'payments/:payment_id', action: :remove_payment
+              end
+            end
             resources :categories, only: [:index, :create, :update, :destroy]
             resources :payment_methods, only: [:index, :create, :update, :destroy]
             resource :profile, only: [:show, :update]
@@ -742,6 +754,11 @@ Rails.application.routes.draw do
     end
   end
 
+  # CortexGen: orçamento ou fatura para o cliente, pelo link (token)
+  get 'd/:token', to: 'commerce_public_documents#show', as: :commerce_public_document
+  get 'd/:token/pdf', to: 'commerce_public_documents#pdf', as: :commerce_public_document_pdf
+  post 'd/:token/accept', to: 'commerce_public_documents#accept', as: :commerce_public_document_accept
+  post 'd/:token/decline', to: 'commerce_public_documents#decline', as: :commerce_public_document_decline
   get 'hc/:slug', to: 'public/api/v1/portals#show'
   get 'hc/:slug/sitemap.xml', to: 'public/api/v1/portals#sitemap'
   get 'hc/:slug/:locale', to: 'public/api/v1/portals#show', as: :public_portal_locale

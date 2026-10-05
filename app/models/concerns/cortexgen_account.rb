@@ -18,5 +18,6 @@ module CortexgenAccount
     has_many :commerce_items, class_name: 'Commerce::Item', dependent: :destroy_async
     has_one :commerce_profile, class_name: 'Commerce::Profile', dependent: :destroy
     has_many :commerce_payment_methods, class_name: 'Commerce::PaymentMethod', dependent: :delete_all
+    has_many :commerce_documents, class_name: 'Commerce::Document', dependent: :destroy_async
   end
 end

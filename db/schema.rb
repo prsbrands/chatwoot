@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_05_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_05_000002) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -845,6 +845,83 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000001) do
     t.index ["account_id", "position"], name: "index_commerce_categories_on_account_id_and_position"
   end
 
+  create_table "commerce_document_items", force: :cascade do |t|
+    t.bigint "document_id", null: false
+    t.bigint "item_id"
+    t.string "name", null: false
+    t.text "description"
+    t.decimal "quantity", precision: 14, scale: 3, default: "1.0", null: false
+    t.string "unit", default: "unit", null: false
+    t.decimal "unit_price", precision: 14, scale: 2
+    t.decimal "discount_percent", precision: 5, scale: 2, default: "0.0", null: false
+    t.decimal "tax_rate", precision: 5, scale: 2, default: "0.0", null: false
+    t.decimal "line_subtotal", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "line_discount", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "line_tax", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "line_total", precision: 14, scale: 2, default: "0.0", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id"], name: "index_commerce_document_items_on_document_id"
+  end
+
+  create_table "commerce_document_payments", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "document_id", null: false
+    t.bigint "payment_method_id"
+    t.decimal "amount", precision: 14, scale: 2, null: false
+    t.date "paid_on", null: false
+    t.string "note"
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id"], name: "index_commerce_document_payments_on_document_id"
+  end
+
+  create_table "commerce_documents", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "kind", default: 0, null: false
+    t.string "number", null: false
+    t.integer "year", null: false
+    t.integer "sequence", null: false
+    t.integer "status", default: 0, null: false
+    t.string "language", default: "es", null: false
+    t.string "currency", default: "USD", null: false
+    t.integer "tax_mode", default: 0, null: false
+    t.bigint "contact_id"
+    t.bigint "deal_id"
+    t.bigint "appointment_id"
+    t.bigint "conversation_id"
+    t.bigint "source_document_id"
+    t.date "issue_date", null: false
+    t.date "due_date"
+    t.jsonb "customer", default: {}, null: false
+    t.jsonb "company", default: {}, null: false
+    t.decimal "subtotal", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "discount_total", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "tax_total", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "total", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "amount_paid", precision: 14, scale: 2, default: "0.0", null: false
+    t.text "notes"
+    t.text "terms"
+    t.text "footer"
+    t.string "public_token", null: false
+    t.bigint "created_by_id"
+    t.datetime "sent_at"
+    t.datetime "accepted_at"
+    t.datetime "declined_at"
+    t.datetime "paid_at"
+    t.datetime "voided_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "kind", "status"], name: "index_commerce_documents_on_account_id_and_kind_and_status"
+    t.index ["account_id", "kind", "year", "sequence"], name: "index_commerce_documents_on_number", unique: true
+    t.index ["contact_id"], name: "index_commerce_documents_on_contact_id"
+    t.index ["deal_id"], name: "index_commerce_documents_on_deal_id"
+    t.index ["public_token"], name: "index_commerce_documents_on_public_token", unique: true
+    t.index ["source_document_id"], name: "index_commerce_documents_on_source_document_id"
+  end
+
   create_table "commerce_items", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "category_id"
@@ -891,6 +968,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000001) do
     t.text "footer"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "quote_prefix", default: "COT", null: false
+    t.string "invoice_prefix", default: "FAT", null: false
     t.index ["account_id"], name: "index_commerce_profiles_on_account_id", unique: true
   end
 

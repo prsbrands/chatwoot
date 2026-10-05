@@ -58,6 +58,9 @@ gem 'aws-sdk-sesv2', require: false
 gem 'azure-blob', require: false
 gem 'google-cloud-storage', '>= 1.48.0', require: false
 gem 'image_processing'
+# CortexGen: PDF dos orçamentos e faturas (Commerce::DocumentPdf)
+gem 'prawn'
+gem 'prawn-table'
 
 ##-- for actionmailbox --##
 gem 'aws-actionmailbox-ses', '~> 0'
