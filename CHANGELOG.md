@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.11.0] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Uso de IA por conta.** Tela nova (menu AI → AI usage): quanto a IA gastou no período, por dia, por tipo (respostas, resumos da passagem, follow-ups e decisões do Jev) e por modelo, e o custo médio por conversa. O custo vem do que o OpenRouter cobra em cada chamada.
+- **Teto mensal de gasto, definido no Super Admin.** Na página da conta, o Super Admin vê o gasto do mês e define o teto em dólares (em branco = sem teto). Com o mês no teto, o bot não chama a IA: a mensagem nova vai para a equipe com uma nota, e o follow-up da conta para até o mês virar.
+
 ## [1.10.0] — 2026-10-03 · base Chatwoot 4.18.0
 
 - **A IA desmarca e muda de horário pelo WhatsApp.** "Desmarca mi reunión del martes" cancela o compromisso na Agenda e no Google, com o motivo do cliente, e quem atende é avisado por menção; a IA confirma e pergunta se o cliente quer outro horário. "Muévela al miércoles a las 10" marca o novo horário e só então cancela o antigo. Quando não fica claro qual compromisso ou o que fazer, a IA pergunta, sem pedir dados que não servem (ano, e-mail).
