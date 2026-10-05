@@ -48,7 +48,9 @@ const open = async document => {
     // ligação) não entrega nada ao cliente: fica fora da lista.
     const delivers = conversation => {
       const inbox = getInbox.value(conversation.inbox_id);
-      return inbox?.channel_type !== 'Channel::Api' || Boolean(inbox.webhook_url);
+      return (
+        inbox?.channel_type !== 'Channel::Api' || Boolean(inbox.webhook_url)
+      );
     };
     conversations.value = data.payload
       .filter(delivers)
