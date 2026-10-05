@@ -240,7 +240,9 @@
       "EMPTY_ARCHIVED": "No archived documents.",
       "ARCHIVE_ACTION": "Archive",
       "UNARCHIVE": "Unarchive",
-      "REOPEN": "Reopen for editing"
+      "REOPEN": "Reopen for editing",
+      "LAST_FROM_CUSTOMER": "Customer:",
+      "LAST_FROM_US": "You:"
     }
   }
 }
