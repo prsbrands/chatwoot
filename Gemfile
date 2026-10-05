@@ -61,6 +61,8 @@ gem 'image_processing'
 # CortexGen: PDF dos orçamentos e faturas (Commerce::DocumentPdf)
 gem 'prawn'
 gem 'prawn-table'
+# a Prawn usa matrix, que saiu da biblioteca padrão no Ruby 3.4
+gem 'matrix'
 
 ##-- for actionmailbox --##
 gem 'aws-actionmailbox-ses', '~> 0'
