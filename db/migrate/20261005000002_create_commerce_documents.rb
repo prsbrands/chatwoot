@@ -32,6 +32,10 @@ class CreateCommerceDocuments < ActiveRecord::Migration[7.1]
     end
     add_document_links
     add_document_contents
+    index_documents
+  end
+
+  def index_documents
     add_index :commerce_documents, [:account_id, :kind, :year, :sequence], unique: true, name: 'index_commerce_documents_on_number'
     add_index :commerce_documents, [:account_id, :kind, :status]
     add_index :commerce_documents, :public_token, unique: true

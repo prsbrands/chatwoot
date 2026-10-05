@@ -54,13 +54,16 @@ const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
 export const documentTotals = (lines, taxMode) => {
   const totals = { subtotal: 0, discount: 0, tax: 0, total: 0 };
   lines.forEach(line => {
-    const gross = round(Number(line.quantity || 0) * Number(line.unit_price || 0));
+    const gross = round(
+      Number(line.quantity || 0) * Number(line.unit_price || 0)
+    );
     const discount = round((gross * Number(line.discount_percent || 0)) / 100);
     const net = gross - discount;
     const rate = Number(line.tax_rate || 0);
     let tax = 0;
     if (taxMode === 'exclusive') tax = round((net * rate) / 100);
-    if (taxMode === 'inclusive' && rate) tax = round(net - net / (1 + rate / 100));
+    if (taxMode === 'inclusive' && rate)
+      tax = round(net - net / (1 + rate / 100));
     totals.subtotal += gross;
     totals.discount += discount;
     totals.tax += tax;
