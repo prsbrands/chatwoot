@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.12.0] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Catálogo** (menu CRM → Catalog, flag `commerce` por conta): produtos e serviços com categoria, código, descrição, unidade (un, hora, m², projeto…), até 10 imagens e preço com moeda (USD, BRL, EUR). Sem preço, o item aparece como "sob orçamento" — para o que é medido, projetado ou feito sob medida. Busca e filtros por tipo e categoria. Todos consultam; só admin cadastra.
+- **Empresa e pagamentos**: logo, nome fantasia, razão social, documento fiscal (RUC, CNPJ, EIN…), endereço, telefones, e-mail, site, moeda padrão, condições e rodapé — os dados que saem nos orçamentos e faturas da próxima fase. Formas de pagamento aceitas (dinheiro, transferência, Pix, Yappy, cartão, link…) com as instruções ao cliente.
+
 ## [1.11.0] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Uso de IA por conta.** Tela nova (menu AI → AI usage): quanto a IA gastou no período, por dia, por tipo (respostas, resumos da passagem, follow-ups e decisões do Jev) e por modelo, e o custo médio por conversa. O custo vem do que o OpenRouter cobra em cada chamada.
