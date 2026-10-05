@@ -100,7 +100,7 @@
         "tax_id": "",
         "phone": "+507 …",
         "whatsapp": "+507 …",
-        "email": "billing@company.com",
+        "email": "billing{'@'}company.com",
         "website": "https://",
         "default_terms": "Validity, delivery time, payment conditions…",
         "footer": "Thank you for your business."
