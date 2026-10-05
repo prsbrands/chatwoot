@@ -44,10 +44,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 - **Imagem:** `:v1` = `f8b15c65b5df` (1.13.3, commit `bd1673e46`, clone `src-b15`, imagem `test-b29n`), rollback em `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b30`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
-- **GitHub:** está em `535def329` (1.7.0). **Falta o push** de `ddd2bd517` em diante e das tags `cg-v1.8.0` a `cg-v1.10.0`:
-  ```
-  git push https://github.com/prsbrands/chatwoot.git feature/cortexgen-whitelabel cg-v1.8.0 cg-v1.8.1 cg-v1.9.0 cg-v1.9.1 cg-v1.9.2 cg-v1.9.3 cg-v1.10.0 cg-v1.11.0 cg-v1.12.0 cg-v1.12.1 cg-v1.13.0 cg-v1.13.1 cg-v1.13.2 cg-v1.13.3
-  ```
+- **GitHub:** em dia em 05/10 (`725ad62ec`, tags até `cg-v1.13.3`). O push é do Paulo (o classificador bloqueia para o Claude).
 
 ### Configuração viva (conta 1)
 
@@ -119,7 +116,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
     - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b14` (o vivo é `src-b15`);
     - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b25`; manter `v1`, `v1-pre-b28` e `v1-pre-b27`;
     - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
-11. **Push para o GitHub** (comando acima) e revisão cosmética antiga (acentos, modo escuro, celular).
+11. Revisão cosmética antiga (acentos, modo escuro, celular).
 
 ### Pendências antigas que continuam valendo
 
