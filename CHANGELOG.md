@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.12.1] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **A tela Company & payments abre.** Na 1.12.0 ela ficava em branco: o exemplo de e-mail num dos campos tinha um "@", que o sistema de traduções da tela lê como comando.
+
 ## [1.12.0] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Catálogo** (menu CRM → Catalog, flag `commerce` por conta): produtos e serviços com categoria, código, descrição, unidade (un, hora, m², projeto…), até 10 imagens e preço com moeda (USD, BRL, EUR). Sem preço, o item aparece como "sob orçamento" — para o que é medido, projetado ou feito sob medida. Busca e filtros por tipo e categoria. Todos consultam; só admin cadastra.
