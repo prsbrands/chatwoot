@@ -228,7 +228,10 @@ if (!g.splitReplies) {
 }
 if (marcadoAgora) await mandarLinkDaReuniao();
 const idiomaDoCliente = ($('JevEntrada').first().json.jev || {}).language;
-if (linhasDaCotacao.length) await chamarComercial('quotes', { lines: linhasDaCotacao, language: idiomaDoCliente });
+// O rascunho que o MontaPrompt ja criou (escolha do Jev) nao se repete pela etiqueta.
+if (linhasDaCotacao.length && !$('MontaPrompt').first().json.quoted) {
+  await chamarComercial('quotes', { lines: linhasDaCotacao, language: idiomaDoCliente });
+}
 // A assinatura que o MontaPrompt ja criou (escolha do Jev) manda o link; uma
 // etiqueta [[SUBSCRIBE]] que o LLM escreva assim mesmo so sai do texto.
 const linkPronto = $('MontaPrompt').first().json.subscriptionUrl;

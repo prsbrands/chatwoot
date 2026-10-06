@@ -38,6 +38,15 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist2 }, {},
     { 'commerce/bot/catalog': [200, catalog], 'typesafe.ai': [200, { answers: { subscribe: { choice: 'p14', confidence: 0.6 } } }] });
   ok('MontaPrompt: sem certeza do Jev, nada criado (fica a etiqueta)', !r.calls.some(c => c.url.includes('bot/subscriptions')) && r.out[0].json.subscriptionUrl === null);
+  const hist3 = { payload: [{ message_type: 0, content: 'Ahora genere una cotizacion del product test #1 de 10 unidades', private: false }] };
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true, language: 'es' } }, Historico: hist3 }, {},
+    { 'commerce/bot/catalog': [200, catalog], 'typesafe.ai': [200, { answers: { subscribe: { choice: 'none', confidence: 0.9 }, quote: { choice: 'i12', confidence: 0.7 } } }],
+      'commerce/bot/quotes': [200, { id: 9, number: 'COT-2026-0009' }] });
+  const pedido = r.calls.find(c => c.url.includes('bot/quotes'));
+  const sys4 = r.out[0].json.body.messages[0].content;
+  ok('MontaPrompt: Jev escolhe o item e o rascunho nasce antes do LLM, com a quantidade da mensagem',
+     pedido && JSON.stringify(pedido.body.lines) === JSON.stringify([{ item_id: 12, quantity: '10' }]) && r.out[0].json.quoted === true &&
+     sys4.includes('The draft quote COT-2026-0009 for 10 x "Cortina"') && !r.calls.some(c => c.url.includes('bot/subscriptions')));
   const mp = { booked: null, catalog: true };
   const input = { reply: 'Perfecto, preparo la cotización y el equipo te la envía.\n[[QUOTE 12x2, 13]]\n[[SUBSCRIBE 14]]', accountId: 1, conversationId: 89 };
   r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: mp, JevEntrada: { jev: { language: 'es' } } }, input,
@@ -57,6 +66,9 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
     { reply: 'Listo.', accountId: 1, conversationId: 89 }, { '/conversations/89': [200, { meta: {} }] });
   ok('Responde: sem idioma decidido, o link vai sem rotulo em ingles',
      r.calls.filter(c => c.url.endsWith('/messages'))[1].body.content === '👉 https://x/s/plan');
+  r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: { catalog: true, quoted: true }, JevEntrada: { jev: {} } },
+    { reply: 'Listo, cotización en camino. [[QUOTE 12x10]]', accountId: 1, conversationId: 89 }, { '/conversations/89': [200, { meta: {} }] });
+  ok('Responde: rascunho ja criado no MontaPrompt nao se repete pela etiqueta', !r.calls.some(c => c.url.includes('commerce/bot')));
   r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: mp, JevEntrada: { jev: {} } }, input,
     { '/conversations/89': [200, { meta: { assignee_type: 'User' } }] });
   ok('Responde: humano assumiu, nada criado', !r.calls.some(c => c.url.includes('commerce/bot')));

@@ -39,7 +39,7 @@ const conferirAgendamento = !jaMarcado && !ETIQUETA_BOOK.test(String(i.reply || 
 // preparada ou que o link vem a seguir deixaria o cliente esperando por nada.
 const ETIQUETA_VENDA = /\[\[(QUOTE|SUBSCRIBE) [^\]]+\]\]/;
 // Assinatura ja criada no MontaPrompt (escolha do Jev): o link vem de fato.
-const jaVendido = Boolean(agenda.subscriptionUrl);
+const jaVendido = Boolean(agenda.subscriptionUrl || agenda.quoted);
 const conferirVenda = Boolean(agenda.catalog) && !jaVendido && !ETIQUETA_VENDA.test(String(i.reply || '')) && g.jev &&
   g.jev.activities.catalog === 'deciding';
 
