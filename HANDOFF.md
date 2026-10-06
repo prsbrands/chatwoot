@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.16.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.16.2** (1.16.3 buildada, esperando deploy) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -49,6 +49,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.16.0 | **Comercial 3c: Yappy** (`Commerce::Gateways::Yappy`, Botón de Pago V2, USD): credenciais `merchant_id`, `secret_key` (cifrada; base64, a 1ª parte antes do `.` é a chave do HMAC) e `domain` opcional (padrão `FRONTEND_URL`, tem de ser o domínio cadastrado no Yappy Comercial). `validate/merchant` ao conectar e a cada ordem; `payment-wc` com `aliasYappy` = celular de 8 dígitos digitado na página; `orderId` = `CG<checkout>`. Confirmação só pelo IPN (**GET** `/commerce/webhooks/yappy/:token`), hash HMAC-SHA256 de orderId+status+domain **obrigatório**; E pago (valor da ordem), R/C falha, X expira. Sem API de consulta: a conciliação só expira em 24 h. Página: campo do celular e "aprueba en tu app" com refresh | Sim, 06/10 (sem credenciais reais ainda) |
 | 1.16.1 | **Página da fatura espera o pagamento sem recarregar** (antes, meta refresh de 5 s, que o Paulo viu como loop no Yappy): indicador + `fetch` a cada 4 s em `GET /d/:token/checkouts/:id` (`checkout_status`, JSON), recarrega uma vez quando sai de pending; formulário "Pagar" escondido enquanto espera; aviso de recusado/vencido; 10 min sem resposta → aviso + link. `CheckoutStarter` em transação (provedor recusou → não fica checkout pendente). Aviso no cartão do provedor conectado sem forma de pagamento ligada (o Paulo ligou o Yappy mas a forma "Yappy" antiga seguia offline) | Sim, 06/10 |
 | 1.16.2 | Texto do aviso do app Yappy na página da fatura: «¡Te pidieron un Yappy!» (era «Te solicitan un Yappy») | Sim, 06/10 |
+| 1.16.3 | **Excluir forma de pagamento pela lista** (lixeira + confirmação em Company & payments). `PaymentMethod` com `payments`/`checkouts` `restrict_with_error` (com histórico → 422, a tela sugere desmarcar Active) e `before_destroy` que tira o id do `payment_method_ids` dos documentos (antes, id órfão fazia o `DocumentEditor#find` dar 404 ao salvar) | **Buildada** (`test-b36n`, commit `ae9736c21`, clone `src-b22`; smoke 334/0, `BOOT_API 200`), **esperando deploy** |
 
 - **Imagem:** `:v1` = `5259fcc06a3f` (1.16.2, commit `30aef3274`, clone `src-b21`, imagem `test-b35n`), rollback em `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b36`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
@@ -81,7 +82,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b36`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 327 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 37, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 21.
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 21.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
 - **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
@@ -103,6 +104,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
+0. **Deploy da 1.16.3** (`test-b36n`, sem migration, smoke verde): `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b36` → `docker tag cortexgen-chat:test-b36n cortexgen-chat:v1 && cd /opt/cortexgen-chat && docker compose up -d --force-recreate rails sidekiq`. O rollback seguinte é `v1-pre-b37`. Depois, o Paulo exclui a "Credit Card" duplicada (id 3, sem pagamentos) e, se quiser, a "Yappy" offline (id 1). **Stripe e Mercado Pago estão em produção desde 06/10** (webhook Stripe `we_1UNavI…`).
 1. **Provar a cobrança online em uso real** (**Yappy provado com dinheiro real em 06/10:** checkout 8 pago, pagamento 3, recibo documento 11; o Paulo está trocando Stripe e Mercado Pago para chaves de produção):
    - **Yappy (produção, comércio `…3c90`):** o caminho do aviso já foi **provado em 06/10**. A ordem `CG6` (FAT-2026-0005, USD 2,00) não foi aceita no app e, 5 min depois (14:51:17), o Yappy chamou `GET /commerce/webhooks/yappy/:token?orderId=CG6&status=X&domain=https://prs.cortexgen.cloud&confirmationNumber=…&hash=…`; o hash bateu e o checkout expirou. Ou seja, **a solicitação no app vence em ~5 min**, e o domínio e o hash estão certos. Falta ver um **`status=E`** (aceito): o Paulo precisa ligar a forma "Yappy" (id 1) ao provedor, pagar e **aceitar no app em menos de 5 min**. É dinheiro real (Live);
    - **Mercado Pago (teste, `…1783`):** o checkout 3 (FAT-2026-0004, R$ 10) só abriu o Checkout Pro, e a API não tem pagamento nenhum. Falta pagar **logado como comprador de teste**;
