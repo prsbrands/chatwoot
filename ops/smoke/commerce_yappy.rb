@@ -99,7 +99,7 @@ ok 'ordem criada com o celular e o valor do servidor; volta para a pagina',
    ordem['authorization'] == 'tok-yappy' && ordem['paymentDate'] == 1_791_300_000 && ordem['domain'] == ENV.fetch('FRONTEND_URL')
 s.get s.response.location.sub(%r{\Ahttps?://[^/]+}, '')
 ok 'pagina espera a aprovacao no app, sem recarregar e sem o formulario',
-   s.response.body.include?('Te solicitan un Yappy') && s.response.body.include?('id="waiting"') &&
+   s.response.body.include?('¡Te pidieron un Yappy!') && s.response.body.include?('id="waiting"') &&
    s.response.body.exclude?('http-equiv="refresh"') && s.response.body.exclude?('id="pay"')
 situacao = lambda do |tentativa|
   s.get "#{link}/checkouts/#{tentativa.id}", headers: { 'Accept' => 'application/json' }

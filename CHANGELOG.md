@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.16.2] — 2026-10-06 · base Chatwoot 4.18.0
+
+- A página da fatura agora cita o aviso do app Yappy com o texto que o cliente realmente vê: «¡Te pidieron un Yappy!» (antes: «Te solicitan un Yappy»).
+
 ## [1.16.1] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **A página da fatura espera o pagamento sem recarregar.** Antes, ela se recarregava a cada 5 segundos enquanto o cliente aprovava no app do Yappy, e parecia estar em loop. Agora mostra "Te enviamos una solicitud de pago a tu app Yappy (Banco General)…" com um indicador e consulta a situação em segundo plano. Ela só se atualiza quando o pagamento é confirmado, recusado ou vence. Enquanto espera, o formulário "Pagar" fica escondido, para evitar uma segunda solicitação. Depois de 10 minutos sem resposta, aparece um aviso com o link para voltar à fatura.
