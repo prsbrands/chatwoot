@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.6] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n (inclui a 1.19.5)
+
+- **A cotização sai mesmo quando o LLM esquece a etiqueta.** Visto às 21:37: "genere para mi una cotización del product test #1 de 10 unidades" foi respondida com a promessa, sem `[[QUOTE]]`; a rede de segurança reteve e nenhum rascunho nasceu (por isso o número vermelho não apareceu). Agora o Jev escolhe, antes do LLM, o item da cotização pedida (confiança de 0,65 ou mais, porque é só um rascunho que a equipe revisa), a quantidade vem da mensagem ("10 unidades", "de 10"; sem número, 1) e o rascunho nasce nessa hora; o LLM só confirma o item e a quantidade. No Jev real: a mensagem das 21:37 0,99; "Enviame porfa" depois da oferta 0,71; "la cotización en pdf" do CortexGen 1 0,97; perguntar preço e pedir para assinar ficam fora. Pedido com vários itens ou mudança de quantidade segue pela etiqueta.
+
 ## [1.19.5] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
 
 - **Assinatura pela conversa provada** (21:35, conversa 89): o cliente pediu para assinar, a IA confirmou e o link chegou na mensagem seguinte.
