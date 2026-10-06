@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.17.1** (1.17.2 buildada, esperando deploy) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.17.2** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -13,7 +13,7 @@
 - **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
 - **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático.
 
-**Comece pelo item 1 da fila:** provar a cobrança online em uso real (a 1.16.1 foi ao ar em 06/10). **O Google Calendar da conta 1 vence por volta de 09/10** (item 2).
+**Comece pelo item 0 da fila:** provar a cobrança online em uso real (a 1.16.1 foi ao ar em 06/10). **O Google Calendar da conta 1 vence por volta de 09/10** (item 2).
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -52,9 +52,9 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.16.3 | **Excluir forma de pagamento pela lista** (lixeira + confirmação em Company & payments). `PaymentMethod` com `payments`/`checkouts` `restrict_with_error` (com histórico → 422, a tela sugere desmarcar Active) e `before_destroy` que tira o id do `payment_method_ids` dos documentos (antes, id órfão fazia o `DocumentEditor#find` dar 404 ao salvar) | Sim, 06/10 |
 | 1.17.0 | **Comercial 3d: assinaturas pelo Stripe Billing.** Migration `20261006000002` (`commerce_items.billing_interval`; `commerce_subscriptions`; `commerce_documents.subscription_id/period_start/period_end`). Item mensal/anual = plano. Tela `/subscriptions` (menu CRM), link público `/s/:token`, Checkout Session `mode: subscription`; webhook `invoice.paid` → fatura do ciclo paga + recibo (só o recibo é enviado), `invoice.payment_failed` → em atraso, `customer.subscription.deleted` → cancelada; a 1ª assinatura acrescenta esses eventos ao webhook já existente. Cancelar no fim do período ou na hora (admin). `ConversationPicker` extraído do envio de documento. Detalhe em `docs/cortexgen/comercial.md` | Sim, 06/10 (telas conferidas no Chrome, console limpo; nenhuma assinatura real ainda) |
 | 1.17.1 | **Assinaturas no Mercado Pago** (preapproval pendente; o cliente digita o e-mail da conta MP na página `/s/`; `external_reference` = `subscription-<id>`). Avisos `subscription_preapproval` e `subscription_authorized_payment` **só chegam com o webhook cadastrado no painel do MP** (o preapproval não aceita `notification_url`). `Commerce::SubscriptionExpiryJob` (5 min) encerra as canceladas no fim do período. Nova assinatura só lista formas que cobram assinatura (`charges_subscriptions`); subtítulo do Catálogo corrigido | Sim, 06/10 (webhook cadastrado pelo Paulo no painel do MP em 06/10) |
-| 1.17.2 | **Assinaturas no Yappy, cobrança assistida** (`Subscription::ASSISTED`): assinar cria a fatura do 1º ciclo e leva à página dela; `Commerce::SubscriptionCycleJob` (5 min) gera a do ciclo seguinte 3 dias antes, com link pela conversa e e-mail, lembrete no dia (`details.reminded_on`), em atraso 5 dias depois. **Para os três provedores**, a fatura do ciclo paga ativa e avança o período (`DocumentFlow#paid!` → `invoice_paid!`). Cancelar na hora anula a fatura sem pagamento. Fase 3 completa | **Buildada** (`test-b39n`, commit `eb553a8c3`, clone `src-b25`; smoke 18 scripts, 404/0, `BOOT_API 200`), **esperando deploy** (sem migration) |
+| 1.17.2 | **Assinaturas no Yappy, cobrança assistida** (`Subscription::ASSISTED`): assinar cria a fatura do 1º ciclo e leva à página dela; `Commerce::SubscriptionCycleJob` (5 min) gera a do ciclo seguinte 3 dias antes, com link pela conversa e e-mail, lembrete no dia (`details.reminded_on`), em atraso 5 dias depois. **Para os três provedores**, a fatura do ciclo paga ativa e avança o período (`DocumentFlow#paid!` → `invoice_paid!`). Cancelar na hora anula a fatura sem pagamento. Fase 3 completa | Sim, 06/10 |
 
-- **Imagem:** `:v1` = imagem `test-b38n` (1.17.1, commit `b24b7d122`, clone `src-b24`), rollback em `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b39`.
+- **Imagem:** `:v1` = imagem `test-b39n` (1.17.2, commit `eb553a8c3`, clone `src-b25`), rollback em `:v1-pre-b39` (1.17.1), `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b40`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** em dia em 05/10 (`725ad62ec`, tags até `cg-v1.13.3`). O push é do Paulo (o classificador bloqueia para o Claude).
 
@@ -82,7 +82,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b39`.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b40`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 327 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18.
@@ -107,7 +107,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
-0. **Deploy da 1.17.2** (`test-b39n`, sem migration): `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b39` → `docker tag cortexgen-chat:test-b39n cortexgen-chat:v1 && cd /opt/cortexgen-chat && docker compose up -d --force-recreate rails sidekiq`. Rollback seguinte: `v1-pre-b40`. Com isso a Fase 3 (cobrança online e assinaturas) fecha; próximas frentes da fila: Fase 4 (catálogo na IA, vitrine) ou fechar a Fase 2 em uso real. Item "CortexGen 1" ainda é `one_time`.
+0. A Fase 3 (cobrança online e assinaturas) fecha; próximas frentes da fila: Fase 4 (catálogo na IA, vitrine) ou fechar a Fase 2 em uso real. Item "CortexGen 1" ainda é `one_time`.
 1. **Provar a cobrança online em uso real** (**o Paulo decidiu em 06/10 pular os testes reais do Stripe e do MP em produção; se aparecer problema, trata-se o caso.** **os três provedores estão em produção desde 06/10**; formas de pagamento da conta 1: só `Credit Card` id 2 → Stripe, `Mercado Pago BR` id 4 → MP, `Yappy Online` id 5 → Yappy; as outras o Paulo excluiu. **Yappy provado com dinheiro real em 06/10:** checkout 8 pago, pagamento 3, recibo documento 11; o Paulo está trocando Stripe e Mercado Pago para chaves de produção):
    - **Yappy (produção, comércio `…3c90`):** o caminho do aviso já foi **provado em 06/10**. A ordem `CG6` (FAT-2026-0005, USD 2,00) não foi aceita no app e, 5 min depois (14:51:17), o Yappy chamou `GET /commerce/webhooks/yappy/:token?orderId=CG6&status=X&domain=https://prs.cortexgen.cloud&confirmationNumber=…&hash=…`; o hash bateu e o checkout expirou. Ou seja, **a solicitação no app vence em ~5 min**, e o domínio e o hash estão certos. Falta ver um **`status=E`** (aceito): o Paulo precisa ligar a forma "Yappy" (id 1) ao provedor, pagar e **aceitar no app em menos de 5 min**. É dinheiro real (Live);
    - **Mercado Pago (teste, `…1783`):** o checkout 3 (FAT-2026-0004, R$ 10) só abriu o Checkout Pro, e a API não tem pagamento nenhum. Falta pagar **logado como comprador de teste**;
@@ -123,7 +123,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 9. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
 10. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
 11. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
-    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b19` (o vivo é `src-b24`; o `src-b15` é o de lint, com `node_modules`), e `dev-b30` (código montado nos smokes rápidos, script `dev-smoke.sh`);
+    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b19` (o vivo é `src-b25`; o `src-b15` é o de lint, com `node_modules`), e `dev-b30` (código montado nos smokes rápidos, script `dev-smoke.sh`);
     - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b31`; manter `v1` e os dois últimos `v1-pre-*`;
     - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
 12. Revisão cosmética antiga (acentos, modo escuro, celular).
