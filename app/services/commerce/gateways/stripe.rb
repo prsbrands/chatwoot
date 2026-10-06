@@ -29,7 +29,7 @@ class Commerce::Gateways::Stripe
     fail_with(e.message)
   end
 
-  def start!(checkout, return_url:)
+  def start!(checkout, return_url:, **)
     document = checkout.document
     session = call do
       client.v1.checkout.sessions.create(session_params(checkout, document, return_url), { idempotency_key: "cortexgen-checkout-#{checkout.id}" })

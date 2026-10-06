@@ -45,6 +45,7 @@
     .pay label { display: block; font-size: 13px; color: #52525b; margin-bottom: 4px; }
     .pay input { font: inherit; padding: 8px 10px; border: 1px solid #d4d4d8; border-radius: 8px; width: 180px; max-width: 100%; }
     .pay .actions { margin-top: 14px; }
+    .pay .spaced { margin-top: 12px; }
     .summary { width: 420px; max-width: 100%; margin-top: 16px; }
     .summary div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e4e4e7; }
     footer { text-align: center; color: #71717a; font-size: 12px; margin-top: 28px; }
@@ -72,7 +73,7 @@
   <% if @document.paid? %><p><span class="badge ok"><%= l[:status_paid] %></span></p><% end %>
   <% if @document.void? %><p><span class="badge no"><%= l[:status_void] %></span></p><% end %>
   <% if @checkout&.paid? %><div class="notice ok"><%= l[:payment_received] %></div><% end %>
-  <% if processing %><div class="notice ghost"><%= l[:payment_processing] %></div><% end %>
+  <% if processing %><div class="notice ghost"><%= @checkout.provider.yappy? ? l[:yappy_approve] : l[:payment_processing] %></div><% end %>
   <% if @pay_error %><div class="notice no"><%= l[:pay_error] %></div><% end %>
 
   <% if customer['name'].present? %>
@@ -138,6 +139,10 @@
         <label for="amount"><%= l[:amount_to_pay] %> (<%= @document.currency %>)</label>
         <input id="amount" name="amount" type="number" step="0.01" min="<%= minimum %>" max="<%= @document.balance %>" value="<%= @document.balance %>" required>
         <div class="muted"><%= format(l[:pay_amount_hint], minimum: money.(minimum)) %></div>
+        <% if online_methods.any? { |method| method.provider.yappy? } %>
+          <label for="phone" class="spaced"><%= l[:yappy_phone] %></label>
+          <input id="phone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="6000 0000">
+        <% end %>
         <div class="actions">
           <% online_methods.each do |method| %>
             <button type="submit" name="payment_method_id" value="<%= method.id %>" class="btn primary"><%= format(l[:pay_with], method: method.name) %></button>

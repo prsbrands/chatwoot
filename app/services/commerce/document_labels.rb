@@ -20,7 +20,9 @@ module Commerce::DocumentLabels
       amount_to_pay: 'Monto a pagar', pay_amount_hint: 'Puedes pagar el saldo completo o una parte (mínimo %<minimum>s).',
       pay_with: 'Pagar con %<method>s', pay_error: 'No pudimos iniciar el pago. Revisa el monto e inténtalo de nuevo.',
       payment_processing: 'Estamos confirmando tu pago. Esta página se actualizará sola.',
-      payment_received: '¡Pago recibido, gracias! Te enviaremos el recibo.'
+      payment_received: '¡Pago recibido, gracias! Te enviaremos el recibo.',
+      yappy_phone: 'Celular Yappy (8 dígitos, solo para pagar con Yappy)',
+      yappy_approve: 'Abre tu app Yappy y aprueba el pago. Esta página se actualizará sola.'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -39,7 +41,9 @@ module Commerce::DocumentLabels
       amount_to_pay: 'Valor a pagar', pay_amount_hint: 'Você pode pagar o saldo inteiro ou uma parte (mínimo %<minimum>s).',
       pay_with: 'Pagar com %<method>s', pay_error: 'Não conseguimos iniciar o pagamento. Confira o valor e tente de novo.',
       payment_processing: 'Estamos confirmando o seu pagamento. Esta página se atualiza sozinha.',
-      payment_received: 'Pagamento recebido, obrigado! Vamos enviar o recibo.'
+      payment_received: 'Pagamento recebido, obrigado! Vamos enviar o recibo.',
+      yappy_phone: 'Celular Yappy (8 dígitos, só para pagar com Yappy)',
+      yappy_approve: 'Abra o app Yappy e aprove o pagamento. Esta página se atualiza sozinha.'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -58,7 +62,9 @@ module Commerce::DocumentLabels
       amount_to_pay: 'Amount to pay', pay_amount_hint: 'You can pay the full balance or part of it (minimum %<minimum>s).',
       pay_with: 'Pay with %<method>s', pay_error: 'We could not start the payment. Check the amount and try again.',
       payment_processing: 'We are confirming your payment. This page refreshes on its own.',
-      payment_received: 'Payment received, thank you! We will send you the receipt.'
+      payment_received: 'Payment received, thank you! We will send you the receipt.',
+      yappy_phone: 'Yappy phone (8 digits, only to pay with Yappy)',
+      yappy_approve: 'Open your Yappy app and approve the payment. This page refreshes on its own.'
     }
   }.freeze
 

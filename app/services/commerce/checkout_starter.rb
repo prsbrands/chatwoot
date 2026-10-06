@@ -5,9 +5,10 @@
 class Commerce::CheckoutStarter
   MINIMUM = 1
 
-  def initialize(document, payment_method:, amount:)
+  def initialize(document, payment_method:, amount:, phone: nil)
     @document = document
     @payment_method = payment_method
+    @phone = phone
     @amount = BigDecimal(amount.to_s).round(2)
   rescue ArgumentError
     @amount = nil
@@ -19,7 +20,7 @@ class Commerce::CheckoutStarter
 
     checkout = @document.account.commerce_checkouts.create!(document: @document, provider: provider, payment_method: @payment_method,
                                                             amount: @amount, currency: @document.currency)
-    provider.gateway.start!(checkout, return_url: return_url)
+    provider.gateway.start!(checkout, return_url: return_url, phone: @phone)
     checkout
   end
 

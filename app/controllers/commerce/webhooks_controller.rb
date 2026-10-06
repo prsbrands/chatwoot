@@ -1,6 +1,7 @@
-# Avisos dos provedores de cobrança online. O token da URL acha o provedor da
-# conta e a assinatura é verificada com o segredo dele antes de tocar no banco;
-# o corpo de um aviso recusado não vai para o log.
+# Avisos dos provedores de cobrança online (POST; o IPN do Yappy chega por
+# GET). O token da URL acha o provedor da conta e a assinatura é verificada com
+# o segredo dele antes de tocar no banco; o corpo de um aviso recusado não vai
+# para o log.
 class Commerce::WebhooksController < ActionController::API
   def create
     provider = ::Commerce::PaymentProvider.find_by!(provider: params[:provider], webhook_token: params[:token])

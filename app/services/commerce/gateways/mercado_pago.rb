@@ -20,7 +20,7 @@ class Commerce::Gateways::MercadoPago
     fail_with(e.message)
   end
 
-  def start!(checkout, return_url:)
+  def start!(checkout, return_url:, **)
     preference = request(:post, '/checkout/preferences', body: preference_params(checkout, return_url))
     url = sandbox_token? ? preference['sandbox_init_point'] : preference['init_point']
     checkout.update!(external_id: preference['id'], checkout_url: url)

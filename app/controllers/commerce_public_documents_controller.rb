@@ -3,7 +3,8 @@
 # a fatura ou o recibo no idioma do cliente, baixa o PDF, deixa aceitar ou
 # recusar o orçamento aberto e pagar a fatura online (inteira ou uma parte).
 # Na volta do provedor (?checkout=), pergunta a ele se já pagou, sem esperar o
-# webhook.
+# webhook. No Yappy não há página do provedor: o cliente aprova no app e esta
+# página espera o aviso.
 class CommercePublicDocumentsController < PublicController
   layout false
   before_action :fetch_document
@@ -15,9 +16,10 @@ class CommercePublicDocumentsController < PublicController
 
   def pay
     method = @document.payment_methods.online.find(params.require(:payment_method_id))
-    checkout = ::Commerce::CheckoutStarter.new(@document, payment_method: method, amount: params[:amount])
-                                          .start!(::Commerce::DocumentFlow.new(@document).public_url)
-    redirect_to checkout.checkout_url, allow_other_host: true
+    public_url = ::Commerce::DocumentFlow.new(@document).public_url
+    checkout = ::Commerce::CheckoutStarter.new(@document, payment_method: method, amount: params[:amount], phone: params[:phone])
+                                          .start!(public_url)
+    redirect_to checkout.checkout_url.presence || "#{public_url}?checkout=#{checkout.id}", allow_other_host: true
   rescue ::Commerce::Gateways::Error, ActiveRecord::RecordNotFound
     @pay_error = true
     render :show, status: :unprocessable_entity

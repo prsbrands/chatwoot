@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.16.0] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Fatura paga pelo Yappy (Panamá, USD).** Em Company & payments, o cartão **Yappy** conecta o Botón de Pago V2 com o ID do comércio, a chave secreta (cifrada) e, se preciso, o domínio cadastrado no Yappy Comercial; sem domínio, vale o desta instalação. Ao conectar, o comércio é validado no Yappy.
+- **Como o cliente paga:** na fatura em USD, ele digita o celular Yappy e clica em "Pagar con Yappy". O pagamento pode ser da fatura inteira ou de uma parte. Ele aprova no app, e a página espera a confirmação, atualizando sozinha.
+- **Confirmação:** só o aviso do Yappy confirma, e o hash dele é conferido sempre; o valor vale o da ordem criada aqui. Pagamento recusado ou cancelado no app não mexe no saldo. Como o Yappy não tem consulta de situação, a conciliação só expira a tentativa depois de 24 h.
+- O recibo, a nota interna e o negócio ganho funcionam igual ao Stripe e ao Mercado Pago.
+
 ## [1.15.0] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Fatura paga pelo Mercado Pago Brasil (Pix, cartão, boleto e saldo MP).** Em Company & payments, o cartão **Mercado Pago** conecta a conta com o Access token, que fica cifrado. Só contas do Brasil, em BRL, são aceitas. A forma de pagamento ligada a ele vira o botão "Pagar com…" das faturas em BRL. O cliente vai para o Checkout Pro do Mercado Pago, paga a fatura inteira ou uma parte, e volta.

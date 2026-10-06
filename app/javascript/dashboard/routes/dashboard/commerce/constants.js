@@ -44,19 +44,26 @@ export const DOCUMENT_STATUSES = {
 };
 export const PROVIDER_ENVIRONMENTS = ['sandbox', 'production'];
 // Provedores de cobrança online (Commerce::PaymentProvider::AVAILABLE e
-// CREDENTIALS): a credencial pedida, as moedas aceitas e, no Mercado Pago, a
-// chave secreta opcional dos webhooks.
+// CREDENTIALS): as credenciais pedidas (secret: campo de senha; optional: pode
+// ficar em branco), as moedas aceitas e, no Mercado Pago, a chave secreta
+// opcional dos webhooks.
 export const ONLINE_PROVIDERS = {
   stripe: {
-    credential: 'secret_key',
+    fields: [{ key: 'secret_key', secret: true, placeholder: 'sk_test_…' }],
     currencies: ['USD', 'EUR', 'BRL'],
-    placeholder: { sandbox: 'sk_test_…', production: 'sk_live_…' },
   },
   mercado_pago: {
-    credential: 'access_token',
+    fields: [{ key: 'access_token', secret: true, placeholder: 'APP_USR-…' }],
     currencies: ['BRL'],
-    placeholder: { sandbox: 'APP_USR-…', production: 'APP_USR-…' },
     webhookSecret: true,
+  },
+  yappy: {
+    fields: [
+      { key: 'merchant_id' },
+      { key: 'secret_key', secret: true },
+      { key: 'domain', optional: true, placeholder: 'https://' },
+    ],
+    currencies: ['USD'],
   },
 };
 export const TAX_MODES = ['exclusive', 'inclusive', 'exempt'];

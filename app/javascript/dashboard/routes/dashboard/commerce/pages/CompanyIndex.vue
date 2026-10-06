@@ -58,6 +58,14 @@ const providerFor = key =>
   providers.value.find(provider => provider.provider === key);
 const providerLabel = key => t(`COMMERCE.ONLINE.PROVIDER.${key}`);
 const editingConfig = computed(() => ONLINE_PROVIDERS[editingProvider.value]);
+// O domínio que o Yappy valida quando a conta não informa outro.
+const installationUrl = window.location.origin;
+const providerFormReady = computed(() =>
+  editingConfig.value.fields.every(
+    field =>
+      field.optional || providerForm.value.credentials?.[field.key]?.trim()
+  )
+);
 const environmentOptions = computed(() =>
   PROVIDER_ENVIRONMENTS.map(value => ({
     value,
@@ -100,7 +108,9 @@ const openProvider = key => {
   editingProvider.value = key;
   providerForm.value = {
     environment: providerFor(key)?.environment || 'sandbox',
-    credential: '',
+    credentials: Object.fromEntries(
+      ONLINE_PROVIDERS[key].fields.map(field => [field.key, ''])
+    ),
     webhook_secret: '',
   };
   providerDialog.value.open();
@@ -114,9 +124,12 @@ const connectProvider = async () => {
   const payload = {
     environment: providerForm.value.environment,
     active: true,
-    credentials: {
-      [ONLINE_PROVIDERS[key].credential]: providerForm.value.credential.trim(),
-    },
+    credentials: Object.fromEntries(
+      Object.entries(providerForm.value.credentials).map(([field, value]) => [
+        field,
+        value.trim(),
+      ])
+    ),
   };
   if (ONLINE_PROVIDERS[key].webhookSecret) {
     payload.webhook_secret = providerForm.value.webhook_secret.trim();
@@ -559,7 +572,7 @@ onMounted(async () => {
         })
       "
       :confirm-button-label="$t('COMMERCE.ONLINE.SAVE_KEY')"
-      :disable-confirm-button="!providerForm.credential?.trim()"
+      :disable-confirm-button="!providerFormReady"
       :is-loading="isConnecting"
       @confirm="connectProvider"
     >
@@ -572,14 +585,20 @@ onMounted(async () => {
           />
         </label>
         <Input
-          v-model="providerForm.credential"
-          type="password"
+          v-for="field in editingConfig.fields"
+          :key="field.key"
+          v-model="providerForm.credentials[field.key]"
+          :type="field.secret ? 'password' : 'text'"
           autocomplete="off"
-          :label="$t(`COMMERCE.ONLINE.CREDENTIAL.${editingConfig.credential}`)"
-          :placeholder="editingConfig.placeholder[providerForm.environment]"
+          :label="$t(`COMMERCE.ONLINE.CREDENTIAL.${field.key}`)"
+          :placeholder="field.placeholder"
         />
         <p class="text-xs text-n-slate-11">
-          {{ $t(`COMMERCE.ONLINE.KEY_HELP.${editingProvider}`) }}
+          {{
+            $t(`COMMERCE.ONLINE.KEY_HELP.${editingProvider}`, {
+              url: installationUrl,
+            })
+          }}
         </p>
         <template v-if="editingConfig.webhookSecret">
           <Input

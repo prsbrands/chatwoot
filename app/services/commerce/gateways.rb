@@ -1,5 +1,6 @@
-# Provedores de cobrança online (Commerce::Gateways::Stripe e ::MercadoPago;
-# Yappy na próxima fase). Todos respondem a connect!, start!, status e
+# Provedores de cobrança online (Commerce::Gateways::Stripe, ::MercadoPago e
+# ::Yappy). Todos respondem a connect!, start! (o Yappy usa o celular do
+# cliente), status e
 # webhook(request), e devolvem o resultado como { status:, amount:, reference: };
 # o webhook devolve também como achar o checkout ({ external_id: } ou { id: }).
 module Commerce::Gateways
