@@ -14,7 +14,7 @@ class CommercePublicDocumentsController < PublicController
   end
 
   def pay
-    method = @document.account.commerce_payment_methods.online.find(params.require(:payment_method_id))
+    method = @document.payment_methods.online.find(params.require(:payment_method_id))
     checkout = ::Commerce::CheckoutStarter.new(@document, payment_method: method, amount: params[:amount])
                                           .start!(::Commerce::DocumentFlow.new(@document).public_url)
     redirect_to checkout.checkout_url, allow_other_host: true

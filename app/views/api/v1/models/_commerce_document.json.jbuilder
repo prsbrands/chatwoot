@@ -1,5 +1,6 @@
 json.call(resource, :id, :kind, :number, :status, :language, :currency, :tax_mode, :contact_id, :deal_id, :appointment_id,
-          :conversation_id, :source_document_id, :customer, :notes, :terms, :footer, :details, :delivered_email)
+          :conversation_id, :source_document_id, :customer, :notes, :terms, :footer, :details, :delivered_email,
+          :payment_method_ids)
 json.display_status resource.display_status
 json.editable resource.editable?
 json.payable resource.payable?

@@ -131,15 +131,17 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
     ::Commerce::DocumentFlow.new(@document, user: Current.user)
   end
 
-  # Documento novo começa com a moeda, as condições e o rodapé da empresa.
+  # Documento novo começa com a moeda, as condições e o rodapé da empresa, e
+  # com todas as formas de pagamento ativas (o editor desmarca).
   def defaults
     profile = ::Commerce::Profile.for(Current.account)
     { currency: profile.default_currency, terms: profile.default_terms, footer: profile.footer,
+      payment_method_ids: Current.account.commerce_payment_methods.where(active: true).order(:position, :id).ids,
       language: Current.account.locale.to_s.first(2).presence_in(::Commerce::Document::LANGUAGES) || 'es' }
   end
 
   def document_params
-    params.permit(*::Commerce::DocumentEditor::HEADER, customer: ::Commerce::Document::CUSTOMER_FIELDS,
+    params.permit(*::Commerce::DocumentEditor::HEADER, payment_method_ids: [], customer: ::Commerce::Document::CUSTOMER_FIELDS,
                                                        items: ::Commerce::DocumentEditor::LINE).to_h.symbolize_keys
   end
 end

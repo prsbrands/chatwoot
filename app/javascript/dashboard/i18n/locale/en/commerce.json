@@ -289,7 +289,9 @@
       "AMOUNT_RECEIVED": "Amount received",
       "INVOICE_TOTAL": "Invoice total",
       "PAID_TO_DATE": "Paid to date",
-      "PDF_FILE": "{number}.pdf · {date}"
+      "PDF_FILE": "{number}.pdf · {date}",
+      "PAYMENT_METHODS_SHOWN": "Payment methods shown on this document",
+      "PAY_ONLINE_BUTTON": "(Pay button)"
     }
   }
 }

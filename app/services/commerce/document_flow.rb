@@ -58,7 +58,7 @@ class Commerce::DocumentFlow
     raise_unless(@document.quote? && !@document.void? && !@document.declined?)
     invoice = @document.account.commerce_documents.new(
       @document.slice(:language, :currency, :tax_mode, :contact_id, :deal_id, :appointment_id, :conversation_id,
-                      :customer, :company, :notes, :terms, :footer)
+                      :customer, :company, :notes, :terms, :footer, :payment_method_ids)
                .merge(kind: :invoice, issue_date: Date.current, source_document: @document, created_by: @user)
     )
     @document.items.each { |line| invoice.items.build(line.slice(*Commerce::DocumentEditor::LINE, :position)) }

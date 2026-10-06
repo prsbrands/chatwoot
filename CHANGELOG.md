@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.14.1] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Cada orçamento e fatura escolhe as formas de pagamento que mostra.** No editor, em "Payment methods shown on this document", as formas ativas aparecem marcadas e você desmarca as que não valem. A página do cliente, o PDF, o e-mail e os botões "Pagar" seguem só a escolha. Antes saíam todas as formas ativas da conta, como o Yappy antigo. Os documentos já existentes ficaram com as formas ativas de hoje; documentos ainda editáveis podem ser ajustados.
+- A página não aceita pagamento por uma forma online que não foi escolhida no documento.
+- **Corrigido:** um clique duplo em Save criava a forma de pagamento duas vezes, e o resultado eram dois botões "Pagar" iguais. Agora o diálogo trava enquanto salva.
+
 ## [1.14.0] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Fatura paga online pelo Stripe.** Em Company & payments, a nova seção **Online payments** conecta a conta Stripe da empresa (modo teste ou produção). A chave fica cifrada, e o webhook de pagamento é criado sozinho. A forma de pagamento ligada ao Stripe vira o botão **"Pagar con…"** na página da fatura e no e-mail ("Pagar en línea").

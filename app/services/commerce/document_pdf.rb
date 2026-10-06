@@ -197,7 +197,7 @@ class Commerce::DocumentPdf
   end
 
   def payment_methods
-    methods = @doc.account.commerce_payment_methods.where(active: true).order(:position, :name)
+    methods = @doc.payment_methods
     return if methods.empty? || @doc.paid? || @doc.void?
 
     section(@l[:payment_methods]) do

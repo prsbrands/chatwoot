@@ -147,7 +147,7 @@
     </section>
   <% end %>
 
-  <% methods = @document.account.commerce_payment_methods.where(active: true, provider_id: nil).order(:position, :name) %>
+  <% methods = @document.payment_methods.where(provider_id: nil) %>
   <% if methods.any? && !@document.receipt? && !@document.paid? && !@document.void? %>
     <section>
       <h2><%= l[:payment_methods] %></h2>

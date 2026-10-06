@@ -104,6 +104,7 @@ ok 'forma de pagamento online', cartao['provider_id'] == provider.id && Commerce
 # --- pagar uma parte ----------------------------------------------------------
 fatura = nova_fatura.(300)
 link = caminho.(fatura)
+ok 'fatura nasce com as formas ativas da conta', fatura['payment_method_ids'].sort == [transferencia.id, cartao['id']].sort
 s.get link
 ok 'pagina da fatura: botao Pagar e instrucoes so das formas offline',
    s.response.body.include?('Pagar con Tarjeta') && s.response.body.include?('Banco General') && s.response.body.include?('id="pay"')
@@ -203,6 +204,15 @@ ok 'lista de recibos', recibos['payload'].size == 5
 account.commerce_profile.update!(receipt_prefix: 'RC')
 _, quarta = api.(:post, "documents/#{terceira['id']}/payments", { amount: '5', paid_on: Date.current.to_s, send_receipt: true })
 ok 'prefixo do recibo editavel', quarta['payments'].last['receipt_number'].start_with?('RC-')
+quinta = nova_fatura.(20)
+api.(:patch, "documents/#{quinta['id']}", { payment_method_ids: [transferencia.id] })
+s.get caminho.(quinta)
+ok 'documento mostra so as formas escolhidas', s.response.body.include?('Banco General') && s.response.body.exclude?('id="pay"')
+s.post "#{caminho.(quinta)}/pay", params: { amount: '20', payment_method_id: cartao['id'] }
+ok 'forma online nao escolhida nao paga: 422', s.response.status == 422
+api.(:patch, "documents/#{quinta['id']}", { payment_method_ids: [cartao['id']] })
+s.get caminho.(quinta)
+ok 'so a online escolhida: Pagar, sem instrucoes', s.response.body.include?('id="pay"') && s.response.body.exclude?('Banco General')
 api.(:patch, "payment_providers/#{provider.id}", { active: false })
 s.get pagina.(Commerce::Document.find(terceira['id']))
 ok 'provedor desligado: sem botao Pagar', s.response.body.exclude?('id="pay"')

@@ -21,7 +21,7 @@ class Commerce::DocumentEditor
     return save_receipt! if @document.receipt?
 
     Commerce::Document.transaction do
-      @document.assign_attributes(header)
+      @document.assign_attributes(header.merge(payment_methods))
       @document.customer = customer if @params.key?(:customer)
       replace_lines if @params.key?(:items)
       @document.company = company_snapshot
@@ -49,6 +49,13 @@ class Commerce::DocumentEditor
       @account.agenda_appointments.find(attrs[:appointment_id]) if attrs[:appointment_id].present?
       @account.conversations.find(attrs[:conversation_id]) if attrs[:conversation_id].present?
     end
+  end
+
+  # As formas de pagamento escolhidas para o documento, todas da conta.
+  def payment_methods
+    return {} unless @params.key?(:payment_method_ids)
+
+    { payment_method_ids: @account.commerce_payment_methods.find(Array(@params[:payment_method_ids])).map(&:id) }
   end
 
   def customer

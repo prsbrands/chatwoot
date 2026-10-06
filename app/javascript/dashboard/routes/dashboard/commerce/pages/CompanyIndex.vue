@@ -46,6 +46,7 @@ const isUploadingLogo = ref(false);
 const logoInput = ref(null);
 const methodDialog = ref(null);
 const method = ref({});
+const isSavingMethod = ref(false);
 const providers = ref([]);
 const providerDialog = ref(null);
 const providerForm = ref({});
@@ -184,6 +185,8 @@ const openMethod = (existing = null) => {
 };
 
 const saveMethod = async () => {
+  if (isSavingMethod.value) return;
+  isSavingMethod.value = true;
   const payload = {
     ...method.value,
     name: method.value.name.trim(),
@@ -199,6 +202,8 @@ const saveMethod = async () => {
     await fetchMethods();
   } catch (error) {
     useAlert(error.response?.data?.message || t('COMMERCE.API.ERROR'));
+  } finally {
+    isSavingMethod.value = false;
   }
 };
 
@@ -483,6 +488,7 @@ onMounted(async () => {
       "
       :confirm-button-label="$t('COMMERCE.SAVE')"
       :disable-confirm-button="!method.name?.trim()"
+      :is-loading="isSavingMethod"
       @confirm="saveMethod"
     >
       <div class="flex flex-col gap-3">

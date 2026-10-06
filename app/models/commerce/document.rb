@@ -65,9 +65,14 @@ class Commerce::Document < ApplicationRecord
     invoice? && (sent? || partially_paid?) && balance.positive?
   end
 
-  # Formas com cobrança online que aceitam a moeda do documento.
+  # As formas de pagamento escolhidas para este documento que seguem ativas.
+  def payment_methods
+    account.commerce_payment_methods.where(id: payment_method_ids, active: true).order(:position, :name)
+  end
+
+  # Das escolhidas, as com cobrança online que aceitam a moeda do documento.
   def online_payment_methods
-    account.commerce_payment_methods.online.includes(:provider).order(:position, :name).select { |method| method.provider.supports?(currency) }
+    payment_methods.online.includes(:provider).select { |method| method.provider.supports?(currency) }
   end
 
   private

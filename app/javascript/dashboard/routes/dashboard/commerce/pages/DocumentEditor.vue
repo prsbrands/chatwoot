@@ -8,6 +8,7 @@ import { useAccount } from 'dashboard/composables/useAccount';
 import CommerceAPI from 'dashboard/api/commerce';
 import ContactAPI from 'dashboard/api/contacts';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -104,6 +105,16 @@ const catalogOptions = computed(() => [
 ]);
 const pickedCatalogItem = ref('');
 
+// Formas de pagamento que este documento mostra ao cliente (página, PDF,
+// e-mail e botões "Pagar"). Só as ativas da conta podem ser escolhidas.
+const activePaymentMethods = computed(() =>
+  paymentMethods.value.filter(method => method.active)
+);
+const togglePaymentMethod = (id, checked) => {
+  const ids = form.value.payment_method_ids.filter(value => value !== id);
+  form.value.payment_method_ids = checked ? [...ids, id] : ids;
+};
+
 const load = data => {
   doc.value = data;
   form.value = {
@@ -117,6 +128,7 @@ const load = data => {
     footer: data.footer || '',
     contact_id: data.contact_id,
     customer: { address: '', ...data.customer },
+    payment_method_ids: [...(data.payment_method_ids || [])],
   };
   lines.value = (data.items || []).map(line => ({ ...line }));
 };
@@ -512,6 +524,29 @@ onMounted(async () => {
                     : $t('COMMERCE.DOCUMENTS.DUE_DATE')
                 "
               />
+            </div>
+            <div
+              v-if="!isReceipt && activePaymentMethods.length"
+              class="flex flex-col gap-2"
+            >
+              <span class="text-label-small text-n-slate-11">
+                {{ $t('COMMERCE.DOCUMENTS.PAYMENT_METHODS_SHOWN') }}
+              </span>
+              <label
+                v-for="method in activePaymentMethods"
+                :key="method.id"
+                class="flex items-center gap-2 text-sm text-n-slate-12"
+              >
+                <Checkbox
+                  :model-value="form.payment_method_ids.includes(method.id)"
+                  :disabled="!fieldsEditable"
+                  @update:model-value="togglePaymentMethod(method.id, $event)"
+                />
+                {{ method.name }}
+                <span v-if="method.provider_id" class="text-xs text-n-slate-11">
+                  {{ $t('COMMERCE.DOCUMENTS.PAY_ONLINE_BUTTON') }}
+                </span>
+              </label>
             </div>
           </section>
         </div>
