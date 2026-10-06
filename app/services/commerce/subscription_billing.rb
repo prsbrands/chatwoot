@@ -10,15 +10,17 @@ class Commerce::SubscriptionBilling
   end
 
   # Abre o pagamento recorrente no provedor e devolve o endereço para o cliente.
-  def start!(return_url)
+  # O Mercado Pago pede o e-mail de quem paga.
+  def start!(return_url, payer_email: nil)
     raise Commerce::Gateways::Error, 'subscription is not open' unless @subscription.subscribable?
 
-    @subscription.provider.gateway.start_subscription!(@subscription, return_url: return_url)
+    @subscription.provider.gateway.start_subscription!(@subscription, return_url: return_url, payer_email: payer_email)
   end
 
-  # O provedor confirmou a assinatura feita pelo link.
+  # O provedor confirmou a assinatura feita pelo link (a última concluída, se o
+  # cliente abriu mais de uma).
   def link!(external_id)
-    @subscription.update!(external_id: external_id) if @subscription.external_id.blank?
+    @subscription.update!(external_id: external_id)
   end
 
   # O aviso repetido acha o checkout do ciclo e o settler não paga de novo.

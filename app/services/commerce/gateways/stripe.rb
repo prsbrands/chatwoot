@@ -46,7 +46,7 @@ class Commerce::Gateways::Stripe
 
   # O webhook das contas conectadas antes das assinaturas só tinha os eventos de
   # checkout: a primeira assinatura acrescenta os do Stripe Billing.
-  def start_subscription!(subscription, return_url:)
+  def start_subscription!(subscription, return_url:, **)
     call { client.v1.webhook_endpoints.update(@provider.webhook_endpoint_id, enabled_events: EVENTS) }
     call { client.v1.checkout.sessions.create(subscription_session_params(subscription, return_url)) }.url
   end

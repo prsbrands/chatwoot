@@ -1,7 +1,8 @@
 # A página da assinatura para o cliente, sem login (o token do link é a chave):
-# mostra o plano, o valor e o ciclo, e leva ao provedor para assinar. Na volta
-# (?session_id=), avisa que a confirmação chega pelo provedor; quem ativa a
-# assinatura é o aviso do primeiro ciclo pago.
+# mostra o plano, o valor e o ciclo, e leva ao provedor para assinar (no
+# Mercado Pago, com o e-mail que o cliente digita). Na volta (?session_id= do
+# Stripe, ?preapproval_id= do Mercado Pago), avisa que a confirmação chega pelo
+# provedor; quem ativa a assinatura é o aviso do primeiro ciclo pago.
 class CommercePublicSubscriptionsController < PublicController
   layout false
   before_action :fetch_subscription
@@ -9,7 +10,8 @@ class CommercePublicSubscriptionsController < PublicController
   def show; end
 
   def subscribe
-    url = ::Commerce::SubscriptionBilling.new(@subscription).start!(commerce_public_subscription_url(@subscription.public_token))
+    url = ::Commerce::SubscriptionBilling.new(@subscription).start!(commerce_public_subscription_url(@subscription.public_token),
+                                                                   payer_email: params[:payer_email].to_s.strip.presence)
     redirect_to url, allow_other_host: true
   rescue ::Commerce::Gateways::Error
     @subscribe_error = true

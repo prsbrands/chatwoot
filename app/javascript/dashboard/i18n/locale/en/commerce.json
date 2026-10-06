@@ -157,6 +157,7 @@
       "WEBHOOK_SECRET": "Webhook secret signature (optional)",
       "WEBHOOK_SECRET_HELP": "Optional extra check. In Your integrations, Webhooks, set the webhook URL shown on the Mercado Pago card with the Payments event and paste the secret signature here. Without it, every notice is still confirmed by reading the payment from Mercado Pago.",
       "WEBHOOK_URL": "Webhook URL: {url}",
+      "WEBHOOK_SUBSCRIPTIONS": "For subscriptions, register this URL in Mercado Pago (Your integrations, your application, Webhooks, production mode) with the events Payments and Plans and subscriptions. Without it, subscription charges are not recorded here.",
       "NO_METHOD": "No active payment method uses {provider} yet, so invoices show no Pay button. Edit a payment method below and pick {provider} in Online charge."
     },
     "PAYMENT_METHODS": {
@@ -329,9 +330,9 @@
       "PLAN": "Plan",
       "QUANTITY": "Quantity",
       "PAYMENT_METHOD": "Payment method",
-      "PAYMENT_METHOD_HELP": "Only payment methods charged online. For now, subscriptions are charged by Stripe.",
+      "PAYMENT_METHOD_HELP": "Only payment methods charged online by a provider that bills subscriptions: Stripe (USD, EUR, BRL) or Mercado Pago (BRL).",
       "NO_PLANS": "No plans in the catalog yet. Create an item with Billing set to Monthly or Yearly plan.",
-      "NO_ONLINE_METHODS": "No payment method charged online. Link one to Stripe in Company & payments.",
+      "NO_ONLINE_METHODS": "No payment method linked to Stripe or Mercado Pago. Link one in Company & payments.",
       "CHANGE_CUSTOMER": "Change",
       "LINK_HELP": "Send this link to the customer. They subscribe on the payment provider's page, and the first charge happens right away.",
       "COPY_LINK": "Copy link",

@@ -455,6 +455,12 @@ onMounted(async () => {
                 })
               }}
             </span>
+            <span
+              v-if="config.webhookSecret && providerFor(key)"
+              class="text-xs text-n-slate-11"
+            >
+              {{ $t('COMMERCE.ONLINE.WEBHOOK_SUBSCRIPTIONS') }}
+            </span>
           </div>
           <div class="flex flex-wrap gap-2">
             <Button

@@ -4,8 +4,8 @@
 # vira uma fatura (documents.subscription_id) já paga, com o recibo enviado
 # pelos canais da assinatura (Commerce::SubscriptionBilling).
 class Commerce::Subscription < ApplicationRecord
-  # Provedores com cobrança recorrente pela API (Mercado Pago e Yappy depois).
-  PROVIDERS = %w[stripe].freeze
+  # Provedores com cobrança recorrente pela API (Yappy depois).
+  PROVIDERS = %w[stripe mercado_pago].freeze
 
   belongs_to :account
   belongs_to :contact, optional: true

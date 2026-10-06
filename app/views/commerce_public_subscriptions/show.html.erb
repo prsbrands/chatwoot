@@ -3,7 +3,7 @@
 <% date = ->(value) { Commerce::DocumentLabels.date(value&.to_date, sub.language) } %>
 <% customer = sub.customer || {} %>
 <% company = @profile %>
-<% processing = sub.pending? && params[:session_id].present? %>
+<% processing = sub.pending? && (params[:session_id].present? || params[:preapproval_id].present?) %>
 <!DOCTYPE html>
 <html lang="<%= sub.language %>">
 <head>
@@ -51,6 +51,10 @@
     <section class="pay">
       <div class="muted"><%= format(l[:subscription_hint], interval: l[:"interval_#{sub.interval}"]) %></div>
       <%= form_tag commerce_public_subscription_subscribe_path(sub.public_token), method: :post do %>
+        <% if sub.provider.mercado_pago? %>
+          <label for="payer_email" class="spaced"><%= l[:payer_email] %></label>
+          <input id="payer_email" name="payer_email" type="email" required value="<%= customer['email'] %>">
+        <% end %>
         <div class="actions">
           <button type="submit" class="btn primary"><%= format(l[:subscribe_with], method: sub.payment_method.name) %></button>
         </div>

@@ -33,7 +33,7 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_ends: 'Se cancela el %<date>s, al final del período pagado.',
       subscription_past_due: 'No pudimos cobrar la última renovación. Revisa tu tarjeta; intentaremos de nuevo.',
       subscription_canceled: 'Suscripción cancelada.', subscribe_error: 'No pudimos iniciar la suscripción. Inténtalo de nuevo.',
-      subscription_message: '%<plan>s — suscríbete aquí: %<url>s'
+      subscription_message: '%<plan>s — suscríbete aquí: %<url>s', payer_email: 'E-mail de tu cuenta Mercado Pago'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -65,7 +65,7 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_ends: 'Termina em %<date>s, no fim do período pago.',
       subscription_past_due: 'Não conseguimos cobrar a última renovação. Confira o seu cartão; vamos tentar de novo.',
       subscription_canceled: 'Assinatura cancelada.', subscribe_error: 'Não conseguimos iniciar a assinatura. Tente de novo.',
-      subscription_message: '%<plan>s — assine aqui: %<url>s'
+      subscription_message: '%<plan>s — assine aqui: %<url>s', payer_email: 'E-mail da sua conta Mercado Pago'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -97,7 +97,7 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_ends: 'Ends on %<date>s, at the end of the paid period.',
       subscription_past_due: 'We could not charge the last renewal. Check your card; we will try again.',
       subscription_canceled: 'Subscription canceled.', subscribe_error: 'We could not start the subscription. Please try again.',
-      subscription_message: '%<plan>s — subscribe here: %<url>s'
+      subscription_message: '%<plan>s — subscribe here: %<url>s', payer_email: 'Email of your Mercado Pago account'
     }
   }.freeze
 
