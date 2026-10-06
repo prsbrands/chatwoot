@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.1] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
+
+- **A IA monta a cotização quando o cliente pede o PDF.** Visto na conversa 89: o cliente pediu "la cotización en pdf" do CortexGen 1, e a IA, em vez de preparar, perguntou de novo o item e a quantidade. Agora ela usa o item de que já estavam falando e a quantidade 1 quando o cliente não diz, e só pergunta se não dá para saber qual item.
+- **A rede de segurança não segura mais pergunta.** A mesma resposta (que só confirmava antes de preparar) foi retida como "promessa sem cotização" e a conversa foi para a equipe. Agora só é retida a resposta que diz que a cotização ou o link já está saindo sem ter sido criado. Medido no Jev: a resposta retida caiu de 0,74 para 0,04; uma promessa de verdade continua em 0,96.
+- **O Jev reconhece interesse no catálogo mesmo com erros de digitação e mistura de idiomas** ("Cuando esta la assinatura del CortexGen 1" passou de 0,20 para 0,91).
+
 ## [1.19.0] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Vitrine pública do catálogo.** Em Company & payments, a seção **Public catalog** publica uma página com os itens disponíveis do Catálogo: foto, categoria, preço com a unidade (ou o ciclo do plano) e "a cotizar" quando não há preço, com filtro por categoria. O link serve para redes sociais, bio e site.
