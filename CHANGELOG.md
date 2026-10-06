@@ -14,6 +14,14 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.17.1] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Assinaturas pelo Mercado Pago (BRL).** Um plano em reais pode ser assinado com a forma de pagamento ligada ao Mercado Pago. Na página da assinatura, o cliente digita o e-mail da conta Mercado Pago dele e conclui no Mercado Pago, com cartão. Cada cobrança aprovada vira a fatura do ciclo, já paga, e o recibo vai pela conversa e pelo e-mail; cobrança recusada deixa a assinatura em atraso.
+- **É preciso cadastrar o webhook no painel do Mercado Pago:** em Suas integrações, na aplicação, Webhooks (modo produção), a URL que aparece no cartão do Mercado Pago, com os eventos "Pagamentos" e "Planos e assinaturas". Sem isso, as cobranças das assinaturas não chegam aqui. O cartão do provedor passou a dizer isso.
+- **Cancelar no fim do período** no Mercado Pago para as cobranças na hora; a assinatura continua ativa aqui até o fim do período pago e então se encerra sozinha (vale também para o Stripe, se o aviso de fim se perder).
+- Nova assinatura só oferece as formas de pagamento que cobram assinatura (Stripe e Mercado Pago); antes, listava também as que seriam recusadas.
+- O subtítulo do Catálogo mostrava só a palavra "Description"; agora tem o texto certo.
+
 ## [1.17.0] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Assinaturas mensais e anuais, cobradas pelo Stripe.** No catálogo, um item ganhou o campo **Billing**: "Monthly plan" ou "Yearly plan" faz dele um plano (com preço obrigatório).

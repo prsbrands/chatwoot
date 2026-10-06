@@ -10,8 +10,8 @@ class CommercePublicSubscriptionsController < PublicController
   def show; end
 
   def subscribe
-    url = ::Commerce::SubscriptionBilling.new(@subscription).start!(commerce_public_subscription_url(@subscription.public_token),
-                                                                   payer_email: params[:payer_email].to_s.strip.presence)
+    return_url = commerce_public_subscription_url(@subscription.public_token)
+    url = ::Commerce::SubscriptionBilling.new(@subscription).start!(return_url, payer_email: params[:payer_email].to_s.strip.presence)
     redirect_to url, allow_other_host: true
   rescue ::Commerce::Gateways::Error
     @subscribe_error = true
