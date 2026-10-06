@@ -103,9 +103,10 @@ class Commerce::SubscriptionBilling
     conversation = @subscription.conversation
     return unless conversation && Commerce::DocumentSender.deliverable?(conversation)
 
-    text = format(Commerce::DocumentLabels.for(@subscription.language)[label], plan: @subscription.name, number: invoice.number,
-                                                                                date: Commerce::DocumentLabels.date(invoice.due_date, invoice.language),
-                                                                                url: Commerce::DocumentFlow.new(invoice).public_url)
+    labels = Commerce::DocumentLabels
+    text = format(labels.for(@subscription.language)[label],
+                  plan: @subscription.name, number: invoice.number, date: labels.date(invoice.due_date, invoice.language),
+                  url: Commerce::DocumentFlow.new(invoice).public_url)
     Commerce::DocumentSender.new(invoice, nil).to_conversation!(conversation, text)
   end
 

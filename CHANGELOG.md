@@ -14,6 +14,14 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.17.2] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Assinaturas pelo Yappy (USD), com cobrança assistida.** O Yappy não tem débito automático, então o sistema cobra por você: ao assinar, o cliente vai direto à fatura do primeiro ciclo e paga com o celular Yappy. Três dias antes de cada vencimento, a fatura da renovação sai pela conversa e pelo e-mail com o link para pagar; no dia do vencimento vai um lembrete pela conversa; cinco dias depois sem pagamento, a assinatura fica em atraso, com nota interna. Ao pagar, ela volta a ativa.
+- A página da assinatura mostra o botão da fatura aberta da renovação.
+- Para todos os provedores, pagar a fatura de um ciclo, inclusive registrando o pagamento à mão, ativa a assinatura e avança o período.
+- Cancelar na hora anula a fatura do ciclo que ainda não foi paga.
+- O aviso de assinatura em atraso na página do cliente ficou neutro (servia só para cartão).
+
 ## [1.17.1] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Assinaturas pelo Mercado Pago (BRL).** Um plano em reais pode ser assinado com a forma de pagamento ligada ao Mercado Pago. Na página da assinatura, o cliente digita o e-mail da conta Mercado Pago dele e conclui no Mercado Pago, com cartão. Cada cobrança aprovada vira a fatura do ciclo, já paga, e o recibo vai pela conversa e pelo e-mail; cobrança recusada deixa a assinatura em atraso.

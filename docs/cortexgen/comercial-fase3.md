@@ -1,6 +1,6 @@
 # Comercial, fase 3 — cobrança online, recibos e assinaturas (DESENHO v2)
 
-**3a (Stripe avulso e recibo) entregue na 1.14.0**, 3b (Mercado Pago) na 1.15.0, 3c (Yappy) na 1.16.0 e **3d no Stripe na 1.17.0** e **no Mercado Pago na 1.17.1** (preapproval com cartão; o Yappy vem na 1.17.2). Diferenças da 1.17.0 para o desenho abaixo: cada ciclo envia **só o recibo** (a fatura do ciclo fica no sistema, já paga); o link vai pela conversa ou copiado (sem e-mail ainda); o card do contato ainda não mostra as assinaturas. A v2 incorpora as respostas do Paulo de 05/10:
+**3a (Stripe avulso e recibo) entregue na 1.14.0**, 3b (Mercado Pago) na 1.15.0, 3c (Yappy) na 1.16.0 e **3d no Stripe na 1.17.0** **no Mercado Pago na 1.17.1** (preapproval com cartão) e **no Yappy na 1.17.2** (cobrança assistida). A fase 3 está completa. Diferenças da 1.17.0 para o desenho abaixo: cada ciclo envia **só o recibo** (a fatura do ciclo fica no sistema, já paga); o link vai pela conversa ou copiado (sem e-mail ainda); o card do contato ainda não mostra as assinaturas. A v2 incorpora as respostas do Paulo de 05/10:
 
 - Contas: **Stripe EUA**, **Mercado Pago Brasil**, **Yappy Panamá**.
 - O cliente **pode pagar uma parte** da fatura.

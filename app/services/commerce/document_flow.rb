@@ -101,8 +101,12 @@ class Commerce::DocumentFlow
                :sent
              end
     @document.update!(amount_paid: paid, status: status, paid_at: status == :paid ? (@document.paid_at || Time.current) : nil)
-    return unless @document.paid?
+    paid! if @document.paid?
+  end
 
+  # Fatura paga: o negócio é ganho e, no ciclo de uma assinatura, ela fica ativa
+  # com o período da fatura.
+  def paid!
     win_deal
     Commerce::SubscriptionBilling.new(@document.subscription).invoice_paid!(@document) if @document.subscription
   end
