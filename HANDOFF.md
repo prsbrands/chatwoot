@@ -114,7 +114,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
    - **Stripe (teste):** provado em 05/10. Falta ver um caso com **conversa do WhatsApp + negócio aberto**: o recibo pela conversa, a nota interna e o negócio ganho;
    - pendências do Paulo: apagar a forma duplicada "Credit Card" (id 3) e o app OAuth do Google (item 2).
 2. **App OAuth do Google** (`cortexgencrm`): páginas `/privacy` e `/terms` no ar desde a 1.13.3; domínio verificado no Search Console (TXT no Cloudflare) em 05/10. Falta o Paulo **publicar** no Google Auth Platform (o Google pediu 24 h depois da verificação). Se a conexão do Calendar da conta 1 tiver vencido (~09/10), reconectar.
-3. **Fase 3d — assinaturas mensais/anuais** (desenho v2, seção 3): plano = item com `billing_interval`; `commerce_subscriptions`; Stripe Billing (Checkout no modo subscription, `invoice.paid` → FAT do ciclo + recibo), preapproval do MP, cobrança assistida no Yappy (fatura + link 3 dias antes); tela Assinaturas. Recomendado esperar pelo menos o teste real do MP.
+3. ~~**Fase 3d — assinaturas mensais/anuais**~~ entregue: 1.17.0 (Stripe), 1.17.1 (Mercado Pago), 1.17.2 (Yappy, cobrança assistida). Nenhuma assinatura real ainda.
 4. **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual (o diálogo agora tem "Issue and send the receipt") e Aceptar/Rechazar na página pública.
 5. **Fase 4 do Comercial:** catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
 6. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
