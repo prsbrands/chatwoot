@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.3] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Número vermelho em Quotes & invoices** com as cotizações que a IA preparou e ainda não foram enviadas. Ele é relido a cada minuto e diminui quando você envia (ou apaga) o rascunho. Ideia do Paulo: a menção da IA ia só para o sino (My Inbox) e passava despercebida.
+- **Rascunho da IA identificado:** selo "Prepared by AI" na lista e, no editor, um aviso para revisar itens, quantidades e cliente, com o link para a conversa.
+- **Sem rascunho duplicado:** quando o cliente muda o pedido (de 1 para 10 unidades, visto no teste), a IA atualiza o rascunho dela que ainda não foi enviado, e a nota avisa que o pedido mudou.
+
 ## [1.19.2] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
 
 - **O catálogo fica no prompt durante toda a venda.** Visto no teste da 1.19.1: as respostas do cliente no meio da cotização ("si", o nome e o e-mail, "pa mi") sozinhas não pareciam compra para o Jev (0,52 e 0,29), o catálogo saía do prompt e a IA terminou prometendo "te llega en unos minutos" sem criar nada (e sem o catálogo, a rede de segurança não roda). O critério do Jev agora conta a resposta do cliente a uma venda em andamento: no Jev real, 0,93, 0,96 e 0,76; "quiero agendar" e "gracias" seguem em 0,03 e 0,02.

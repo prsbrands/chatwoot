@@ -184,9 +184,7 @@ onMounted(fetchDocuments);
         </span>
         <span class="flex items-center flex-1 min-w-0 gap-2 text-n-slate-12">
           <span class="truncate">
-            {{
-              document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER')
-            }}
+            {{ document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER') }}
           </span>
           <span
             v-if="document.prepared_by_ai && document.status === 'draft'"
