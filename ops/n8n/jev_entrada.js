@@ -232,13 +232,16 @@ if (act.booking) {
 }
 // Produtos, servicos, precos, planos, um orcamento ou assinar: o catalogo da
 // conta (com precos) vai para o prompt, e a IA pode montar o rascunho da
-// cotizacao ou mandar o link de assinatura (MontaPrompt e Responde).
+// cotizacao ou mandar o link de assinatura (MontaPrompt e Responde). Vale
+// tambem a resposta do cliente no meio da venda ("si", o nome, "pa mi"): visto
+// em 06/10, sozinhas elas tiravam o catalogo do prompt (0,52 e 0,29) e a IA
+// prometia a cotizacao sem cria-la.
 if (act.catalog) {
   perguntas.catalog = {
     type: 'noul',
-    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer asking about the products, services, plans or prices offered, asking for a quote or proposal, or wanting to buy or subscribe? Customers often write with typos or mix Spanish, Portuguese and English ("cuando esta" meaning "cuánto está", "assinatura", "suscripcion", "plano", "precio", "valor").',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer asking about the products, services, plans or prices offered, asking for a quote or proposal, wanting to buy or subscribe, or answering the assistant about a purchase, quote or subscription already under way? Customers often write with typos or mix Spanish, Portuguese and English ("cuando esta" meaning "cuánto está", "assinatura", "suscripcion", "plano", "precio", "valor").',
     criteria: {
-      true: 'The customer asks what is offered, how much something costs, what a plan or subscription includes, names a product, service or plan of the business, asks for a quote, proposal or budget, says what and how many they want, or wants to buy, hire or subscribe.',
+      true: 'The customer asks what is offered, how much something costs, what a plan or subscription includes, names a product, service or plan of the business, asks for a quote, proposal or budget, says what and how many they want, wants to buy, hire or subscribe, or replies to the assistant\'s questions about a quote, purchase or subscription in progress (a yes, their name, their email, who it is for).',
       false: 'Anything else, including booking an appointment, a greeting, a complaint or a question about something already bought.',
     },
   };

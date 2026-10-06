@@ -19,6 +19,9 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [500, {}] });
   const sys2 = r.out[0].json.body.messages[0].content;
   ok('MontaPrompt: catalogo fora do ar nao cala o bot', sys2.includes('cannot be read right now') && r.out[0].json.catalog === false && r.logs.length === 1);
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [401, {}] });
+  ok('MontaPrompt: conta sem o Comercial (401) segue sem secao nem erro', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.logs.length);
+  ok('MontaPrompt: regra de nao pedir nome e e-mail', sys.includes('Do not ask for their name, email or company'));
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: {} }, Historico: hist }, {}, {});
   ok('MontaPrompt: sem o Jev ver catalogo, nada muda', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.calls.length);
 
