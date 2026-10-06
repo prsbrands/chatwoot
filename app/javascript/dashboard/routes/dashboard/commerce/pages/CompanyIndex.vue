@@ -11,10 +11,17 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
-import { CURRENCIES, IMAGE_TYPES, PAYMENT_KINDS } from '../constants';
+import {
+  CURRENCIES,
+  IMAGE_TYPES,
+  PAYMENT_KINDS,
+  PROVIDER_ENVIRONMENTS,
+} from '../constants';
 
-// Os dados da empresa que saem nos orçamentos e faturas (fase 2) e as formas
-// de pagamento que a conta aceita, com as instruções ao cliente.
+// Os dados da empresa que saem nos orçamentos, faturas e recibos, a cobrança
+// online (Stripe) e as formas de pagamento que a conta aceita, com as
+// instruções ao cliente. A forma ligada a um provedor vira o botão "Pagar" da
+// fatura.
 const { t } = useI18n();
 
 const PROFILE_FIELDS = [
@@ -28,6 +35,7 @@ const PROFILE_FIELDS = [
   'website',
   'quote_prefix',
   'invoice_prefix',
+  'receipt_prefix',
 ];
 
 const profile = ref({});
@@ -38,6 +46,33 @@ const isUploadingLogo = ref(false);
 const logoInput = ref(null);
 const methodDialog = ref(null);
 const method = ref({});
+const providers = ref([]);
+const providerDialog = ref(null);
+const providerForm = ref({});
+const isConnecting = ref(false);
+
+const stripe = computed(() =>
+  providers.value.find(provider => provider.provider === 'stripe')
+);
+const environmentOptions = computed(() =>
+  PROVIDER_ENVIRONMENTS.map(value => ({
+    value,
+    label: t(`COMMERCE.ONLINE.ENVIRONMENT.${value}`),
+  }))
+);
+const providerName = id => {
+  const provider = providers.value.find(entry => entry.id === id);
+  return provider ? t(`COMMERCE.ONLINE.PROVIDER.${provider.provider}`) : '';
+};
+const providerOptions = computed(() => [
+  { value: '', label: t('COMMERCE.PAYMENT_METHODS.OFFLINE') },
+  ...providers.value
+    .filter(provider => provider.active)
+    .map(provider => ({
+      value: provider.id,
+      label: providerName(provider.id),
+    })),
+]);
 
 const currencyOptions = CURRENCIES.map(code => ({ value: code, label: code }));
 const kindOptions = computed(() =>
@@ -50,6 +85,58 @@ const kindOptions = computed(() =>
 const fetchMethods = async () => {
   const { data } = await CommerceAPI.paymentMethods();
   methods.value = data.payload;
+};
+
+const fetchProviders = async () => {
+  const { data } = await CommerceAPI.paymentProviders();
+  providers.value = data.payload;
+};
+
+const openStripe = () => {
+  providerForm.value = {
+    environment: stripe.value?.environment || 'sandbox',
+    secret_key: '',
+  };
+  providerDialog.value.open();
+};
+
+// Conectar ou trocar a chave: o servidor valida a chave no Stripe e cria o
+// webhook da conta.
+const connectStripe = async () => {
+  isConnecting.value = true;
+  const payload = {
+    environment: providerForm.value.environment,
+    active: true,
+    credentials: { secret_key: providerForm.value.secret_key.trim() },
+  };
+  try {
+    if (stripe.value) {
+      await CommerceAPI.updatePaymentProvider(stripe.value.id, payload);
+    } else {
+      await CommerceAPI.createPaymentProvider({
+        provider: 'stripe',
+        ...payload,
+      });
+    }
+    providerDialog.value.close();
+    await fetchProviders();
+    useAlert(t('COMMERCE.ONLINE.CONNECTED'));
+  } catch (error) {
+    useAlert(error.response?.data?.message || t('COMMERCE.API.ERROR'));
+  } finally {
+    isConnecting.value = false;
+  }
+};
+
+const toggleStripe = async () => {
+  try {
+    await CommerceAPI.updatePaymentProvider(stripe.value.id, {
+      active: !stripe.value.active,
+    });
+    await fetchProviders();
+  } catch (error) {
+    useAlert(t('COMMERCE.API.ERROR'));
+  }
 };
 
 const saveProfile = async (extra = {}) => {
@@ -89,13 +176,19 @@ const openMethod = (existing = null) => {
         kind: 'bank_transfer',
         instructions: '',
         active: true,
+        provider_id: '',
         position: methods.value.length,
       };
+  method.value.provider_id = method.value.provider_id || '';
   methodDialog.value.open();
 };
 
 const saveMethod = async () => {
-  const payload = { ...method.value, name: method.value.name.trim() };
+  const payload = {
+    ...method.value,
+    name: method.value.name.trim(),
+    provider_id: method.value.provider_id || null,
+  };
   try {
     if (payload.id) {
       await CommerceAPI.updatePaymentMethod(payload.id, payload);
@@ -124,6 +217,7 @@ onMounted(async () => {
     const [{ data }] = await Promise.all([
       CommerceAPI.profile(),
       fetchMethods(),
+      fetchProviders(),
     ]);
     profile.value = data;
   } catch (error) {
@@ -214,7 +308,10 @@ onMounted(async () => {
           class="flex flex-col gap-1 text-label-small text-n-slate-11 sm:w-1/2"
         >
           {{ $t('COMMERCE.COMPANY.FIELDS.default_currency') }}
-          <Select v-model="profile.default_currency" :options="currencyOptions" />
+          <Select
+            v-model="profile.default_currency"
+            :options="currencyOptions"
+          />
         </label>
         <TextArea
           v-model="profile.default_terms"
@@ -235,6 +332,88 @@ onMounted(async () => {
             @click="saveProfile()"
           />
         </div>
+      </section>
+
+      <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-heading-3 text-n-slate-12">
+            {{ $t('COMMERCE.ONLINE.TITLE') }}
+          </h2>
+          <p class="text-sm text-n-slate-11">
+            {{ $t('COMMERCE.ONLINE.DESCRIPTION') }}
+          </p>
+        </div>
+        <div
+          class="flex flex-wrap items-start justify-between gap-3 p-3 border rounded-lg border-n-weak"
+        >
+          <div class="flex flex-col min-w-0 gap-1">
+            <span class="flex items-center gap-2 font-medium text-n-slate-12">
+              {{ $t('COMMERCE.ONLINE.PROVIDER.stripe') }}
+              <span
+                v-if="stripe"
+                class="px-1.5 py-0.5 text-xs rounded-md"
+                :class="
+                  stripe.active
+                    ? 'bg-n-teal-3 text-n-teal-11'
+                    : 'bg-n-slate-3 text-n-slate-11'
+                "
+              >
+                {{
+                  stripe.active
+                    ? $t('COMMERCE.ONLINE.ACTIVE')
+                    : $t('COMMERCE.ONLINE.INACTIVE')
+                }}
+              </span>
+            </span>
+            <span class="text-sm text-n-slate-11">
+              {{
+                stripe
+                  ? $t('COMMERCE.ONLINE.CONNECTED_AS', {
+                      environment: $t(
+                        `COMMERCE.ONLINE.ENVIRONMENT.${stripe.environment}`
+                      ),
+                      key: stripe.credential_hint,
+                    })
+                  : $t('COMMERCE.ONLINE.NOT_CONNECTED')
+              }}
+            </span>
+            <span class="text-xs text-n-slate-11">
+              {{
+                $t('COMMERCE.ONLINE.CURRENCIES', {
+                  currencies: (
+                    stripe?.currencies || ['USD', 'EUR', 'BRL']
+                  ).join(', '),
+                })
+              }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <Button
+              sm
+              :label="
+                stripe
+                  ? $t('COMMERCE.ONLINE.CHANGE_KEY')
+                  : $t('COMMERCE.ONLINE.CONNECT')
+              "
+              @click="openStripe"
+            />
+            <Button
+              v-if="stripe"
+              sm
+              slate
+              outline
+              :label="
+                stripe.active
+                  ? $t('COMMERCE.ONLINE.DISABLE')
+                  : $t('COMMERCE.ONLINE.ENABLE')
+              "
+              @click="toggleStripe"
+            />
+          </div>
+        </div>
+        <p class="text-xs text-n-slate-11">
+          {{ $t('COMMERCE.ONLINE.HOW_TO') }}
+        </p>
       </section>
 
       <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
@@ -268,6 +447,14 @@ onMounted(async () => {
             <span class="font-medium text-n-slate-12">{{ row.name }}</span>
             <span class="text-xs text-n-slate-11">
               {{ $t(`COMMERCE.PAYMENT_KIND.${row.kind}`) }}
+              <template v-if="row.provider_id">
+                ·
+                {{
+                  $t('COMMERCE.PAYMENT_METHODS.ONLINE_BADGE', {
+                    provider: providerName(row.provider_id),
+                  })
+                }}
+              </template>
             </span>
             <span
               v-if="row.instructions"
@@ -308,6 +495,13 @@ onMounted(async () => {
           {{ $t('COMMERCE.PAYMENT_METHODS.KIND') }}
           <Select v-model="method.kind" :options="kindOptions" />
         </label>
+        <label
+          v-if="providers.length"
+          class="flex flex-col gap-1 text-label-small text-n-slate-11"
+        >
+          {{ $t('COMMERCE.PAYMENT_METHODS.ONLINE_PROVIDER') }}
+          <Select v-model="method.provider_id" :options="providerOptions" />
+        </label>
         <TextArea
           v-model="method.instructions"
           :label="$t('COMMERCE.PAYMENT_METHODS.INSTRUCTIONS')"
@@ -328,6 +522,40 @@ onMounted(async () => {
             @click="deleteMethod"
           />
         </div>
+      </div>
+    </Dialog>
+
+    <Dialog
+      ref="providerDialog"
+      overflow-y-auto
+      :title="$t('COMMERCE.ONLINE.STRIPE_TITLE')"
+      :confirm-button-label="$t('COMMERCE.ONLINE.SAVE_KEY')"
+      :disable-confirm-button="!providerForm.secret_key?.trim()"
+      :is-loading="isConnecting"
+      @confirm="connectStripe"
+    >
+      <div class="flex flex-col gap-3">
+        <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
+          {{ $t('COMMERCE.ONLINE.ENVIRONMENT_LABEL') }}
+          <Select
+            v-model="providerForm.environment"
+            :options="environmentOptions"
+          />
+        </label>
+        <Input
+          v-model="providerForm.secret_key"
+          type="password"
+          autocomplete="off"
+          :label="$t('COMMERCE.ONLINE.SECRET_KEY')"
+          :placeholder="
+            providerForm.environment === 'production'
+              ? 'sk_live_…'
+              : 'sk_test_…'
+          "
+        />
+        <p class="text-xs text-n-slate-11">
+          {{ $t('COMMERCE.ONLINE.KEY_HELP') }}
+        </p>
       </div>
     </Dialog>
   </section>

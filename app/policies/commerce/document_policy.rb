@@ -14,4 +14,8 @@ class Commerce::DocumentPolicy < Commerce::BasePolicy
   def remove_payment?
     @account_user.administrator?
   end
+
+  def issue_receipt?
+    @account_user.administrator?
+  end
 end

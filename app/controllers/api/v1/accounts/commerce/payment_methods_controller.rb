@@ -28,6 +28,6 @@ class Api::V1::Accounts::Commerce::PaymentMethodsController < Api::V1::Accounts:
   end
 
   def payment_method_params
-    params.permit(:name, :kind, :instructions, :active, :position)
+    params.permit(:name, :kind, :instructions, :active, :position, :provider_id)
   end
 end

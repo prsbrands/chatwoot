@@ -9,18 +9,20 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
-import { STATUS_CLASSES, formatPrice } from '../constants';
+import {
+  DOCUMENT_KINDS,
+  DOCUMENT_STATUSES,
+  STATUS_CLASSES,
+  formatPrice,
+} from '../constants';
 
-// Orçamentos e faturas da conta, com filtro por tipo, situação e busca.
+// Orçamentos, faturas e recibos da conta, com filtro por tipo, situação e
+// busca. Recibo não se cria aqui: nasce de um pagamento da fatura.
 const { t } = useI18n();
 const router = useRouter();
 const { accountScopedRoute } = useAccount();
 
 const ALL = '';
-const STATUSES = {
-  quote: ['draft', 'sent', 'accepted', 'declined', 'void'],
-  invoice: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
-};
 const kind = ref('quote');
 const status = ref(ALL);
 const search = ref('');
@@ -31,7 +33,7 @@ const isCreating = ref(false);
 
 const statusOptions = computed(() => [
   { value: ALL, label: t('COMMERCE.DOCUMENTS.ALL_STATUSES') },
-  ...STATUSES[kind.value].map(value => ({
+  ...DOCUMENT_STATUSES[kind.value].map(value => ({
     value,
     label: t(`COMMERCE.DOCUMENTS.STATUS.${value}`),
   })),
@@ -105,6 +107,7 @@ onMounted(fetchDocuments);
         </p>
       </div>
       <Button
+        v-if="kind !== 'receipt'"
         sm
         icon="i-lucide-plus"
         :is-loading="isCreating"
@@ -120,7 +123,7 @@ onMounted(fetchDocuments);
     <div class="flex flex-wrap items-center gap-2 px-6 pt-4">
       <div class="flex p-0.5 rounded-lg bg-n-slate-3">
         <button
-          v-for="value in ['quote', 'invoice']"
+          v-for="value in DOCUMENT_KINDS"
           :key="value"
           type="button"
           class="px-3 py-1 text-sm rounded-md"
@@ -177,9 +180,7 @@ onMounted(fetchDocuments);
           {{ document.number }}
         </span>
         <span class="flex-1 min-w-0 truncate text-n-slate-12">
-          {{
-            document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER')
-          }}
+          {{ document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER') }}
         </span>
         <span class="w-28 text-sm text-n-slate-11">
           {{ formatDate(document.issue_date) }}

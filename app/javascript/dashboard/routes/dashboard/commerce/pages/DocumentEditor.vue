@@ -25,8 +25,10 @@ import {
 } from '../constants';
 
 // Editor do orçamento ou da fatura: cliente, idioma, moeda e modo de imposto,
-// linhas (do catálogo ou livres), textos e, na fatura, os pagamentos. Salva a
-// lista inteira de linhas; os totais da tela são uma prévia do servidor.
+// linhas (do catálogo ou livres), textos e, na fatura, os pagamentos com o
+// recibo de cada um. Salva a lista inteira de linhas; os totais da tela são uma
+// prévia do servidor. No recibo, valor, cliente e datas vêm do pagamento: só o
+// idioma e os textos mudam.
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -50,18 +52,36 @@ const paymentDialog = ref(null);
 const editable = computed(() => doc.value?.editable);
 // Reabrir: aceito, recusado ou anulado volta a rascunho; fatura com
 // pagamento não (o servidor tem a mesma regra).
+const isReceipt = computed(() => doc.value?.kind === 'receipt');
+// Campos que o recibo não deixa mudar (cliente, moeda, datas, linhas).
+const fieldsEditable = computed(() => editable.value && !isReceipt.value);
 const canReopen = computed(
   () =>
     doc.value &&
+    !isReceipt.value &&
     !doc.value.editable &&
     !doc.value.payments?.length &&
     !['paid', 'partially_paid'].includes(doc.value.status)
 );
 const isQuote = computed(() => doc.value?.kind === 'quote');
-const totals = computed(() =>
-  documentTotals(lines.value, form.value.tax_mode)
-);
+const totals = computed(() => documentTotals(lines.value, form.value.tax_mode));
 const money = value => formatPrice(value, form.value.currency || 'USD');
+
+// O recibo: o pagamento e a posição da fatura depois dele.
+const receiptRows = computed(() => {
+  const details = doc.value?.details || {};
+  return [
+    { label: 'PAYMENT_DATE', value: details.paid_on },
+    {
+      label: 'PAYMENT_METHOD',
+      value: details.method || t('COMMERCE.DOCUMENTS.NO_METHOD'),
+    },
+    { label: 'AMOUNT_RECEIVED', value: money(doc.value?.total) },
+    { label: 'INVOICE_TOTAL', value: money(details.invoice_total) },
+    { label: 'PAID_TO_DATE', value: money(details.paid_to_date) },
+    { label: 'BALANCE', value: money(details.balance) },
+  ];
+});
 
 const optionsFor = (list, prefix) =>
   list.map(value => ({ value, label: t(`${prefix}.${value}`) }));
@@ -182,6 +202,18 @@ const removeDocument = async () => {
   await CommerceAPI.deleteDocument(doc.value.id);
   router.push(accountScopedRoute('commerce_documents'));
 };
+
+const issueReceipt = async payment => {
+  try {
+    const { data } = await CommerceAPI.issueReceipt(doc.value.id, payment.id);
+    load(data);
+  } catch (error) {
+    useAlert(error.response?.data?.message || t('COMMERCE.API.ERROR'));
+  }
+};
+
+const openDocument = id =>
+  router.push(accountScopedRoute('commerce_document', { documentId: id }));
 
 const removePayment = async payment => {
   try {
@@ -337,7 +369,7 @@ onMounted(async () => {
             v-if="doc.status !== 'draft'"
             :href="doc.public_url"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
           >
             <Button
               sm
@@ -382,7 +414,7 @@ onMounted(async () => {
             <h2 class="text-heading-3 text-n-slate-12">
               {{ $t('COMMERCE.DOCUMENTS.CUSTOMER') }}
             </h2>
-            <div v-if="editable" class="relative">
+            <div v-if="fieldsEditable" class="relative">
               <Input
                 v-model="contactQuery"
                 :placeholder="$t('COMMERCE.DOCUMENTS.SEARCH_CONTACT')"
@@ -399,7 +431,9 @@ onMounted(async () => {
                   class="flex flex-col w-full px-3 py-2 text-start hover:bg-n-slate-2"
                   @click="pickContact(contact)"
                 >
-                  <span class="text-sm text-n-slate-12">{{ contact.name }}</span>
+                  <span class="text-sm text-n-slate-12">{{
+                    contact.name
+                  }}</span>
                   <span class="text-xs text-n-slate-11">
                     {{ contact.email || contact.phone_number }}
                   </span>
@@ -411,13 +445,13 @@ onMounted(async () => {
                 v-for="field in CUSTOMER_FIELDS"
                 :key="field"
                 v-model="form.customer[field]"
-                :disabled="!editable"
+                :disabled="!fieldsEditable"
                 :label="$t(`COMMERCE.DOCUMENTS.CUSTOMER_FIELDS.${field}`)"
               />
             </div>
             <TextArea
               v-model="form.customer.address"
-              :disabled="!editable"
+              :disabled="!fieldsEditable"
               :label="$t('COMMERCE.DOCUMENTS.CUSTOMER_FIELDS.address')"
               :max-length="500"
             />
@@ -447,10 +481,11 @@ onMounted(async () => {
                 <Select
                   v-model="form.currency"
                   :options="currencyOptions"
-                  :disabled="!editable"
+                  :disabled="!fieldsEditable"
                 />
               </label>
               <label
+                v-if="!isReceipt"
                 class="flex flex-col gap-1 text-label-small text-n-slate-11 sm:col-span-2"
               >
                 {{ $t('COMMERCE.DOCUMENTS.TAX_MODE_LABEL') }}
@@ -463,10 +498,11 @@ onMounted(async () => {
               <Input
                 v-model="form.issue_date"
                 type="date"
-                :disabled="!editable"
+                :disabled="!fieldsEditable"
                 :label="$t('COMMERCE.DOCUMENTS.ISSUE_DATE')"
               />
               <Input
+                v-if="!isReceipt"
                 v-model="form.due_date"
                 type="date"
                 :disabled="!editable"
@@ -480,7 +516,41 @@ onMounted(async () => {
           </section>
         </div>
 
-        <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <section
+          v-if="isReceipt"
+          class="flex flex-col gap-2 p-4 text-sm border rounded-xl border-n-weak"
+        >
+          <h2 class="text-heading-3 text-n-slate-12">
+            {{ $t('COMMERCE.DOCUMENTS.RECEIPT_SUMMARY') }}
+          </h2>
+          <button
+            v-if="doc.source_document_id"
+            type="button"
+            class="self-start text-n-blue-11 hover:underline"
+            @click="openDocument(doc.source_document_id)"
+          >
+            {{
+              $t('COMMERCE.DOCUMENTS.FOR_INVOICE', {
+                number: doc.details.invoice_number,
+              })
+            }}
+          </button>
+          <div
+            v-for="row in receiptRows"
+            :key="row.label"
+            class="flex justify-between max-w-md py-1 border-b border-n-weak"
+          >
+            <span class="text-n-slate-11">
+              {{ $t(`COMMERCE.DOCUMENTS.${row.label}`) }}
+            </span>
+            <span class="text-n-slate-12">{{ row.value }}</span>
+          </div>
+        </section>
+
+        <section
+          v-else
+          class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak"
+        >
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-heading-3 text-n-slate-12">
               {{ $t('COMMERCE.DOCUMENTS.LINES') }}
@@ -596,11 +666,15 @@ onMounted(async () => {
           </div>
           <div class="flex flex-col self-end w-full gap-1 text-sm sm:w-72">
             <div class="flex justify-between">
-              <span class="text-n-slate-11">{{ $t('COMMERCE.DOCUMENTS.SUBTOTAL') }}</span>
+              <span class="text-n-slate-11">{{
+                $t('COMMERCE.DOCUMENTS.SUBTOTAL')
+              }}</span>
               <span>{{ money(totals.subtotal) }}</span>
             </div>
             <div v-if="totals.discount" class="flex justify-between">
-              <span class="text-n-slate-11">{{ $t('COMMERCE.DOCUMENTS.DISCOUNT_TOTAL') }}</span>
+              <span class="text-n-slate-11">{{
+                $t('COMMERCE.DOCUMENTS.DISCOUNT_TOTAL')
+              }}</span>
               <span>- {{ money(totals.discount) }}</span>
             </div>
             <div v-if="totals.tax" class="flex justify-between">
@@ -621,7 +695,9 @@ onMounted(async () => {
             </div>
             <template v-if="!isQuote && Number(doc.amount_paid)">
               <div class="flex justify-between">
-                <span class="text-n-slate-11">{{ $t('COMMERCE.DOCUMENTS.PAID') }}</span>
+                <span class="text-n-slate-11">{{
+                  $t('COMMERCE.DOCUMENTS.PAID')
+                }}</span>
                 <span>{{ money(doc.amount_paid) }}</span>
               </div>
               <div class="flex justify-between font-semibold">
@@ -633,7 +709,7 @@ onMounted(async () => {
         </section>
 
         <section
-          v-if="!isQuote && doc.status !== 'draft'"
+          v-if="doc.kind === 'invoice' && doc.status !== 'draft'"
           class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak"
         >
           <div class="flex items-center justify-between gap-2">
@@ -662,6 +738,12 @@ onMounted(async () => {
                 paymentMethods.find(m => m.id === payment.payment_method_id)
                   ?.name || $t('COMMERCE.DOCUMENTS.NO_METHOD')
               }}
+              <span
+                v-if="payment.online"
+                class="px-1.5 py-0.5 text-xs rounded-md bg-n-blue-3 text-n-blue-11"
+              >
+                {{ $t('COMMERCE.DOCUMENTS.ONLINE_PAYMENT') }}
+              </span>
               <span v-if="payment.note" class="text-n-slate-11">
                 · {{ payment.note }}
               </span>
@@ -669,7 +751,24 @@ onMounted(async () => {
             <span class="flex items-center gap-2">
               {{ money(payment.amount) }}
               <Button
-                v-if="isAdmin"
+                v-if="payment.receipt_id"
+                xs
+                slate
+                link
+                icon="i-lucide-receipt-text"
+                :label="payment.receipt_number"
+                @click="openDocument(payment.receipt_id)"
+              />
+              <Button
+                v-else-if="isAdmin"
+                xs
+                slate
+                link
+                :label="$t('COMMERCE.DOCUMENTS.ISSUE_RECEIPT')"
+                @click="issueReceipt(payment)"
+              />
+              <Button
+                v-if="isAdmin && !payment.online"
                 xs
                 ruby
                 ghost
@@ -702,7 +801,9 @@ onMounted(async () => {
           />
         </section>
 
-        <section class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak">
+        <section
+          class="flex flex-col gap-2 p-4 border rounded-xl border-n-weak"
+        >
           <h2 class="text-heading-3 text-n-slate-12">
             {{ $t('COMMERCE.DOCUMENTS.ARCHIVE') }}
           </h2>
@@ -714,11 +815,16 @@ onMounted(async () => {
             :key="pdf.id"
             :href="pdf.url"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="flex items-center gap-2 text-sm text-n-blue-11 hover:underline"
           >
             <span class="i-lucide-file-text size-4" />
-            {{ doc.number }}.pdf · {{ formatDate(pdf.created_at) }}
+            {{
+              $t('COMMERCE.DOCUMENTS.PDF_FILE', {
+                number: doc.number,
+                date: formatDate(pdf.created_at),
+              })
+            }}
           </a>
         </section>
 
@@ -727,7 +833,9 @@ onMounted(async () => {
             sm
             slate
             link
-            :icon="doc.archived_at ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
+            :icon="
+              doc.archived_at ? 'i-lucide-archive-restore' : 'i-lucide-archive'
+            "
             :label="
               doc.archived_at
                 ? $t('COMMERCE.DOCUMENTS.UNARCHIVE')
@@ -737,7 +845,12 @@ onMounted(async () => {
             @click="run(doc.archived_at ? 'unarchive' : 'archive')"
           />
           <Button
-            v-if="isAdmin && doc.status !== 'void' && !doc.payments?.length"
+            v-if="
+              isAdmin &&
+              !isReceipt &&
+              doc.status !== 'void' &&
+              !doc.payments?.length
+            "
             sm
             slate
             link
@@ -745,7 +858,7 @@ onMounted(async () => {
             @click="run('void')"
           />
           <Button
-            v-if="doc.status === 'draft'"
+            v-if="doc.status === 'draft' && !isReceipt"
             sm
             ruby
             link

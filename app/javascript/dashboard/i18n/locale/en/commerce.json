@@ -72,7 +72,7 @@
     },
     "COMPANY": {
       "HEADER": "Company & payments",
-      "DESCRIPTION": "The details printed on your quotes and invoices, and the payment methods you accept.",
+      "DESCRIPTION": "The details printed on your quotes, invoices and receipts, online payments and the payment methods you accept.",
       "LOADING": "Loading company details",
       "DATA": "Company details",
       "LOGO": "Logo",
@@ -93,7 +93,8 @@
         "default_terms": "Default terms",
         "footer": "Footer",
         "quote_prefix": "Quote prefix",
-        "invoice_prefix": "Invoice prefix"
+        "invoice_prefix": "Invoice prefix",
+        "receipt_prefix": "Receipt prefix"
       },
       "PLACEHOLDERS": {
         "trade_name": "PRS Global",
@@ -107,8 +108,38 @@
         "default_terms": "Validity, delivery time, payment conditions…",
         "footer": "Thank you for your business.",
         "quote_prefix": "COT",
-        "invoice_prefix": "FAT"
+        "invoice_prefix": "FAT",
+        "receipt_prefix": "REC"
       }
+    },
+    "ONLINE": {
+      "TITLE": "Online payments",
+      "DESCRIPTION": "Let customers pay invoices online, in full or in part. The payment is recorded and the receipt is sent automatically.",
+      "PROVIDER": {
+        "stripe": "Stripe",
+        "mercado_pago": "Mercado Pago",
+        "yappy": "Yappy"
+      },
+      "ACTIVE": "Active",
+      "INACTIVE": "Disabled",
+      "NOT_CONNECTED": "Not connected",
+      "CONNECTED_AS": "{environment} · key {key}",
+      "CURRENCIES": "Currencies: {currencies}",
+      "CONNECT": "Connect",
+      "CHANGE_KEY": "Change key",
+      "DISABLE": "Disable",
+      "ENABLE": "Enable",
+      "CONNECTED": "Stripe connected.",
+      "HOW_TO": "To show the Pay button on invoices, link a payment method below to the provider.",
+      "STRIPE_TITLE": "Connect Stripe",
+      "SAVE_KEY": "Connect",
+      "ENVIRONMENT_LABEL": "Environment",
+      "ENVIRONMENT": {
+        "sandbox": "Test mode",
+        "production": "Live"
+      },
+      "SECRET_KEY": "Secret key",
+      "KEY_HELP": "Stripe Dashboard, Developers, API keys. Use the secret key, or a restricted key with write access to Checkout Sessions and Webhook Endpoints. The key is stored encrypted and the payment webhook is created for you."
     },
     "PAYMENT_METHODS": {
       "TITLE": "Payment methods",
@@ -123,11 +154,14 @@
       "INSTRUCTIONS_PLACEHOLDER": "Account number, Pix key, Yappy number…",
       "ACTIVE": "Active",
       "INACTIVE": "Inactive",
-      "DELETE": "Delete payment method"
+      "DELETE": "Delete payment method",
+      "ONLINE_PROVIDER": "Online charge",
+      "OFFLINE": "None (instructions only)",
+      "ONLINE_BADGE": "Online with {provider}"
     },
     "DOCUMENTS": {
       "HEADER": "Quotes & invoices",
-      "DESCRIPTION": "Create quotes and invoices with your branding, send them by chat or email and record the payments received.",
+      "DESCRIPTION": "Create quotes and invoices with your branding, send them by chat or email, get paid online and send receipts.",
       "LOADING": "Loading",
       "EMPTY": "Nothing here yet.",
       "SEARCH": "Search by number or customer",
@@ -138,11 +172,13 @@
       "BACK": "Back to the list",
       "KIND": {
         "quote": "Quote",
-        "invoice": "Invoice"
+        "invoice": "Invoice",
+        "receipt": "Receipt"
       },
       "KIND_PLURAL": {
         "quote": "Quotes",
-        "invoice": "Invoices"
+        "invoice": "Invoices",
+        "receipt": "Receipts"
       },
       "STATUS": {
         "draft": "Draft",
@@ -242,7 +278,18 @@
       "UNARCHIVE": "Unarchive",
       "REOPEN": "Reopen for editing",
       "LAST_FROM_CUSTOMER": "Customer:",
-      "LAST_FROM_US": "You:"
+      "LAST_FROM_US": "You:",
+      "SEND_RECEIPT": "Issue and send the receipt",
+      "ONLINE_PAYMENT": "Online",
+      "ISSUE_RECEIPT": "Issue receipt",
+      "RECEIPT_SUMMARY": "Payment received",
+      "FOR_INVOICE": "For invoice {number}",
+      "PAYMENT_DATE": "Payment date",
+      "PAYMENT_METHOD": "Payment method",
+      "AMOUNT_RECEIVED": "Amount received",
+      "INVOICE_TOTAL": "Invoice total",
+      "PAID_TO_DATE": "Paid to date",
+      "PDF_FILE": "{number}.pdf · {date}"
     }
   }
 }

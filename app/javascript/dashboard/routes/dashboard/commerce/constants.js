@@ -35,6 +35,14 @@ export const formatPrice = (price, currency) =>
   );
 
 export const DOCUMENT_LANGUAGES = ['es', 'pt', 'en'];
+export const DOCUMENT_KINDS = ['quote', 'invoice', 'receipt'];
+// Mesmas regras do Commerce::Document#status_fits_kind.
+export const DOCUMENT_STATUSES = {
+  quote: ['draft', 'sent', 'accepted', 'declined', 'void'],
+  invoice: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
+  receipt: ['draft', 'sent', 'void'],
+};
+export const PROVIDER_ENVIRONMENTS = ['sandbox', 'production'];
 export const TAX_MODES = ['exclusive', 'inclusive', 'exempt'];
 export const STATUS_CLASSES = {
   draft: 'bg-n-slate-3 text-n-slate-11',

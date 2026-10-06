@@ -1,8 +1,8 @@
-# PDF do orçamento ou da fatura (Prawn), no idioma do documento. As fontes
+# PDF do orçamento, da fatura ou do recibo (Prawn), no idioma do documento. As fontes
 # embutidas da Prawn só conhecem Windows-1252 (cobre espanhol, português, inglês
 # e €): o que ficar fora disso vira "?" em vez de derrubar a geração.
 # Layout: um método por bloco do papel; as métricas de tamanho não ajudam aqui.
-# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/ClassLength
 class Commerce::DocumentPdf
   include Prawn::View
 
@@ -26,9 +26,13 @@ class Commerce::DocumentPdf
     font('Helvetica', size: 9)
     header
     customer
-    lines
-    totals
-    payment_methods
+    if @doc.receipt?
+      receipt_summary
+    else
+      lines
+      totals
+      payment_methods
+    end
     texts
     page_footer
     document.render
@@ -56,7 +60,7 @@ class Commerce::DocumentPdf
       company_lines.each { |line| text t(line), align: :right, color: MUTED }
     end
     move_down 18
-    title = "#{@l[@doc.quote? ? :quote : :invoice]} #{@doc.number}"
+    title = "#{@l[@doc.kind.to_sym]} #{@doc.number}"
     text t(title), size: 16, style: :bold
     stamp_status
     dates = ["#{@l[:issue_date]}: #{Commerce::DocumentLabels.date(@doc.issue_date, @doc.language)}"]
@@ -98,7 +102,7 @@ class Commerce::DocumentPdf
             data['address'], data['email'], data['phone']].compact_blank
     return if rows.empty?
 
-    text t(@l[:bill_to]).upcase, size: 8, style: :bold, color: MUTED
+    text t(@l[@doc.receipt? ? :received_from : :bill_to]).upcase, size: 8, style: :bold, color: MUTED
     text t(rows.first), size: 11, style: :bold
     rows.drop(1).each { |row| text t(row) }
     move_down 14
@@ -131,6 +135,27 @@ class Commerce::DocumentPdf
     row << (line.discount_percent.to_d.positive? ? "#{format_quantity(line.discount_percent)}%" : '') if show_discount
     row << (line.tax_rate.to_d.positive? ? "#{format_quantity(line.tax_rate)}%" : '') if show_tax
     row << t(priced ? money(line.line_total) : @l[:on_quote])
+  end
+
+  # O recibo não tem linhas: a declaração do valor recebido e o quadro com a
+  # posição da fatura depois deste pagamento.
+  def receipt_summary
+    data = @doc.details
+    statement = format(@l[:receipt_statement], amount: money(@doc.total), document: "#{@l[:invoice]} #{data['invoice_number']}")
+    text t(statement), size: 11
+    move_down 10
+    rows = [[@l[:payment_date], Commerce::DocumentLabels.date(data['paid_on'] && Date.parse(data['paid_on']), @doc.language)],
+            [@l[:payment_method], data['method'].presence || '—'],
+            [@l[:amount_received], money(@doc.total)],
+            [@l[:invoice_total], money(data['invoice_total'])],
+            [@l[:paid_to_date], money(data['paid_to_date'])],
+            [@l[:balance], money(data['balance'])]]
+    style = { borders: [:bottom], border_color: LINE, padding: [5, 4] }
+    table(rows.map { |row| row.map { |cell| t(cell) } }, width: bounds.width * 0.6, cell_style: style) do |tbl|
+      tbl.column(1).align = :right
+      tbl.row(2).font_style = :bold
+    end
+    move_down 14
   end
 
   def escape(value)
@@ -207,4 +232,4 @@ class Commerce::DocumentPdf
     number_pages("#{page_label} <page>/<total>", at: [bounds.right - 100, -20], width: 100, align: :right, size: 7, color: MUTED)
   end
 end
-# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/ClassLength

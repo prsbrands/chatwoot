@@ -1,7 +1,8 @@
 json.call(resource, :id, :kind, :number, :status, :language, :currency, :tax_mode, :contact_id, :deal_id, :appointment_id,
-          :conversation_id, :source_document_id, :customer, :notes, :terms, :footer)
+          :conversation_id, :source_document_id, :customer, :notes, :terms, :footer, :details, :delivered_email)
 json.display_status resource.display_status
 json.editable resource.editable?
+json.payable resource.payable?
 json.issue_date resource.issue_date
 json.due_date resource.due_date
 %i[subtotal discount_total tax_total total amount_paid].each { |column| json.set! column, resource.public_send(column).to_s }
@@ -16,9 +17,11 @@ if local_assigns[:full]
       json.set! column, line.public_send(column)&.to_s
     end
   end
-  json.payments resource.payments do |payment|
-    json.call(payment, :id, :payment_method_id, :paid_on, :note)
+  json.payments resource.payments.includes(:receipt) do |payment|
+    json.call(payment, :id, :payment_method_id, :paid_on, :note, :receipt_id)
     json.amount payment.amount.to_s
+    json.online payment.online?
+    json.receipt_number payment.receipt&.number
   end
   json.pdfs resource.pdfs.attachments.sort_by(&:created_at).reverse do |pdf|
     json.id pdf.id

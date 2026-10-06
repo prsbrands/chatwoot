@@ -13,7 +13,14 @@ module Commerce::DocumentLabels
       accepted: 'Cotización aceptada. ¡Gracias!', declined: 'Cotización rechazada.', status_paid: 'Pagada',
       status_void: 'Anulada', page: 'Página', email_greeting: 'Hola %<name>s,', email_body: 'Adjuntamos %<document>s %<number>s.',
       email_thanks: 'Gracias.',
-      view_document: 'Ver %<document>s', regards: 'Saludos,', message: '%<document>s %<number>s: %<url>s'
+      view_document: 'Ver %<document>s', regards: 'Saludos,', message: '%<document>s %<number>s: %<url>s',
+      receipt: 'Recibo', received_from: 'Recibido de', amount_received: 'Monto recibido', payment_date: 'Fecha de pago',
+      payment_method: 'Forma de pago', invoice_total: 'Total de la factura', paid_to_date: 'Pagado a la fecha',
+      receipt_statement: 'Recibimos la suma de %<amount>s como pago de la %<document>s.', pay_online: 'Pagar en línea',
+      amount_to_pay: 'Monto a pagar', pay_amount_hint: 'Puedes pagar el saldo completo o una parte (mínimo %<minimum>s).',
+      pay_with: 'Pagar con %<method>s', pay_error: 'No pudimos iniciar el pago. Revisa el monto e inténtalo de nuevo.',
+      payment_processing: 'Estamos confirmando tu pago. Esta página se actualizará sola.',
+      payment_received: '¡Pago recibido, gracias! Te enviaremos el recibo.'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -25,7 +32,14 @@ module Commerce::DocumentLabels
       accepted: 'Orçamento aceito. Obrigado!', declined: 'Orçamento recusado.', status_paid: 'Paga',
       status_void: 'Anulada', page: 'Página', email_greeting: 'Olá %<name>s,', email_body: 'Segue %<document>s %<number>s em anexo.',
       email_thanks: 'Obrigado.',
-      view_document: 'Ver %<document>s', regards: 'Atenciosamente,', message: '%<document>s %<number>s: %<url>s'
+      view_document: 'Ver %<document>s', regards: 'Atenciosamente,', message: '%<document>s %<number>s: %<url>s',
+      receipt: 'Recibo', received_from: 'Recebido de', amount_received: 'Valor recebido', payment_date: 'Data do pagamento',
+      payment_method: 'Forma de pagamento', invoice_total: 'Total da fatura', paid_to_date: 'Pago até agora',
+      receipt_statement: 'Recebemos a quantia de %<amount>s como pagamento da %<document>s.', pay_online: 'Pagar online',
+      amount_to_pay: 'Valor a pagar', pay_amount_hint: 'Você pode pagar o saldo inteiro ou uma parte (mínimo %<minimum>s).',
+      pay_with: 'Pagar com %<method>s', pay_error: 'Não conseguimos iniciar o pagamento. Confira o valor e tente de novo.',
+      payment_processing: 'Estamos confirmando o seu pagamento. Esta página se atualiza sozinha.',
+      payment_received: 'Pagamento recebido, obrigado! Vamos enviar o recibo.'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -37,7 +51,14 @@ module Commerce::DocumentLabels
       accepted: 'Quote accepted. Thank you!', declined: 'Quote declined.', status_paid: 'Paid',
       status_void: 'Void', page: 'Page', email_greeting: 'Hello %<name>s,', email_body: 'Please find attached %<document>s %<number>s.',
       email_thanks: 'Thank you.',
-      view_document: 'View %<document>s', regards: 'Best regards,', message: '%<document>s %<number>s: %<url>s'
+      view_document: 'View %<document>s', regards: 'Best regards,', message: '%<document>s %<number>s: %<url>s',
+      receipt: 'Receipt', received_from: 'Received from', amount_received: 'Amount received', payment_date: 'Payment date',
+      payment_method: 'Payment method', invoice_total: 'Invoice total', paid_to_date: 'Paid to date',
+      receipt_statement: 'We received the sum of %<amount>s as payment of %<document>s.', pay_online: 'Pay online',
+      amount_to_pay: 'Amount to pay', pay_amount_hint: 'You can pay the full balance or part of it (minimum %<minimum>s).',
+      pay_with: 'Pay with %<method>s', pay_error: 'We could not start the payment. Check the amount and try again.',
+      payment_processing: 'We are confirming your payment. This page refreshes on its own.',
+      payment_received: 'Payment received, thank you! We will send you the receipt.'
     }
   }.freeze
 

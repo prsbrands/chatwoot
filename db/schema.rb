@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_05_000004) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -845,6 +845,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
     t.index ["account_id", "position"], name: "index_commerce_categories_on_account_id_and_position"
   end
 
+  create_table "commerce_checkouts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "document_id", null: false
+    t.bigint "provider_id", null: false
+    t.bigint "payment_method_id"
+    t.decimal "amount", precision: 14, scale: 2, null: false
+    t.string "currency", null: false
+    t.integer "status", default: 0, null: false
+    t.string "external_id"
+    t.text "checkout_url"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "paid_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id"], name: "index_commerce_checkouts_on_document_id"
+    t.index ["provider_id", "external_id"], name: "index_commerce_checkouts_on_provider_id_and_external_id", unique: true
+    t.index ["status", "created_at"], name: "index_commerce_checkouts_on_status_and_created_at"
+  end
+
   create_table "commerce_document_items", force: :cascade do |t|
     t.bigint "document_id", null: false
     t.bigint "item_id"
@@ -875,6 +894,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
     t.bigint "created_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "checkout_id"
+    t.bigint "receipt_id"
+    t.index ["checkout_id"], name: "index_commerce_document_payments_on_checkout_id", unique: true
     t.index ["document_id"], name: "index_commerce_document_payments_on_document_id"
   end
 
@@ -915,6 +937,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
     t.datetime "paid_at"
     t.datetime "voided_at"
     t.datetime "archived_at"
+    t.jsonb "details", default: {}, null: false
+    t.string "delivered_email"
     t.index ["account_id", "kind", "status"], name: "index_commerce_documents_on_account_id_and_kind_and_status"
     t.index ["account_id", "kind", "year", "sequence"], name: "index_commerce_documents_on_number", unique: true
     t.index ["contact_id"], name: "index_commerce_documents_on_contact_id"
@@ -950,7 +974,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
     t.integer "position", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "provider_id"
     t.index ["account_id", "position"], name: "index_commerce_payment_methods_on_account_id_and_position"
+  end
+
+  create_table "commerce_payment_providers", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "provider", null: false
+    t.integer "environment", default: 0, null: false
+    t.text "credentials"
+    t.text "webhook_secret"
+    t.string "webhook_token", null: false
+    t.string "webhook_endpoint_id"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "provider"], name: "index_commerce_payment_providers_on_account_id_and_provider", unique: true
+    t.index ["webhook_token"], name: "index_commerce_payment_providers_on_webhook_token", unique: true
   end
 
   create_table "commerce_profiles", force: :cascade do |t|
@@ -971,6 +1011,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_05_000003) do
     t.datetime "updated_at", null: false
     t.string "quote_prefix", default: "COT", null: false
     t.string "invoice_prefix", default: "FAT", null: false
+    t.string "receipt_prefix", default: "REC", null: false
     t.index ["account_id"], name: "index_commerce_profiles_on_account_id", unique: true
   end
 

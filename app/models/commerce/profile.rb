@@ -6,8 +6,8 @@ class Commerce::Profile < ApplicationRecord
   has_one_attached :logo
 
   validates :default_currency, inclusion: { in: Commerce::CURRENCIES }
-  before_validation { %i[quote_prefix invoice_prefix].each { |field| self[field] = self[field].to_s.strip.upcase } }
-  validates :quote_prefix, :invoice_prefix, format: { with: /\A[A-Z0-9]{1,8}\z/ }
+  before_validation { %i[quote_prefix invoice_prefix receipt_prefix].each { |field| self[field] = self[field].to_s.strip.upcase } }
+  validates :quote_prefix, :invoice_prefix, :receipt_prefix, format: { with: /\A[A-Z0-9]{1,8}\z/ }
   validates :trade_name, :legal_name, :tax_id_label, :tax_id, :phone, :whatsapp, :email, :website, length: { maximum: 160 }
 
   def self.for(account)

@@ -1,7 +1,13 @@
 # Envia o documento ao cliente: pela conversa (o PDF vai como anexo, com o link
 # público) ou por e-mail (PDF anexo). Envia sempre o PDF mais recente do
 # arquivo, gerando um se ainda não houver; o envio tira o documento do rascunho.
+# Guarda a conversa e o e-mail usados: o recibo segue pelos mesmos canais.
 class Commerce::DocumentSender
+  # Canal API sem webhook (a caixa de voz) não entrega nada ao cliente.
+  def self.deliverable?(conversation)
+    !(conversation.inbox.api? && conversation.inbox.channel.webhook_url.blank?)
+  end
+
   def initialize(document, user)
     @document = document
     @user = user
@@ -10,8 +16,7 @@ class Commerce::DocumentSender
   end
 
   def to_conversation!(conversation, content = nil)
-    # Canal API sem webhook (a caixa de voz) não entrega nada ao cliente.
-    if conversation.inbox.api? && conversation.inbox.channel.webhook_url.blank?
+    unless self.class.deliverable?(conversation)
       @document.errors.add(:base, "#{conversation.inbox.name} does not deliver messages to the customer")
       raise ActiveRecord::RecordInvalid, @document
     end
@@ -22,6 +27,7 @@ class Commerce::DocumentSender
                                    content: content.presence || default_message,
                                    attachments: [pdf.blob.signed_id]
                                  }).perform
+    @document.update!(conversation: conversation)
     @flow.mark_sent!
   end
 
@@ -30,6 +36,7 @@ class Commerce::DocumentSender
     Commerce::DocumentMailer.document(document: @document, pdf: pdf, to: to,
                                       subject: subject.presence || default_subject,
                                       body: body.presence || default_email_body).deliver_now
+    @document.update!(delivered_email: to)
     @flow.mark_sent!
   end
 
@@ -40,7 +47,7 @@ class Commerce::DocumentSender
   end
 
   def document_name
-    @labels[@document.quote? ? :quote : :invoice]
+    @labels[@document.kind.to_sym]
   end
 
   def default_subject

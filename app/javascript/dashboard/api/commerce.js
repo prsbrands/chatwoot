@@ -1,8 +1,9 @@
 /* global axios */
 import ApiClient from './ApiClient';
 
-// Comercial: catálogo (itens e categorias), dados da empresa e formas de
-// pagamento. Imagens e logo sobem pelo /upload e chegam aqui como blob_id.
+// Comercial: catálogo (itens e categorias), dados da empresa, formas de
+// pagamento, provedores de cobrança online, orçamentos, faturas e recibos.
+// Imagens e logo sobem pelo /upload e chegam aqui como blob_id.
 class CommerceAPI extends ApiClient {
   constructor() {
     super('commerce', { accountScoped: true });
@@ -64,6 +65,18 @@ class CommerceAPI extends ApiClient {
     return axios.delete(`${this.url}/payment_methods/${id}`);
   }
 
+  paymentProviders() {
+    return axios.get(`${this.url}/payment_providers`);
+  }
+
+  createPaymentProvider(provider) {
+    return axios.post(`${this.url}/payment_providers`, provider);
+  }
+
+  updatePaymentProvider(id, provider) {
+    return axios.patch(`${this.url}/payment_providers/${id}`, provider);
+  }
+
   documents(params) {
     return axios.get(`${this.url}/documents`, { params });
   }
@@ -99,6 +112,12 @@ class CommerceAPI extends ApiClient {
 
   removeDocumentPayment(id, paymentId) {
     return axios.delete(`${this.url}/documents/${id}/payments/${paymentId}`);
+  }
+
+  issueReceipt(id, paymentId) {
+    return axios.post(
+      `${this.url}/documents/${id}/payments/${paymentId}/receipt`
+    );
   }
 
   profile() {

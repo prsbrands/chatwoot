@@ -18,6 +18,8 @@ class Commerce::DocumentEditor
       raise ActiveRecord::RecordInvalid, @document
     end
 
+    return save_receipt! if @document.receipt?
+
     Commerce::Document.transaction do
       @document.assign_attributes(header)
       @document.customer = customer if @params.key?(:customer)
@@ -31,6 +33,13 @@ class Commerce::DocumentEditor
   end
 
   private
+
+  # No recibo, valor, forma, data, cliente e empresa vêm do pagamento e da
+  # fatura: só o idioma e os textos mudam.
+  def save_receipt!
+    @document.update!(@params.slice(:language, :notes, :terms, :footer))
+    @document
+  end
 
   # Contato, negócio, compromisso e conversa têm que ser da conta.
   def header

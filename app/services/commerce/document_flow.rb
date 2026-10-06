@@ -35,7 +35,7 @@ class Commerce::DocumentFlow
   # Reabrir para edição: volta a rascunho (desfaz aceito, recusado ou anulado).
   # Fatura com pagamento não reabre; os PDFs gerados continuam no arquivo.
   def reopen!
-    raise_unless(!@document.editable? && @document.payments.none? && !@document.paid? && !@document.partially_paid?)
+    raise_unless(!@document.receipt? && !@document.editable? && @document.payments.none? && !@document.paid? && !@document.partially_paid?)
     @document.update!(status: :draft, accepted_at: nil, declined_at: nil, voided_at: nil)
   end
 
@@ -47,8 +47,9 @@ class Commerce::DocumentFlow
     @document.update!(archived_at: nil)
   end
 
+  # O recibo só se anula apagando o pagamento dele (remove_payment!).
   def void!
-    raise_unless(!@document.void? && @document.payments.none?)
+    raise_unless(!@document.receipt? && !@document.void? && @document.payments.none?)
     @document.update!(status: :void, voided_at: Time.current)
   end
 
@@ -70,13 +71,18 @@ class Commerce::DocumentFlow
   def add_payment!(attrs)
     raise_unless(@document.invoice? && !@document.void? && !@document.draft?)
     Commerce::Document.transaction do
-      @document.payments.create!(attrs.merge(account: @document.account, created_by: @user))
+      payment = @document.payments.create!(attrs.merge(account: @document.account, created_by: @user))
       settle!
+      payment
     end
   end
 
+  # Pagamento online não sai pela tela (o estorno é no provedor). O recibo de um
+  # pagamento apagado fica anulado, não some.
   def remove_payment!(payment)
+    raise_unless(!payment.online?)
     Commerce::Document.transaction do
+      payment.receipt&.update!(status: :void, voided_at: Time.current)
       payment.destroy!
       @document.payments.reset
       settle!

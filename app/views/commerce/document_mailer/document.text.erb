@@ -1,7 +1,9 @@
 <%= @body %>
 
-<%= @labels[@document.quote? ? :quote : :invoice] %> <%= @document.number %> — <%= @labels[:total] %>: <%= Commerce::DocumentLabels.money(@document.total, @document.currency, @document.language) %>
-<%= format(@labels[:view_document], document: @labels[@document.quote? ? :quote : :invoice].downcase) %>: <%= @public_url %>
+<%= @labels[@document.kind.to_sym] %> <%= @document.number %> — <%= @labels[@document.receipt? ? :amount_received : :total] %>: <%= Commerce::DocumentLabels.money(@document.total, @document.currency, @document.language) %>
+<%= format(@labels[:view_document], document: @labels[@document.kind.to_sym].downcase) %>: <%= @public_url %>
+<% if @pay_online %><%= @labels[:pay_online] %>: <%= @public_url %>#pay
+<% end %>
 
 <%= @labels[:regards] %>
 <%= @company['trade_name'].presence || @company['legal_name'] %>

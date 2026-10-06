@@ -1,6 +1,7 @@
-# Orçamento ou fatura por e-mail, com a marca da empresa da conta (não a do
-# CortexGen): logo embutido, a mensagem, um quadro com número, total e prazo,
-# o botão para o link público e o PDF anexo. Tudo no idioma do documento.
+# Orçamento, fatura ou recibo por e-mail, com a marca da empresa da conta (não
+# a do CortexGen): logo embutido, a mensagem, um quadro com número, total e
+# prazo, o botão para o link público (na fatura com cobrança online, "Pagar
+# online") e o PDF anexo. Tudo no idioma do documento.
 class Commerce::DocumentMailer < ApplicationMailer
   layout false
 
@@ -10,6 +11,7 @@ class Commerce::DocumentMailer < ApplicationMailer
     @body = body
     @company = document.company || {}
     @public_url = Commerce::DocumentFlow.new(document).public_url
+    @pay_online = document.payable? && document.online_payment_methods.any?
     @logo = attach_logo
     attachments[pdf.filename.to_s] = { mime_type: 'application/pdf', content: pdf.download }
     mail(to: to, subject: subject, reply_to: @company['email'].presence)

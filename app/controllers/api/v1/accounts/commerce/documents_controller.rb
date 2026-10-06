@@ -12,9 +12,10 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
 
   def show; end
 
+  # Recibo não se cria pela tela: nasce de um pagamento (receipt).
   def create
-    @document = Current.account.commerce_documents.new(kind: params.require(:kind), issue_date: Date.current, created_by: Current.user,
-                                                       **defaults)
+    kind = params.require(:kind).presence_in(%w[quote invoice]) || raise(ActionController::BadRequest, 'invalid kind')
+    @document = Current.account.commerce_documents.new(kind: kind, issue_date: Date.current, created_by: Current.user, **defaults)
     ::Commerce::DocumentEditor.new(@document, document_params).save!
     render :show
   end
@@ -25,7 +26,7 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
   end
 
   def destroy
-    raise Pundit::NotAuthorizedError unless @document.draft?
+    raise Pundit::NotAuthorizedError unless @document.draft? && !@document.receipt?
 
     @document.destroy!
     head :ok
@@ -86,10 +87,24 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
     render :show
   end
 
+  # send_receipt: emite o recibo agora e o envia em segundo plano pelos canais
+  # da fatura.
   def add_payment
-    payment = params.permit(:amount, :paid_on, :note, :payment_method_id)
-    Current.account.commerce_payment_methods.find(payment[:payment_method_id]) if payment[:payment_method_id].present?
-    flow.add_payment!(payment.to_h.symbolize_keys)
+    attrs = params.permit(:amount, :paid_on, :note, :payment_method_id)
+    Current.account.commerce_payment_methods.find(attrs[:payment_method_id]) if attrs[:payment_method_id].present?
+    payment = flow.add_payment!(attrs.to_h.symbolize_keys)
+    if ActiveModel::Type::Boolean.new.cast(params[:send_receipt])
+      ::Commerce::ReceiptIssuer.new(payment, user: Current.user).issue!
+      ::Commerce::ReceiptJob.perform_later(payment.id, user_id: Current.user.id)
+    end
+    @document.reload
+    render :show
+  end
+
+  # Recibo de um pagamento que ficou sem (registrado sem "enviar recibo").
+  def issue_receipt
+    ::Commerce::ReceiptIssuer.new(@document.payments.find(params.require(:payment_id)), user: Current.user).issue!
+    @document.reload
     render :show
   end
 

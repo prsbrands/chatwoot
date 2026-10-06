@@ -279,10 +279,12 @@ Rails.application.routes.draw do
                 post :unarchive
                 post :payments, action: :add_payment
                 delete 'payments/:payment_id', action: :remove_payment
+                post 'payments/:payment_id/receipt', action: :issue_receipt
               end
             end
             resources :categories, only: [:index, :create, :update, :destroy]
             resources :payment_methods, only: [:index, :create, :update, :destroy]
+            resources :payment_providers, only: [:index, :create, :update]
             resource :profile, only: [:show, :update]
           end
           namespace :sales do
@@ -762,6 +764,8 @@ Rails.application.routes.draw do
   get 'd/:token/pdf', to: 'commerce_public_documents#pdf', as: :commerce_public_document_pdf
   post 'd/:token/accept', to: 'commerce_public_documents#accept', as: :commerce_public_document_accept
   post 'd/:token/decline', to: 'commerce_public_documents#decline', as: :commerce_public_document_decline
+  post 'd/:token/pay', to: 'commerce_public_documents#pay', as: :commerce_public_document_pay
+  post 'commerce/webhooks/:provider/:token', to: 'commerce/webhooks#create', as: :commerce_webhook
   get 'hc/:slug', to: 'public/api/v1/portals#show'
   get 'hc/:slug/sitemap.xml', to: 'public/api/v1/portals#sitemap'
   get 'hc/:slug/:locale', to: 'public/api/v1/portals#show', as: :public_portal_locale

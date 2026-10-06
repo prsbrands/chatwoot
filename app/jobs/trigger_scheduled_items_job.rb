@@ -29,6 +29,9 @@ class TriggerScheduledItemsJob < ApplicationJob
     # Lembretes da Agenda pelo WhatsApp por QR
     Agenda::ReminderJob.perform_later
 
+    # Pagamentos online sem resposta do provedor (Comercial)
+    Commerce::CheckoutReconcileJob.perform_later
+
     # Sessões de WhatsApp por QR (OpenWA) que caíram
     Openwa::SessionWatchJob.perform_later if Integrations::Openwa::Client.configured?
   end

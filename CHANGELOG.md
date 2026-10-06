@@ -14,6 +14,16 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.14.0] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Fatura paga online pelo Stripe.** Em Company & payments, a nova seção **Online payments** conecta a conta Stripe da empresa (modo teste ou produção). A chave fica cifrada, e o webhook de pagamento é criado sozinho. A forma de pagamento ligada ao Stripe vira o botão **"Pagar con…"** na página da fatura e no e-mail ("Pagar en línea").
+- **O cliente paga a fatura inteira ou uma parte.** O valor vem preenchido com o saldo e pode ser trocado por um menor (mínimo de 1). A fatura passa a parcial ou paga sozinha, e o negócio vira ganho quando ela é quitada. Só o aviso assinado do Stripe confirma o pagamento; um aviso repetido não paga duas vezes. Se o aviso atrasar, a página confirma na volta do cliente e uma conciliação a cada 5 min recupera o resto.
+- **Recibo como documento** (`REC-2026-0001`, prefixo editável). Tem PDF, página pública, envio pela conversa e por e-mail, arquivo e os 3 idiomas, como cotações e faturas, e uma aba própria na lista.
+  - **Pagamento online:** o recibo é emitido e enviado sozinho, pelos mesmos canais da fatura, e a equipe recebe uma nota interna na conversa.
+  - **Pagamento manual:** o diálogo tem "Issue and send the receipt", já marcado.
+  - **Conteúdo:** o recibo mostra o valor recebido, quanto já foi pago e o saldo restante.
+  - **Alterações:** apagar um pagamento manual anula o recibo dele. Pagamento online não se apaga pela tela; o estorno é feito no Stripe.
+
 ## [1.13.3] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Política de privacidade e Termos de serviço públicos** em `/privacy` e `/terms` (espanhol, inglês e português), em nome da PRS Global Business LLC (Santa Fe, NM, EUA). São as páginas exigidas pelo Google para publicar o app OAuth do Google Agenda: dizem quais permissões são pedidas, para quê, o compromisso de Uso limitado e como revogar.
