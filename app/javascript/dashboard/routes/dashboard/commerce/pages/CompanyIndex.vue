@@ -57,6 +57,15 @@ const isConnecting = ref(false);
 const providerFor = key =>
   providers.value.find(provider => provider.provider === key);
 const providerLabel = key => t(`COMMERCE.ONLINE.PROVIDER.${key}`);
+// Conectado e ativo, mas nenhuma forma de pagamento usa: a fatura não mostra
+// o botão "Pagar" deste provedor.
+const providerWithoutMethod = key => {
+  const provider = providerFor(key);
+  return (
+    provider?.active &&
+    !methods.value.some(row => row.active && row.provider_id === provider.id)
+  );
+};
 const editingConfig = computed(() => ONLINE_PROVIDERS[editingProvider.value]);
 // O domínio que o Yappy valida quando a conta não informa outro.
 const installationUrl = window.location.origin;
@@ -410,6 +419,16 @@ onMounted(async () => {
               {{
                 $t('COMMERCE.ONLINE.CURRENCIES', {
                   currencies: config.currencies.join(', '),
+                })
+              }}
+            </span>
+            <span
+              v-if="providerWithoutMethod(key)"
+              class="text-xs text-n-amber-11"
+            >
+              {{
+                $t('COMMERCE.ONLINE.NO_METHOD', {
+                  provider: providerLabel(key),
                 })
               }}
             </span>

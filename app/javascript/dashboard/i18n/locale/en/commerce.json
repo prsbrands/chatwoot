@@ -151,7 +151,8 @@
       },
       "WEBHOOK_SECRET": "Webhook secret signature (optional)",
       "WEBHOOK_SECRET_HELP": "Optional extra check. In Your integrations, Webhooks, set the webhook URL shown on the Mercado Pago card with the Payments event and paste the secret signature here. Without it, every notice is still confirmed by reading the payment from Mercado Pago.",
-      "WEBHOOK_URL": "Webhook URL: {url}"
+      "WEBHOOK_URL": "Webhook URL: {url}",
+      "NO_METHOD": "No active payment method uses {provider} yet, so invoices show no Pay button. Edit a payment method below and pick {provider} in Online charge."
     },
     "PAYMENT_METHODS": {
       "TITLE": "Payment methods",
