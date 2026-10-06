@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.2] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
+
+- **O catálogo fica no prompt durante toda a venda.** Visto no teste da 1.19.1: as respostas do cliente no meio da cotização ("si", o nome e o e-mail, "pa mi") sozinhas não pareciam compra para o Jev (0,52 e 0,29), o catálogo saía do prompt e a IA terminou prometendo "te llega en unos minutos" sem criar nada (e sem o catálogo, a rede de segurança não roda). O critério do Jev agora conta a resposta do cliente a uma venda em andamento: no Jev real, 0,93, 0,96 e 0,76; "quiero agendar" e "gracias" seguem em 0,03 e 0,02.
+- **A IA não pede nome, e-mail nem empresa para cotizar:** a cotização usa os dados do contato e a equipe completa o resto (a base de conhecimento pedia esses dados e a IA seguia).
+- **Contas sem o Comercial** não veem mais "o catálogo não pode ser lido" no prompt: sem a flag, a seção não entra e o bot segue como antes.
+
 ## [1.19.1] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
 
 - **A IA monta a cotização quando o cliente pede o PDF.** Visto na conversa 89: o cliente pediu "la cotización en pdf" do CortexGen 1, e a IA, em vez de preparar, perguntou de novo o item e a quantidade. Agora ela usa o item de que já estavam falando e a quantidade 1 quando o cliente não diz, e só pergunta se não dá para saber qual item.
