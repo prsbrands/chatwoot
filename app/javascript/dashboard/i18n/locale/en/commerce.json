@@ -168,6 +168,9 @@
       "ACTIVE": "Active",
       "INACTIVE": "Inactive",
       "DELETE": "Delete payment method",
+      "DELETE_TITLE": "Delete {name}?",
+      "DELETE_DESCRIPTION": "It disappears from the company settings and from every quote and invoice that shows it.",
+      "DELETE_IN_USE": "This payment method already has payments or online charges, so it stays in the history. Uncheck Active to hide it.",
       "ONLINE_PROVIDER": "Online charge",
       "OFFLINE": "None (instructions only)",
       "ONLINE_BADGE": "Online with {provider}"

@@ -17,8 +17,9 @@ class Api::V1::Accounts::Commerce::PaymentMethodsController < Api::V1::Accounts:
   end
 
   def destroy
-    @payment_method.destroy!
-    head :ok
+    return head :ok if @payment_method.destroy
+
+    render_could_not_create_error(@payment_method.errors.full_messages.to_sentence)
   end
 
   private

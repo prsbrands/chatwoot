@@ -48,6 +48,8 @@ const logoInput = ref(null);
 const methodDialog = ref(null);
 const method = ref({});
 const isSavingMethod = ref(false);
+const deleteMethodDialog = ref(null);
+const methodToDelete = ref({});
 const providers = ref([]);
 const providerDialog = ref(null);
 const providerForm = ref({});
@@ -238,13 +240,24 @@ const saveMethod = async () => {
   }
 };
 
+const confirmDeleteMethod = row => {
+  methodToDelete.value = row;
+  deleteMethodDialog.value.open();
+};
+
 const deleteMethod = async () => {
   try {
-    await CommerceAPI.deletePaymentMethod(method.value.id);
+    await CommerceAPI.deletePaymentMethod(methodToDelete.value.id);
+    deleteMethodDialog.value.close();
     methodDialog.value.close();
     await fetchMethods();
   } catch (error) {
-    useAlert(t('COMMERCE.API.ERROR'));
+    deleteMethodDialog.value.close();
+    useAlert(
+      error.response?.status === 422
+        ? t('COMMERCE.PAYMENT_METHODS.DELETE_IN_USE')
+        : t('COMMERCE.API.ERROR')
+    );
   }
 };
 
@@ -492,13 +505,16 @@ onMounted(async () => {
         <p v-if="!methods.length" class="text-sm text-n-slate-11">
           {{ $t('COMMERCE.PAYMENT_METHODS.EMPTY') }}
         </p>
-        <button
+        <div
           v-for="row in methods"
           :key="row.id"
-          type="button"
-          class="flex items-start justify-between gap-3 p-3 text-start border rounded-lg border-n-weak hover:border-n-strong"
-          @click="openMethod(row)"
+          class="flex items-start gap-2 p-3 border rounded-lg border-n-weak hover:border-n-strong"
         >
+          <button
+            type="button"
+            class="flex items-start justify-between flex-1 min-w-0 gap-3 text-start"
+            @click="openMethod(row)"
+          >
           <div class="flex flex-col min-w-0 gap-0.5">
             <span class="font-medium text-n-slate-12">{{ row.name }}</span>
             <span class="text-xs text-n-slate-11">
@@ -525,7 +541,17 @@ onMounted(async () => {
           >
             {{ $t('COMMERCE.PAYMENT_METHODS.INACTIVE') }}
           </span>
-        </button>
+          </button>
+          <Button
+            xs
+            slate
+            ghost
+            icon="i-lucide-trash-2"
+            :aria-label="$t('COMMERCE.PAYMENT_METHODS.DELETE')"
+            :title="$t('COMMERCE.PAYMENT_METHODS.DELETE')"
+            @click="confirmDeleteMethod(row)"
+          />
+        </div>
       </section>
     </div>
 
@@ -576,11 +602,20 @@ onMounted(async () => {
             link
             icon="i-lucide-trash-2"
             :label="$t('COMMERCE.PAYMENT_METHODS.DELETE')"
-            @click="deleteMethod"
+            @click="confirmDeleteMethod(method)"
           />
         </div>
       </div>
     </Dialog>
+
+    <Dialog
+      ref="deleteMethodDialog"
+      type="alert"
+      :title="$t('COMMERCE.PAYMENT_METHODS.DELETE_TITLE', { name: methodToDelete.name })"
+      :description="$t('COMMERCE.PAYMENT_METHODS.DELETE_DESCRIPTION')"
+      :confirm-button-label="$t('COMMERCE.PAYMENT_METHODS.DELETE')"
+      @confirm="deleteMethod"
+    />
 
     <Dialog
       ref="providerDialog"
