@@ -225,7 +225,12 @@ if (!g.splitReplies) {
 if (marcadoAgora) await mandarLinkDaReuniao();
 const idiomaDoCliente = ($('JevEntrada').first().json.jev || {}).language;
 if (linhasDaCotacao.length) await chamarComercial('quotes', { lines: linhasDaCotacao, language: idiomaDoCliente });
-if (assinar) {
+// A assinatura que o MontaPrompt ja criou (escolha do Jev) manda o link; uma
+// etiqueta [[SUBSCRIBE]] que o LLM escreva assim mesmo so sai do texto.
+const linkPronto = $('MontaPrompt').first().json.subscriptionUrl;
+if (linkPronto) {
+  await mandarBolhaFinal((ASSINATURA[idiomaDoCliente] || ASSINATURA.en) + ' ' + linkPronto);
+} else if (assinar) {
   const assinatura = await chamarComercial('subscriptions', { item_id: Number(assinar[1]), language: idiomaDoCliente });
   if (assinatura) await mandarBolhaFinal((ASSINATURA[idiomaDoCliente] || ASSINATURA.en) + ' ' + assinatura.public_url);
 }

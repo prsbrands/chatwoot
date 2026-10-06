@@ -38,7 +38,9 @@ const conferirAgendamento = !jaMarcado && !ETIQUETA_BOOK.test(String(i.reply || 
 // [[QUOTE]] ou [[SUBSCRIBE]], uma resposta que diz que a cotizacao esta sendo
 // preparada ou que o link vem a seguir deixaria o cliente esperando por nada.
 const ETIQUETA_VENDA = /\[\[(QUOTE|SUBSCRIBE) [^\]]+\]\]/;
-const conferirVenda = Boolean(agenda.catalog) && !ETIQUETA_VENDA.test(String(i.reply || '')) && g.jev &&
+// Assinatura ja criada no MontaPrompt (escolha do Jev): o link vem de fato.
+const jaVendido = Boolean(agenda.subscriptionUrl);
+const conferirVenda = Boolean(agenda.catalog) && !jaVendido && !ETIQUETA_VENDA.test(String(i.reply || '')) && g.jev &&
   g.jev.activities.catalog === 'deciding';
 
 if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento && !conferirVenda)) return segue();
@@ -119,7 +121,7 @@ async function gravar(row) {
 // cria o rascunho e a assinatura). A etiqueta sai do texto revisado e a
 // pergunta de promessa fica de fora, senão toda confirmação seria retida.
 const ETIQUETA = /\s*\[\[(BOOK|QUOTE|SUBSCRIBE) [^\]]+\]\]\s*/g;
-const agendando = jaMarcado || ETIQUETA.test(String(i.reply || ''));
+const agendando = jaMarcado || jaVendido || ETIQUETA.test(String(i.reply || ''));
 const respostaRevisada = String(i.reply || '').replace(ETIQUETA, ' ').trim();
 
 const perguntas = {

@@ -213,8 +213,44 @@ if (jev.booking) {
 // Responde cria o rascunho da cotizacao para a equipe revisar e enviar. Plano
 // que se assina online: [[SUBSCRIBE <id>]], e o Responde manda o link. Fora do
 // ar, o catalogo nao cala o bot: ele responde sem inventar preco.
+// Assinar: o plano que o cliente decidiu assinar agora e escolhido pelo Jev
+// antes do LLM, e a assinatura nasce aqui; o LLM so confirma que o link vem a
+// seguir, e o Responde manda. Visto em 06/10: com so a etiqueta, o LLM disse
+// "el enlace te llega en el siguiente mensaje" sem escrever [[SUBSCRIBE]] (o
+// mesmo que a Agenda viveu com o [[BOOK]] em 03/10). A etiqueta segue valendo
+// quando o Jev nao tem certeza.
+async function escolherPlano(planos) {
+  const scrub = text => String(text || '')
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]');
+  const anterior = messages.length > 1 ? messages[messages.length - 2] : null;
+  const criteria = {
+    none: 'The customer does not decide to subscribe now: they ask about a plan, its price or what it includes, compare, ask for a quote, or talk about something else.',
+  };
+  planos.forEach(plano => { criteria['p' + plano.id] = plano.name + ' (' + plano.currency + ' ' + plano.price + ' per ' + plano.billing_interval + ').'; });
+  const res = await postJson('https://api.typesafe.ai/v1/systemone', { authorization: 'Bearer ' + g.jev.key }, {
+    model: 'jev-1.13.0',
+    state: {
+      customer_last_message: scrub(messages[messages.length - 1].content),
+      previous_assistant_message: anterior && anterior.role === 'assistant' ? scrub(anterior.content) : '',
+    },
+    questions: {
+      subscribe: {
+        type: 'choice',
+        instructions: 'Which plan does the customer clearly decide to subscribe to now in `customer_last_message`, either asking to subscribe, sign up or buy it, or saying yes to `previous_assistant_message` offering to subscribe?',
+        criteria: criteria,
+      },
+    },
+  }, 2500);
+  let resposta = null;
+  try { resposta = res.statusCode === 200 ? (JSON.parse(res.body).answers || {}).subscribe : null; } catch (e) { resposta = null; }
+  if (!resposta || resposta.choice === 'none' || resposta.confidence < ESCOLHA_CONFIDENCE) return null;
+  return planos.find(plano => 'p' + plano.id === resposta.choice) || null;
+}
+
 let regraDeCatalogo = '';
 let catalogoNoPrompt = false;
+let assinatura = null;
 if (jev.catalog) {
   try {
     const catalogo = await getJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/commerce/bot/catalog',
@@ -226,8 +262,16 @@ if (jev.catalog) {
     };
     const linhas = catalogo.items.map(item => '- [' + item.id + '] ' + item.name + (item.category ? ' (' + item.category + ')' : '') + ': ' +
       preco(item) + (item.subscribable ? '; subscribe online' : '') + (item.description ? '\n  ' + item.description.replace(/\s+/g, ' ') : ''));
-    const assinaveis = catalogo.items.some(item => item.subscribable);
+    const planos = catalogo.items.filter(item => item.subscribable);
+    const assinaveis = planos.length > 0;
     catalogoNoPrompt = linhas.length > 0;
+    const plano = assinaveis ? await escolherPlano(planos) : null;
+    if (plano) {
+      const res = await postJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/commerce/bot/subscriptions',
+        { api_access_token: g.chatUserToken }, { conversation_id: g.conversationId, item_id: plano.id, language: jev.language || null }, 20000);
+      if (res.statusCode >= 200 && res.statusCode < 300) assinatura = { name: plano.name, url: JSON.parse(res.body).public_url };
+      else console.error('MontaPrompt: commerce/bot/subscriptions ' + plano.id + ' HTTP ' + res.statusCode + ' ' + String(res.body).slice(0, 200));
+    }
     regraDeCatalogo = '\n\n---\n\n# CATALOG\n\n' + (linhas.length
       ? 'These are the products, services and plans this business sells, with the only prices you may quote. The [id] is for the lines described below; never show it to the customer.\n' +
         linhas.join('\n') + '\n\n' +
@@ -235,6 +279,9 @@ if (jev.catalog) {
         '2. If the customer asks for a formal quote (a quote, proposal, budget or PDF in writing), prepare it now: say that you are preparing the quote and the team will send it shortly, and end your reply with a last line containing exactly [[QUOTE <id>x<quantity>, <id>x<quantity>]] with the ids above. The items are the ones the customer asked for or that you were talking about in this conversation; when they did not say how many, use 1. Ask first, without the line, only when you cannot tell which item they mean. Do not ask for their name, email or company to prepare it: the quote uses the customer data of this conversation and the team completes the rest. Never say a quote is being prepared or sent unless that same reply ends with the line.\n' +
         (assinaveis
           ? '3. Items with "subscribe online" are plans the customer can subscribe to by themselves. When the customer clearly decides to subscribe to one, say that the subscription link comes in the next message and end your reply with a last line containing exactly [[SUBSCRIBE <id>]]. Never write a link yourself, and never say a link is coming unless that same reply ends with the line.\n'
+          : '') +
+        (assinatura
+          ? '4. The customer decided to subscribe to "' + assinatura.name + '": their subscription link is sent automatically right after your reply. Confirm in a short reply that the link to subscribe comes in the next message and that they finish the subscription there. Do not write any link or [[...]] line, and do not say the subscription is already active.\n'
           : '') +
         'The customer never sees the [[...]] line.'
       : 'The catalog is empty. Do not quote prices that are not in the knowledge base: say the team will send the details.');
@@ -341,4 +388,5 @@ return [{ json: {
   booked: marcado,
   cancelled: desmarcado ? desmarcado.id : null,
   catalog: catalogoNoPrompt,
+  subscriptionUrl: assinatura ? assinatura.url : null,
 } }];

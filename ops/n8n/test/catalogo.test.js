@@ -25,6 +25,19 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: {} }, Historico: hist }, {}, {});
   ok('MontaPrompt: sem o Jev ver catalogo, nada muda', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.calls.length);
 
+  const hist2 = { payload: [{ message_type: 0, content: 'Hola, quiero assinar el Plan Pro', private: false }] };
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true, language: 'es' } }, Historico: hist2 }, {},
+    { 'commerce/bot/catalog': [200, catalog], 'typesafe.ai': [200, { answers: { subscribe: { choice: 'p14', confidence: 0.99 } } }],
+      'commerce/bot/subscriptions': [200, { id: 7, public_url: 'https://x/s/plan' }] });
+  const jevPlano = r.calls.find(c => c.url.includes('typesafe'));
+  const criada = r.calls.find(c => c.url.includes('bot/subscriptions'));
+  const sys3 = r.out[0].json.body.messages[0].content;
+  ok('MontaPrompt: Jev escolhe o plano e a assinatura nasce antes do LLM',
+     jevPlano && jevPlano.body.questions.subscribe.criteria.p14 && criada && criada.body.item_id === 14 && criada.body.language === 'es' &&
+     r.out[0].json.subscriptionUrl === 'https://x/s/plan' && sys3.includes('decided to subscribe to "Plan Pro"'));
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist2 }, {},
+    { 'commerce/bot/catalog': [200, catalog], 'typesafe.ai': [200, { answers: { subscribe: { choice: 'p14', confidence: 0.6 } } }] });
+  ok('MontaPrompt: sem certeza do Jev, nada criado (fica a etiqueta)', !r.calls.some(c => c.url.includes('bot/subscriptions')) && r.out[0].json.subscriptionUrl === null);
   const mp = { booked: null, catalog: true };
   const input = { reply: 'Perfecto, preparo la cotización y el equipo te la envía.\n[[QUOTE 12x2, 13]]\n[[SUBSCRIBE 14]]', accountId: 1, conversationId: 89 };
   r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: mp, JevEntrada: { jev: { language: 'es' } } }, input,
@@ -35,6 +48,11 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   ok('Responde: etiquetas fora do texto', msgs[0].body.content === 'Perfecto, preparo la cotización y el equipo te la envía.');
   ok('Responde: rascunho com linhas e idioma', q && JSON.stringify(q.body) === JSON.stringify({ conversation_id: 89, lines: [{ item_id: 12, quantity: '2' }, { item_id: 13, quantity: '1' }], language: 'es' }));
   ok('Responde: assinatura e link na bolha final', s && s.body.item_id === 14 && msgs[1] && msgs[1].body.content === 'Suscríbete aquí: https://x/s/abc');
+  r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: { catalog: true, subscriptionUrl: 'https://x/s/plan' }, JevEntrada: { jev: { language: 'es' } } },
+    { reply: 'El enlace te llega en el siguiente mensaje. [[SUBSCRIBE 14]]', accountId: 1, conversationId: 89 }, { '/conversations/89': [200, { meta: {} }] });
+  const m2 = r.calls.filter(c => c.url.endsWith('/messages'));
+  ok('Responde: link da assinatura do MontaPrompt, sem criar outra pela etiqueta',
+     m2.length === 2 && m2[1].body.content === 'Suscríbete aquí: https://x/s/plan' && !r.calls.some(c => c.url.includes('commerce/bot')));
   r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: mp, JevEntrada: { jev: {} } }, input,
     { '/conversations/89': [200, { meta: { assignee_type: 'User' } }] });
   ok('Responde: humano assumiu, nada criado', !r.calls.some(c => c.url.includes('commerce/bot')));
@@ -60,4 +78,8 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   const p2 = r.calls.find(c => c.url.includes('typesafe'));
   ok('JevRevisao: com etiqueta, sem a pergunta de promessa e o texto revisado sem a etiqueta',
      p2 && !p2.body.questions.promises && !p2.body.questions.false_sale && !p2.body.state.assistant_reply.includes('[['));
+  r = await run(R + 'jev_revisao.js', { Guard: g2, MontaPrompt: { catalog: true, subscriptionUrl: 'https://x/s/plan' }, JevEntrada: { jev: {} } },
+    { reply: 'Listo, el enlace te llega en el siguiente mensaje.' }, jevResp(0.1));
+  const p3 = r.calls.find(c => c.url.includes('typesafe'));
+  ok('JevRevisao: assinatura ja criada, sem rede nem pergunta de promessa', p3 && !p3.body.questions.false_sale && !p3.body.questions.promises);
 })();
