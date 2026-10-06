@@ -14,6 +14,14 @@ class CommercePublicDocumentsController < PublicController
     refresh_checkout if @checkout&.pending?
   end
 
+  # Para a página que espera o pagamento (aprovar no app do Yappy, Pix): só a
+  # situação da tentativa, perguntando ao provedor enquanto estiver pendente.
+  def checkout_status
+    @checkout = @document.checkouts.find(params[:checkout_id])
+    refresh_checkout if @checkout.pending?
+    render json: { status: @checkout.status }
+  end
+
   def pay
     method = @document.payment_methods.online.find(params.require(:payment_method_id))
     public_url = ::Commerce::DocumentFlow.new(@document).public_url

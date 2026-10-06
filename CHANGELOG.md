@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.16.1] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **A página da fatura espera o pagamento sem recarregar.** Antes, ela se recarregava a cada 5 segundos enquanto o cliente aprovava no app do Yappy, e parecia estar em loop. Agora mostra "Te enviamos una solicitud de pago a tu app Yappy (Banco General)…" com um indicador e consulta a situação em segundo plano. Ela só se atualiza quando o pagamento é confirmado, recusado ou vence. Enquanto espera, o formulário "Pagar" fica escondido, para evitar uma segunda solicitação. Depois de 10 minutos sem resposta, aparece um aviso com o link para voltar à fatura.
+- Pagamento recusado no app ou solicitação vencida agora aparece na página, e o formulário volta para tentar de novo.
+- Uma tentativa que o provedor recusa logo de início (por exemplo, celular inválido) não fica mais pendente no sistema.
+- Em Company & payments, um provedor conectado sem nenhuma forma de pagamento ligada agora mostra um aviso. Sem essa ligação, a fatura não mostra o botão "Pagar".
+
 ## [1.16.0] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Fatura paga pelo Yappy (Panamá, USD).** Em Company & payments, o cartão **Yappy** conecta o Botón de Pago V2 com o ID do comércio, a chave secreta (cifrada) e, se preciso, o domínio cadastrado no Yappy Comercial; sem domínio, vale o desta instalação. Ao conectar, o comércio é validado no Yappy.

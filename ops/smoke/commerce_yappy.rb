@@ -87,7 +87,7 @@ ok 'fatura em USD: Pagar con Yappy e o campo do celular', s.response.body.includ
 
 # --- pagar uma parte ----------------------------------------------------------
 s.post "#{link}/pay", params: { amount: '50', payment_method_id: yappy['id'] }
-ok 'sem celular: 422, nenhuma ordem', s.response.status == 422 && FakeYappy::ORDERS.empty?
+ok 'sem celular: 422, nenhuma ordem nem tentativa pendente', s.response.status == 422 && FakeYappy::ORDERS.empty? && account.commerce_checkouts.none?
 s.post "#{link}/pay", params: { amount: '50', payment_method_id: yappy['id'], phone: '6123456' }
 ok 'celular com 7 digitos: 422', s.response.status == 422 && FakeYappy::ORDERS.empty?
 s.post "#{link}/pay", params: { amount: '50', payment_method_id: yappy['id'], phone: '6123-4567' }
@@ -98,7 +98,14 @@ ok 'ordem criada com o celular e o valor do servidor; volta para a pagina',
    ordem['aliasYappy'] == '61234567' && ordem['total'] == '50.00' && ordem['ipnUrl'] == provider.webhook_url &&
    ordem['authorization'] == 'tok-yappy' && ordem['paymentDate'] == 1_791_300_000 && ordem['domain'] == ENV.fetch('FRONTEND_URL')
 s.get s.response.location.sub(%r{\Ahttps?://[^/]+}, '')
-ok 'pagina pede para aprovar no app e se atualiza', s.response.body.include?('aprueba el pago') && s.response.body.include?('http-equiv="refresh"')
+ok 'pagina espera a aprovacao no app, sem recarregar e sem o formulario',
+   s.response.body.include?('Te solicitan un Yappy') && s.response.body.include?('id="waiting"') &&
+   s.response.body.exclude?('http-equiv="refresh"') && s.response.body.exclude?('id="pay"')
+situacao = lambda do |tentativa|
+  s.get "#{link}/checkouts/#{tentativa.id}", headers: { 'Accept' => 'application/json' }
+  JSON.parse(s.response.body)['status']
+end
+ok 'consulta leve da situacao: pendente', situacao.(checkout) == 'pending'
 
 hmac = ->(texto) { OpenSSL::HMAC.hexdigest('SHA256', 'chave-hmac-teste', texto) }
 ipn = lambda do |pedido, situacao, hash: :certo, dominio: ENV.fetch('FRONTEND_URL')|
@@ -114,17 +121,21 @@ ok 'aviso com hash errado: 400', ipn.(checkout.external_id, 'E', hash: :errado) 
 ok 'aviso executado (E) com hash certo: 200', ipn.(checkout.external_id, 'E') == 200
 fat = Commerce::Document.find(fatura['id'])
 pagamento = fat.payments.last
+ok 'consulta leve da situacao: paga', situacao.(checkout) == 'paid'
 ok 'fatura parcial com o valor da ordem', fat.partially_paid? && fat.amount_paid == 50 && checkout.reload.paid? && pagamento.online? &&
                                           pagamento.note.include?('CONF-1')
 ok 'recibo enviado', pagamento.receipt&.sent? && ActionMailer::Base.deliveries.last.subject.start_with?('Recibo')
 ipn.(checkout.external_id, 'E')
 ok 'aviso repetido nao paga de novo', fat.payments.count == 1
 s.get "#{link}?checkout=#{checkout.id}"
-ok 'pagina confirma o pagamento', s.response.body.include?('Pago recibido') && s.response.body.exclude?('http-equiv="refresh"')
+ok 'pagina confirma o pagamento e volta o formulario', s.response.body.include?('Pago recibido') && s.response.body.exclude?('id="waiting"') &&
+                                                     s.response.body.include?('id="pay"')
 
 s.post "#{link}/pay", params: { amount: '70', payment_method_id: yappy['id'], phone: '61234567' }
 recusado = account.commerce_checkouts.last
 ok 'recusado no app (R): tentativa falha, saldo intacto', ipn.(recusado.external_id, 'R') == 200 && recusado.reload.failed? && fat.reload.balance == 70
+s.get "#{link}?checkout=#{recusado.id}"
+ok 'pagina avisa a recusa e deixa tentar de novo', s.response.body.include?('rechazado o la solicitud venció') && s.response.body.include?('id="pay"')
 
 # --- domínio próprio e prazo ----------------------------------------------------
 api.(:patch, "payment_providers/#{provider.id}", { credentials: { merchant_id: 'MERCH-1234', secret_key: secreta, domain: 'https://loja.test' } })

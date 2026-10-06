@@ -22,7 +22,10 @@ module Commerce::DocumentLabels
       payment_processing: 'Estamos confirmando tu pago. Esta página se actualizará sola.',
       payment_received: '¡Pago recibido, gracias! Te enviaremos el recibo.',
       yappy_phone: 'Celular Yappy (8 dígitos, solo para pagar con Yappy)',
-      yappy_approve: 'Abre tu app Yappy y aprueba el pago. Esta página se actualizará sola.'
+      yappy_approve: 'Te enviamos una solicitud de pago a tu app Yappy (Banco General): «Te solicitan un Yappy». ' \
+                     'Acéptala en el app; esta página se actualiza sola cuando el pago se confirme.',
+      payment_failed: 'El pago fue rechazado o la solicitud venció. Puedes intentarlo de nuevo.',
+      payment_wait_timeout: '¿Ya aceptaste? La confirmación puede tardar unos minutos más.', back_to_document: 'Volver a la factura'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -43,7 +46,10 @@ module Commerce::DocumentLabels
       payment_processing: 'Estamos confirmando o seu pagamento. Esta página se atualiza sozinha.',
       payment_received: 'Pagamento recebido, obrigado! Vamos enviar o recibo.',
       yappy_phone: 'Celular Yappy (8 dígitos, só para pagar com Yappy)',
-      yappy_approve: 'Abra o app Yappy e aprove o pagamento. Esta página se atualiza sozinha.'
+      yappy_approve: 'Enviamos uma solicitação de pagamento para o seu app Yappy (Banco General): «Te solicitan un Yappy». ' \
+                     'Aceite no app; esta página se atualiza sozinha quando o pagamento for confirmado.',
+      payment_failed: 'O pagamento foi recusado ou a solicitação venceu. Você pode tentar de novo.',
+      payment_wait_timeout: 'Já aceitou? A confirmação pode levar mais alguns minutos.', back_to_document: 'Voltar para a fatura'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -64,7 +70,10 @@ module Commerce::DocumentLabels
       payment_processing: 'We are confirming your payment. This page refreshes on its own.',
       payment_received: 'Payment received, thank you! We will send you the receipt.',
       yappy_phone: 'Yappy phone (8 digits, only to pay with Yappy)',
-      yappy_approve: 'Open your Yappy app and approve the payment. This page refreshes on its own.'
+      yappy_approve: 'We sent a payment request to your Yappy app (Banco General): "Te solicitan un Yappy". ' \
+                     'Accept it in the app; this page updates on its own once the payment is confirmed.',
+      payment_failed: 'The payment was declined or the request expired. You can try again.',
+      payment_wait_timeout: 'Already accepted? Confirmation may take a few more minutes.', back_to_document: 'Back to the invoice'
     }
   }.freeze
 

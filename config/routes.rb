@@ -765,6 +765,7 @@ Rails.application.routes.draw do
   post 'd/:token/accept', to: 'commerce_public_documents#accept', as: :commerce_public_document_accept
   post 'd/:token/decline', to: 'commerce_public_documents#decline', as: :commerce_public_document_decline
   post 'd/:token/pay', to: 'commerce_public_documents#pay', as: :commerce_public_document_pay
+  get 'd/:token/checkouts/:checkout_id', to: 'commerce_public_documents#checkout_status', as: :commerce_public_document_checkout
   post 'commerce/webhooks/:provider/:token', to: 'commerce/webhooks#create', as: :commerce_webhook
   get 'commerce/webhooks/:provider/:token', to: 'commerce/webhooks#create'
   get 'hc/:slug', to: 'public/api/v1/portals#show'

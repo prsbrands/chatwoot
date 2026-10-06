@@ -18,10 +18,14 @@ class Commerce::CheckoutStarter
     provider = @payment_method.provider
     raise Commerce::Gateways::Error, 'invalid payment' unless valid?(provider)
 
-    checkout = @document.account.commerce_checkouts.create!(document: @document, provider: provider, payment_method: @payment_method,
-                                                            amount: @amount, currency: @document.currency)
-    provider.gateway.start!(checkout, return_url: return_url, phone: @phone)
-    checkout
+    # Se o provedor recusar (celular inválido, chave, moeda), não fica tentativa
+    # pendente para trás.
+    Commerce::Checkout.transaction do
+      checkout = @document.account.commerce_checkouts.create!(document: @document, provider: provider, payment_method: @payment_method,
+                                                              amount: @amount, currency: @document.currency)
+      provider.gateway.start!(checkout, return_url: return_url, phone: @phone)
+      checkout
+    end
   end
 
   private
