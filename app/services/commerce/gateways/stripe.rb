@@ -41,13 +41,15 @@ class Commerce::Gateways::Stripe
     result(call { client.v1.checkout.sessions.retrieve(checkout.external_id) })
   end
 
-  # [id da sessão, resultado] dos eventos de checkout; nil para os outros.
-  def webhook(payload, headers)
-    event = ::Stripe::Webhook.construct_event(payload, headers['Stripe-Signature'].to_s, @provider.webhook_secret.to_s)
+  # [{ external_id: sessão }, resultado] dos eventos de checkout; nil para os
+  # outros.
+  def webhook(http_request)
+    event = ::Stripe::Webhook.construct_event(http_request.raw_post, http_request.headers['Stripe-Signature'].to_s,
+                                              @provider.webhook_secret.to_s)
     return unless EVENTS.include?(event.type)
 
     session = event.data.object
-    [session.id, event.type == 'checkout.session.async_payment_failed' ? { status: :failed } : result(session)]
+    [{ external_id: session.id }, event.type == 'checkout.session.async_payment_failed' ? { status: :failed } : result(session)]
   rescue ::Stripe::SignatureVerificationError, JSON::ParserError
     raise Commerce::Gateways::InvalidSignature
   end

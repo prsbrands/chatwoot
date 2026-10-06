@@ -43,6 +43,22 @@ export const DOCUMENT_STATUSES = {
   receipt: ['draft', 'sent', 'void'],
 };
 export const PROVIDER_ENVIRONMENTS = ['sandbox', 'production'];
+// Provedores de cobrança online (Commerce::PaymentProvider::AVAILABLE e
+// CREDENTIALS): a credencial pedida, as moedas aceitas e, no Mercado Pago, a
+// chave secreta opcional dos webhooks.
+export const ONLINE_PROVIDERS = {
+  stripe: {
+    credential: 'secret_key',
+    currencies: ['USD', 'EUR', 'BRL'],
+    placeholder: { sandbox: 'sk_test_…', production: 'sk_live_…' },
+  },
+  mercado_pago: {
+    credential: 'access_token',
+    currencies: ['BRL'],
+    placeholder: { sandbox: 'APP_USR-…', production: 'APP_USR-…' },
+    webhookSecret: true,
+  },
+};
 export const TAX_MODES = ['exclusive', 'inclusive', 'exempt'];
 export const STATUS_CLASSES = {
   draft: 'bg-n-slate-3 text-n-slate-11',

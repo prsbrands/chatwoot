@@ -79,12 +79,13 @@ module Commerce::DocumentLabels
     UNITS.fetch(language).fetch(unit, unit)
   end
 
+  # Separador e milhar vêm daqui, não do I18n: o idioma é do documento, e o
+  # Chatwoot nem tem o locale pt-BR (o dele é pt_BR).
   def self.money(amount, currency, language)
-    locale = { 'es' => :es, 'pt' => :'pt-BR', 'en' => :en }.fetch(language)
     symbol = { 'USD' => '$', 'BRL' => 'R$', 'EUR' => '€' }.fetch(currency)
-    separator, delimiter = language == 'en' ? ['.', ','] : [',', '.']
+    separator, delimiter = { 'es' => [',', '.'], 'pt' => [',', '.'], 'en' => ['.', ','] }.fetch(language)
     formatted = ActiveSupport::NumberHelper.number_to_currency(amount, unit: '', precision: 2, separator: separator,
-                                                                       delimiter: delimiter, locale: locale).strip
+                                                                       delimiter: delimiter).strip
     "#{symbol} #{formatted}"
   end
 

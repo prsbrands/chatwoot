@@ -4,7 +4,9 @@
 class Commerce::PaymentProvider < ApplicationRecord
   CURRENCIES = { 'stripe' => %w[USD EUR BRL], 'mercado_pago' => %w[BRL], 'yappy' => %w[USD] }.freeze
   # Os que já têm Commerce::Gateways::<Provedor>.
-  AVAILABLE = %w[stripe].freeze
+  AVAILABLE = %w[stripe mercado_pago].freeze
+  # A credencial de cada provedor (a primeira dá a dica na tela).
+  CREDENTIALS = { 'stripe' => %w[secret_key], 'mercado_pago' => %w[access_token] }.freeze
 
   belongs_to :account
   has_many :payment_methods, class_name: 'Commerce::PaymentMethod', foreign_key: :provider_id, inverse_of: :provider,
@@ -42,7 +44,7 @@ class Commerce::PaymentProvider < ApplicationRecord
 
   # Para a tela: só o fim da chave.
   def credential_hint
-    key = credential(:secret_key).to_s
+    key = credential(CREDENTIALS.fetch(provider).first).to_s
     key.present? ? "…#{key.last(4)}" : nil
   end
 end

@@ -109,13 +109,13 @@ s.get link
 ok 'pagina da fatura: botao Pagar e instrucoes so das formas offline',
    s.response.body.include?('Pagar con Tarjeta') && s.response.body.include?('Banco General') && s.response.body.include?('id="pay"')
 s.post "#{link}/pay", params: { amount: '300.01', payment_method_id: cartao['id'] }
-ok 'acima do saldo: 422, nada criado', s.response.status == 422 && s.response.body.include?('No pudimos iniciar') && Commerce::Checkout.none?
+ok 'acima do saldo: 422, nada criado', s.response.status == 422 && s.response.body.include?('No pudimos iniciar') && account.commerce_checkouts.none?
 s.post "#{link}/pay", params: { amount: '0.50', payment_method_id: cartao['id'] }
 ok 'abaixo do minimo: 422', s.response.status == 422
 s.post "#{link}/pay", params: { amount: '100', payment_method_id: transferencia.id }
 ok 'forma offline nao paga online: 422', s.response.status == 422
 s.post "#{link}/pay", params: { amount: '100', payment_method_id: cartao['id'] }
-checkout = Commerce::Checkout.last
+checkout = account.commerce_checkouts.last
 enviado = FakeStripe::SESSIONS[checkout&.external_id]&.sent
 ok 'parcial: vai para o Stripe com o valor do servidor', s.response.status == 302 && s.response.location.start_with?('https://checkout.stripe.test/') &&
                                                        checkout.pending? && enviado[:line_items][0][:price_data][:unit_amount] == 10_000 &&
@@ -150,7 +150,7 @@ ok 'recibo enviado pela conversa da fatura, com nota interna',
    conversa.messages.where(private: false).last.content.include?(recibo.number) &&
    conversa.messages.where(private: true).last.content.include?('Online payment received')
 webhook.(evento.(pago))
-ok 'aviso repetido nao paga duas vezes', fat.payments.count == 1 && Commerce::Document.receipt.count == 1
+ok 'aviso repetido nao paga duas vezes', fat.payments.count == 1 && account.commerce_documents.receipt.count == 1
 
 s.get pagina.(recibo)
 ok 'pagina publica do recibo', s.response.status == 200 && s.response.body.include?('Recibimos la suma') && s.response.body.exclude?('id="pay"')
@@ -159,20 +159,20 @@ ok 'pagamento online nao se apaga pela tela: 422', api.(:delete, "documents/#{fa
 
 # --- volta do cliente sem esperar o webhook ---------------------------------
 s.post "#{link}/pay", params: { amount: '200', payment_method_id: cartao['id'] }
-volta = Commerce::Checkout.last
+volta = account.commerce_checkouts.last
 FakeStripe.session(volta.external_id, status: 'complete', payment_status: 'paid')
 s.get "#{link}?checkout=#{volta.id}"
 ok 'na volta, pergunta ao Stripe e confirma', s.response.body.include?('Pago recibido') && fat.reload.paid? && deal.reload.won?
 s.post "#{link}/pay", params: { amount: '1', payment_method_id: cartao['id'] }
-ok 'fatura paga nao abre pagamento', s.response.status == 422 && Commerce::Checkout.count == 2
+ok 'fatura paga nao abre pagamento', s.response.status == 422 && account.commerce_checkouts.count == 2
 
 # --- conciliação ----------------------------------------------------------------
 segunda = nova_fatura.(50)
 s.post "#{caminho.(segunda)}/pay", params: { amount: '50', payment_method_id: cartao['id'] }
-perdido = Commerce::Checkout.last
+perdido = account.commerce_checkouts.last
 FakeStripe.session(perdido.external_id, status: 'complete', payment_status: 'paid')
 s.post "#{caminho.(segunda)}/pay", params: { amount: '10', payment_method_id: cartao['id'] }
-abandonado = Commerce::Checkout.last
+abandonado = account.commerce_checkouts.last
 perdido.update_column(:created_at, 5.minutes.ago) # rubocop:disable Rails/SkipsModelValidations
 abandonado.update_column(:created_at, 25.hours.ago) # rubocop:disable Rails/SkipsModelValidations
 Commerce::CheckoutReconcileJob.perform_now

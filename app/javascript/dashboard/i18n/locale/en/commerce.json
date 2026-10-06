@@ -129,17 +129,26 @@
       "CHANGE_KEY": "Change key",
       "DISABLE": "Disable",
       "ENABLE": "Enable",
-      "CONNECTED": "Stripe connected.",
-      "HOW_TO": "To show the Pay button on invoices, link a payment method below to the provider.",
-      "STRIPE_TITLE": "Connect Stripe",
+      "CONNECTED": "{provider} connected.",
+      "HOW_TO": "To show the Pay button on invoices, link a payment method below to a provider, and keep that method checked on the invoice.",
       "SAVE_KEY": "Connect",
       "ENVIRONMENT_LABEL": "Environment",
       "ENVIRONMENT": {
         "sandbox": "Test mode",
         "production": "Live"
       },
-      "SECRET_KEY": "Secret key",
-      "KEY_HELP": "Stripe Dashboard, Developers, API keys. Use the secret key, or a restricted key with write access to Checkout Sessions and Webhook Endpoints. The key is stored encrypted and the payment webhook is created for you."
+      "KEY_HELP": {
+        "stripe": "Stripe Dashboard, Developers, API keys. Use the secret key (not the publishable one), or a restricted key with write access to Checkout Sessions and Webhook Endpoints. The key is stored encrypted and the payment webhook is created for you.",
+        "mercado_pago": "Mercado Pago Developers, Your integrations, your application, Production credentials (or test credentials). Paste the Access token (not the Public key). Only Mercado Pago Brasil accounts (BRL) are accepted. Customers pay by card, Pix, boleto or Mercado Pago balance."
+      },
+      "CONNECT_TITLE": "Connect {provider}",
+      "CREDENTIAL": {
+        "secret_key": "Secret key",
+        "access_token": "Access token"
+      },
+      "WEBHOOK_SECRET": "Webhook secret signature (optional)",
+      "WEBHOOK_SECRET_HELP": "Optional extra check. In Your integrations, Webhooks, set the webhook URL shown on the Mercado Pago card with the Payments event and paste the secret signature here. Without it, every notice is still confirmed by reading the payment from Mercado Pago.",
+      "WEBHOOK_URL": "Webhook URL: {url}"
     },
     "PAYMENT_METHODS": {
       "TITLE": "Payment methods",

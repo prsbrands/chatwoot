@@ -124,6 +124,9 @@ ok 'e aparece em Arquivados', api.(:get, 'documents?kind=quote&archived=true')[1
 api.(:post, "documents/#{cot['id']}/unarchive")
 ok 'desarquivado volta para a lista', api.(:get, 'documents?kind=quote')[1]['payload'].any? { |d| d['id'] == cot['id'] }
 
+_, portugues = api.(:post, 'documents', { kind: 'quote', language: 'pt', items: [{ name: 'Serviço', quantity: '1', unit: 'unit', unit_price: '1234.5' }] })
+st, = api.(:post, "documents/#{portugues['id']}/pdf")
+ok 'documento em portugues gera o PDF (R$ 1.234,50)', st == 200 && Commerce::DocumentLabels.money(1234.5, 'BRL', 'pt') == 'R$ 1.234,50'
 account.commerce_profile.update!(quote_prefix: 'PRE')
 _, ingles = api.(:post, 'documents', { kind: 'quote', language: 'en', items: [{ name: 'Café ☕ e acentuação', quantity: '1', unit: 'unit', unit_price: '9.9' }] })
 api.(:post, "documents/#{ingles['id']}/pdf")

@@ -15,11 +15,12 @@ import {
   CURRENCIES,
   IMAGE_TYPES,
   PAYMENT_KINDS,
+  ONLINE_PROVIDERS,
   PROVIDER_ENVIRONMENTS,
 } from '../constants';
 
 // Os dados da empresa que saem nos orçamentos, faturas e recibos, a cobrança
-// online (Stripe) e as formas de pagamento que a conta aceita, com as
+// online (Stripe, Mercado Pago) e as formas de pagamento que a conta aceita, com as
 // instruções ao cliente. A forma ligada a um provedor vira o botão "Pagar" da
 // fatura.
 const { t } = useI18n();
@@ -50,11 +51,13 @@ const isSavingMethod = ref(false);
 const providers = ref([]);
 const providerDialog = ref(null);
 const providerForm = ref({});
+const editingProvider = ref('stripe');
 const isConnecting = ref(false);
 
-const stripe = computed(() =>
-  providers.value.find(provider => provider.provider === 'stripe')
-);
+const providerFor = key =>
+  providers.value.find(provider => provider.provider === key);
+const providerLabel = key => t(`COMMERCE.ONLINE.PROVIDER.${key}`);
+const editingConfig = computed(() => ONLINE_PROVIDERS[editingProvider.value]);
 const environmentOptions = computed(() =>
   PROVIDER_ENVIRONMENTS.map(value => ({
     value,
@@ -63,7 +66,7 @@ const environmentOptions = computed(() =>
 );
 const providerName = id => {
   const provider = providers.value.find(entry => entry.id === id);
-  return provider ? t(`COMMERCE.ONLINE.PROVIDER.${provider.provider}`) : '';
+  return provider ? providerLabel(provider.provider) : '';
 };
 const providerOptions = computed(() => [
   { value: '', label: t('COMMERCE.PAYMENT_METHODS.OFFLINE') },
@@ -93,35 +96,41 @@ const fetchProviders = async () => {
   providers.value = data.payload;
 };
 
-const openStripe = () => {
+const openProvider = key => {
+  editingProvider.value = key;
   providerForm.value = {
-    environment: stripe.value?.environment || 'sandbox',
-    secret_key: '',
+    environment: providerFor(key)?.environment || 'sandbox',
+    credential: '',
+    webhook_secret: '',
   };
   providerDialog.value.open();
 };
 
-// Conectar ou trocar a chave: o servidor valida a chave no Stripe e cria o
-// webhook da conta.
-const connectStripe = async () => {
-  isConnecting.value = true;
+// Conectar ou trocar a chave: o servidor valida a chave no provedor (no
+// Stripe, também cria o webhook da conta).
+const connectProvider = async () => {
+  const key = editingProvider.value;
+  const current = providerFor(key);
   const payload = {
     environment: providerForm.value.environment,
     active: true,
-    credentials: { secret_key: providerForm.value.secret_key.trim() },
+    credentials: {
+      [ONLINE_PROVIDERS[key].credential]: providerForm.value.credential.trim(),
+    },
   };
+  if (ONLINE_PROVIDERS[key].webhookSecret) {
+    payload.webhook_secret = providerForm.value.webhook_secret.trim();
+  }
+  isConnecting.value = true;
   try {
-    if (stripe.value) {
-      await CommerceAPI.updatePaymentProvider(stripe.value.id, payload);
+    if (current) {
+      await CommerceAPI.updatePaymentProvider(current.id, payload);
     } else {
-      await CommerceAPI.createPaymentProvider({
-        provider: 'stripe',
-        ...payload,
-      });
+      await CommerceAPI.createPaymentProvider({ provider: key, ...payload });
     }
     providerDialog.value.close();
     await fetchProviders();
-    useAlert(t('COMMERCE.ONLINE.CONNECTED'));
+    useAlert(t('COMMERCE.ONLINE.CONNECTED', { provider: providerLabel(key) }));
   } catch (error) {
     useAlert(error.response?.data?.message || t('COMMERCE.API.ERROR'));
   } finally {
@@ -129,10 +138,10 @@ const connectStripe = async () => {
   }
 };
 
-const toggleStripe = async () => {
+const toggleProvider = async provider => {
   try {
-    await CommerceAPI.updatePaymentProvider(stripe.value.id, {
-      active: !stripe.value.active,
+    await CommerceAPI.updatePaymentProvider(provider.id, {
+      active: !provider.active,
     });
     await fetchProviders();
   } catch (error) {
@@ -349,22 +358,24 @@ onMounted(async () => {
           </p>
         </div>
         <div
+          v-for="(config, key) in ONLINE_PROVIDERS"
+          :key="key"
           class="flex flex-wrap items-start justify-between gap-3 p-3 border rounded-lg border-n-weak"
         >
           <div class="flex flex-col min-w-0 gap-1">
             <span class="flex items-center gap-2 font-medium text-n-slate-12">
-              {{ $t('COMMERCE.ONLINE.PROVIDER.stripe') }}
+              {{ providerLabel(key) }}
               <span
-                v-if="stripe"
+                v-if="providerFor(key)"
                 class="px-1.5 py-0.5 text-xs rounded-md"
                 :class="
-                  stripe.active
+                  providerFor(key).active
                     ? 'bg-n-teal-3 text-n-teal-11'
                     : 'bg-n-slate-3 text-n-slate-11'
                 "
               >
                 {{
-                  stripe.active
+                  providerFor(key).active
                     ? $t('COMMERCE.ONLINE.ACTIVE')
                     : $t('COMMERCE.ONLINE.INACTIVE')
                 }}
@@ -372,12 +383,12 @@ onMounted(async () => {
             </span>
             <span class="text-sm text-n-slate-11">
               {{
-                stripe
+                providerFor(key)
                   ? $t('COMMERCE.ONLINE.CONNECTED_AS', {
                       environment: $t(
-                        `COMMERCE.ONLINE.ENVIRONMENT.${stripe.environment}`
+                        `COMMERCE.ONLINE.ENVIRONMENT.${providerFor(key).environment}`
                       ),
-                      key: stripe.credential_hint,
+                      key: providerFor(key).credential_hint,
                     })
                   : $t('COMMERCE.ONLINE.NOT_CONNECTED')
               }}
@@ -385,9 +396,17 @@ onMounted(async () => {
             <span class="text-xs text-n-slate-11">
               {{
                 $t('COMMERCE.ONLINE.CURRENCIES', {
-                  currencies: (
-                    stripe?.currencies || ['USD', 'EUR', 'BRL']
-                  ).join(', '),
+                  currencies: config.currencies.join(', '),
+                })
+              }}
+            </span>
+            <span
+              v-if="config.webhookSecret && providerFor(key)"
+              class="text-xs break-all text-n-slate-11"
+            >
+              {{
+                $t('COMMERCE.ONLINE.WEBHOOK_URL', {
+                  url: providerFor(key).webhook_url,
                 })
               }}
             </span>
@@ -396,23 +415,23 @@ onMounted(async () => {
             <Button
               sm
               :label="
-                stripe
+                providerFor(key)
                   ? $t('COMMERCE.ONLINE.CHANGE_KEY')
                   : $t('COMMERCE.ONLINE.CONNECT')
               "
-              @click="openStripe"
+              @click="openProvider(key)"
             />
             <Button
-              v-if="stripe"
+              v-if="providerFor(key)"
               sm
               slate
               outline
               :label="
-                stripe.active
+                providerFor(key).active
                   ? $t('COMMERCE.ONLINE.DISABLE')
                   : $t('COMMERCE.ONLINE.ENABLE')
               "
-              @click="toggleStripe"
+              @click="toggleProvider(providerFor(key))"
             />
           </div>
         </div>
@@ -534,11 +553,15 @@ onMounted(async () => {
     <Dialog
       ref="providerDialog"
       overflow-y-auto
-      :title="$t('COMMERCE.ONLINE.STRIPE_TITLE')"
+      :title="
+        $t('COMMERCE.ONLINE.CONNECT_TITLE', {
+          provider: providerLabel(editingProvider),
+        })
+      "
       :confirm-button-label="$t('COMMERCE.ONLINE.SAVE_KEY')"
-      :disable-confirm-button="!providerForm.secret_key?.trim()"
+      :disable-confirm-button="!providerForm.credential?.trim()"
       :is-loading="isConnecting"
-      @confirm="connectStripe"
+      @confirm="connectProvider"
     >
       <div class="flex flex-col gap-3">
         <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
@@ -549,19 +572,26 @@ onMounted(async () => {
           />
         </label>
         <Input
-          v-model="providerForm.secret_key"
+          v-model="providerForm.credential"
           type="password"
           autocomplete="off"
-          :label="$t('COMMERCE.ONLINE.SECRET_KEY')"
-          :placeholder="
-            providerForm.environment === 'production'
-              ? 'sk_live_…'
-              : 'sk_test_…'
-          "
+          :label="$t(`COMMERCE.ONLINE.CREDENTIAL.${editingConfig.credential}`)"
+          :placeholder="editingConfig.placeholder[providerForm.environment]"
         />
         <p class="text-xs text-n-slate-11">
-          {{ $t('COMMERCE.ONLINE.KEY_HELP') }}
+          {{ $t(`COMMERCE.ONLINE.KEY_HELP.${editingProvider}`) }}
         </p>
+        <template v-if="editingConfig.webhookSecret">
+          <Input
+            v-model="providerForm.webhook_secret"
+            type="password"
+            autocomplete="off"
+            :label="$t('COMMERCE.ONLINE.WEBHOOK_SECRET')"
+          />
+          <p class="text-xs text-n-slate-11">
+            {{ $t('COMMERCE.ONLINE.WEBHOOK_SECRET_HELP') }}
+          </p>
+        </template>
       </div>
     </Dialog>
   </section>

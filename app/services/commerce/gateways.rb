@@ -1,6 +1,7 @@
-# Provedores de cobrança online (Commerce::Gateways::Stripe; Mercado Pago e
-# Yappy nas próximas fases). Todos respondem a connect!, start!, status e
-# webhook, e devolvem o resultado como { status:, amount:, reference: }.
+# Provedores de cobrança online (Commerce::Gateways::Stripe e ::MercadoPago;
+# Yappy na próxima fase). Todos respondem a connect!, start!, status e
+# webhook(request), e devolvem o resultado como { status:, amount:, reference: };
+# o webhook devolve também como achar o checkout ({ external_id: } ou { id: }).
 module Commerce::Gateways
   # Recusa do provedor (chave inválida, moeda não aceita, rede): vira mensagem.
   class Error < StandardError; end

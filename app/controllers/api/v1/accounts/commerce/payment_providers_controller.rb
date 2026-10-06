@@ -1,6 +1,8 @@
-# Provedores de cobrança online da conta (fase 3a: Stripe). Conectar ou trocar a
-# chave valida a chave no provedor e cria o webhook; desligar é active=false
-# (as tentativas e os pagamentos já feitos continuam ligados ao provedor).
+# Provedores de cobrança online da conta (Stripe e Mercado Pago). Conectar ou
+# trocar a chave valida a chave no provedor (no Stripe, também cria o webhook);
+# desligar é active=false (as tentativas e os pagamentos já feitos continuam
+# ligados ao provedor). webhook_secret: a chave secreta dos webhooks do Mercado
+# Pago, opcional (o Stripe gera a dele sozinho).
 class Api::V1::Accounts::Commerce::PaymentProvidersController < Api::V1::Accounts::Commerce::BaseController
   before_action :fetch_provider, only: [:update]
   before_action -> { check_authorization(@provider || ::Commerce::PaymentProvider) }
@@ -28,7 +30,10 @@ class Api::V1::Accounts::Commerce::PaymentProvidersController < Api::V1::Account
 
   def save_provider!
     @provider.assign_attributes(params.permit(:environment, :active))
-    @provider.credentials_hash = params.require(:credentials).permit(:secret_key) if params.key?(:credentials)
+    if params.key?(:credentials)
+      @provider.credentials_hash = params.require(:credentials).permit(*::Commerce::PaymentProvider::CREDENTIALS.fetch(@provider.provider, []))
+    end
+    @provider.webhook_secret = params[:webhook_secret].presence if @provider.mercado_pago? && params.key?(:webhook_secret)
     @provider.validate!
     @provider.gateway.connect! if @provider.new_record? || @provider.credentials_changed? || @provider.environment_changed?
     @provider.save!

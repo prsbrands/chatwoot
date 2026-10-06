@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.15.0] — 2026-10-05 · base Chatwoot 4.18.0
+
+- **Fatura paga pelo Mercado Pago Brasil (Pix, cartão, boleto e saldo MP).** Em Company & payments, o cartão **Mercado Pago** conecta a conta com o Access token, que fica cifrado. Só contas do Brasil, em BRL, são aceitas. A forma de pagamento ligada a ele vira o botão "Pagar com…" das faturas em BRL. O cliente vai para o Checkout Pro do Mercado Pago, paga a fatura inteira ou uma parte, e volta.
+- **Confirmação do pagamento:** o aviso do Mercado Pago aponta para o pagamento, e o sistema lê esse pagamento na API com o token da conta. Um Pix ainda não pago fica pendente; aviso repetido não paga duas vezes. Se você cadastrar a chave secreta dos webhooks (é opcional), a assinatura também é conferida. A volta do cliente e a conciliação a cada 5 min também encontram o pagamento.
+- O recibo, a nota interna e o negócio ganho funcionam igual ao Stripe.
+- **Corrigido:** documento em **português** não gerava PDF nem e-mail ("pt-BR is not a valid locale"). A formatação de dinheiro não depende mais do idioma do Chatwoot.
+
 ## [1.14.1] — 2026-10-05 · base Chatwoot 4.18.0
 
 - **Cada orçamento e fatura escolhe as formas de pagamento que mostra.** No editor, em "Payment methods shown on this document", as formas ativas aparecem marcadas e você desmarca as que não valem. A página do cliente, o PDF, o e-mail e os botões "Pagar" seguem só a escolha. Antes saíam todas as formas ativas da conta, como o Yappy antigo. Os documentos já existentes ficaram com as formas ativas de hoje; documentos ainda editáveis podem ser ajustados.
