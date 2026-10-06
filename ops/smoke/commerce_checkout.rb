@@ -23,7 +23,7 @@ module FakeStripe
     def self.create(params, _opts = {})
       id = "cs_test_#{SecureRandom.hex(4)}"
       SESSIONS[id] = Stripe::StripeObject.construct_from(
-        id: id, url: "https://checkout.stripe.test/#{id}", status: 'open', payment_status: 'unpaid', payment_intent: nil,
+        id: id, mode: params[:mode], url: "https://checkout.stripe.test/#{id}", status: 'open', payment_status: 'unpaid', payment_intent: nil,
         amount_total: params[:line_items][0][:price_data][:unit_amount], sent: params
       )
     end

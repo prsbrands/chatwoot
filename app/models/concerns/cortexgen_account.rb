@@ -21,5 +21,6 @@ module CortexgenAccount
     has_many :commerce_documents, class_name: 'Commerce::Document', dependent: :destroy_async
     has_many :commerce_payment_providers, class_name: 'Commerce::PaymentProvider', dependent: :delete_all
     has_many :commerce_checkouts, class_name: 'Commerce::Checkout', dependent: :delete_all
+    has_many :commerce_subscriptions, class_name: 'Commerce::Subscription', dependent: :delete_all
   end
 end

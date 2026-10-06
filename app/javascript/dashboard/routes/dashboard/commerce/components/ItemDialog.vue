@@ -11,6 +11,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import {
+  BILLING_INTERVALS,
   CURRENCIES,
   IMAGE_TYPES,
   KINDS,
@@ -41,6 +42,12 @@ const kindOptions = computed(() =>
 );
 const unitOptions = computed(() =>
   UNITS.map(unit => ({ value: unit, label: t(`COMMERCE.UNIT.${unit}`) }))
+);
+const billingOptions = computed(() =>
+  BILLING_INTERVALS.map(value => ({
+    value,
+    label: t(`COMMERCE.BILLING_INTERVAL.${value}`),
+  }))
 );
 const currencyOptions = CURRENCIES.map(code => ({ value: code, label: code }));
 const categoryOptions = computed(() => [
@@ -76,6 +83,7 @@ const open = (existing = null) => {
     price: existing?.price ?? '',
     currency: existing?.currency || props.defaultCurrency,
     unit: existing?.unit || 'unit',
+    billing_interval: existing?.billing_interval || 'one_time',
     category_id: existing?.category_id || NO_CATEGORY,
     available: existing ? existing.available : true,
   };
@@ -196,6 +204,13 @@ defineExpose({ open });
           <Select v-model="form.unit" :options="unitOptions" />
         </label>
       </div>
+      <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
+        {{ $t('COMMERCE.CATALOG.BILLING') }}
+        <Select v-model="form.billing_interval" :options="billingOptions" />
+        <span v-if="form.billing_interval !== 'one_time'" class="text-n-slate-10">
+          {{ $t('COMMERCE.CATALOG.BILLING_HELP') }}
+        </span>
+      </label>
       <label class="flex items-center gap-2 text-sm text-n-slate-12">
         <Checkbox v-model="form.available" />
         {{ $t('COMMERCE.CATALOG.AVAILABLE') }}

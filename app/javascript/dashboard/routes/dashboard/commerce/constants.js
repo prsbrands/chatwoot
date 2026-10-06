@@ -17,6 +17,8 @@ export const UNITS = [
   'service',
 ];
 export const KINDS = ['product', 'service'];
+// Commerce::Item billing_interval: month/year é plano de assinatura.
+export const BILLING_INTERVALS = ['one_time', 'month', 'year'];
 export const PAYMENT_KINDS = [
   'cash',
   'bank_transfer',
@@ -65,6 +67,14 @@ export const ONLINE_PROVIDERS = {
     ],
     currencies: ['USD'],
   },
+};
+// Mesmas situações do Commerce::Subscription.
+export const SUBSCRIPTION_STATUSES = ['pending', 'active', 'past_due', 'canceled'];
+export const SUBSCRIPTION_STATUS_CLASSES = {
+  pending: 'bg-n-slate-3 text-n-slate-11',
+  active: 'bg-n-teal-3 text-n-teal-11',
+  past_due: 'bg-n-amber-3 text-n-amber-11',
+  canceled: 'bg-n-slate-3 text-n-slate-10',
 };
 export const TAX_MODES = ['exclusive', 'inclusive', 'exempt'];
 export const STATUS_CLASSES = {

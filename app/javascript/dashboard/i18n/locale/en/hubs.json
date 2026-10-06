@@ -36,6 +36,10 @@
           "TITLE": "Quotes & invoices",
           "DESCRIPTION": "Branded quotes and invoices in Spanish, Portuguese or English, sent by chat or email, with payments received."
         },
+        "SUBSCRIPTIONS": {
+          "TITLE": "Subscriptions",
+          "DESCRIPTION": "Monthly and yearly plans charged automatically, with the invoice and receipt of every cycle."
+        },
         "CATALOG": {
           "TITLE": "Catalog",
           "DESCRIPTION": "Products and services you sell, with photos and prices — or marked as priced on request."

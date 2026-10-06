@@ -13,6 +13,8 @@ class Commerce::PaymentProvider < ApplicationRecord
   has_many :payment_methods, class_name: 'Commerce::PaymentMethod', foreign_key: :provider_id, inverse_of: :provider,
                              dependent: :nullify
   has_many :checkouts, class_name: 'Commerce::Checkout', foreign_key: :provider_id, inverse_of: :provider, dependent: :restrict_with_error
+  has_many :subscriptions, class_name: 'Commerce::Subscription', foreign_key: :provider_id, inverse_of: :provider,
+                           dependent: :restrict_with_error
 
   enum :provider, { stripe: 0, mercado_pago: 1, yappy: 2 }, validate: true
   enum :environment, { sandbox: 0, production: 1 }, validate: true

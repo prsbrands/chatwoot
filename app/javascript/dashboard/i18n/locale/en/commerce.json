@@ -56,12 +56,16 @@
       "UNAVAILABLE": "Unavailable",
       "ON_QUOTE": "Price on request",
       "PRICE_PER_UNIT": "{price} / {unit}",
+      "PRICE_PER_MONTH": "{price} / month",
+      "PRICE_PER_YEAR": "{price} / year",
       "IMAGES": "Images ({count} of {max})",
       "ADD_IMAGES": "Add images",
       "REMOVE_IMAGE": "Remove image",
       "CREATED_ADD_IMAGES": "Item created. You can add images now.",
       "DELETE": "Delete item",
-      "DELETE_CONFIRM": "Click again to delete"
+      "DELETE_CONFIRM": "Click again to delete",
+      "BILLING": "Billing",
+      "BILLING_HELP": "A plan for subscriptions: the price is charged automatically every month or year. It needs a price."
     },
     "CATEGORIES": {
       "TITLE": "Categories",
@@ -308,6 +312,43 @@
       "PDF_FILE": "{number}.pdf · {date}",
       "PAYMENT_METHODS_SHOWN": "Payment methods shown on this document",
       "PAY_ONLINE_BUTTON": "(Pay button)"
+    },
+    "BILLING_INTERVAL": {
+      "one_time": "One-time",
+      "month": "Monthly plan",
+      "year": "Yearly plan"
+    },
+    "SUBSCRIPTIONS": {
+      "HEADER": "Subscriptions",
+      "DESCRIPTION": "Monthly and yearly plans charged automatically by the payment provider. Each paid cycle becomes a paid invoice, and the receipt goes to the customer.",
+      "NEW": "New subscription",
+      "CREATE": "Create",
+      "SEARCH": "Search by plan or customer",
+      "EMPTY": "No subscriptions yet.",
+      "PLAN": "Plan",
+      "QUANTITY": "Quantity",
+      "PAYMENT_METHOD": "Payment method",
+      "PAYMENT_METHOD_HELP": "Only payment methods charged online. For now, subscriptions are charged by Stripe.",
+      "NO_PLANS": "No plans in the catalog yet. Create an item with Billing set to Monthly or Yearly plan.",
+      "NO_ONLINE_METHODS": "No payment method charged online. Link one to Stripe in Company & payments.",
+      "CHANGE_CUSTOMER": "Change",
+      "LINK_HELP": "Send this link to the customer. They subscribe on the payment provider's page, and the first charge happens right away.",
+      "COPY_LINK": "Copy link",
+      "LINK_COPIED": "Link copied",
+      "SEND_LINK": "Send link to this conversation",
+      "INVOICES": "Invoices",
+      "NO_INVOICES": "No cycle charged yet.",
+      "RENEWS_ON": "Renews on {date}",
+      "ENDS_ON": "Ends on {date}",
+      "CANCEL_AT_PERIOD_END": "Cancel at period end",
+      "CANCEL_NOW": "Cancel now",
+      "CONFIRM_CANCEL": "Click again to confirm",
+      "STATUS": {
+        "pending": "Awaiting customer",
+        "active": "Active",
+        "past_due": "Past due",
+        "canceled": "Canceled"
+      }
     }
   }
 }

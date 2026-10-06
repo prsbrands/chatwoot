@@ -1,0 +1,63 @@
+<% l = @labels %>
+<% sub = @subscription %>
+<% date = ->(value) { Commerce::DocumentLabels.date(value&.to_date, sub.language) } %>
+<% customer = sub.customer || {} %>
+<% company = @profile %>
+<% processing = sub.pending? && params[:session_id].present? %>
+<!DOCTYPE html>
+<html lang="<%= sub.language %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title><%= l[:subscription] %> · <%= sub.name %></title>
+  <%= render 'commerce_public_documents/style' %>
+</head>
+<body>
+<main>
+  <header>
+    <div><% if company.logo.attached? %><%= image_tag url_for(company.logo), alt: company.trade_name.to_s %><% end %></div>
+    <div class="company">
+      <strong><%= company.trade_name.presence || company.legal_name %></strong>
+      <% %i[phone email website].each do |field| %><% if company[field].present? %><div class="pre"><%= company[field] %></div><% end %><% end %>
+    </div>
+  </header>
+
+  <h1><%= l[:subscription] %> · <%= sub.name %></h1>
+  <div class="totals">
+    <div class="grand">
+      <span><%= Commerce::DocumentLabels.money(sub.amount, sub.currency, sub.language) %></span>
+      <span><%= l[:"per_#{sub.interval}"] %></span>
+    </div>
+  </div>
+  <% if customer['name'].present? %>
+    <section><h2><%= l[:bill_to] %></h2><div><strong><%= customer['name'] %></strong></div></section>
+  <% end %>
+
+  <% if sub.active? || sub.past_due? %>
+    <div class="notice ok"><%= l[:subscription_active] %></div>
+    <% if sub.cancel_at_period_end %>
+      <p class="muted"><%= format(l[:subscription_ends], date: date.(sub.current_period_end)) %></p>
+    <% elsif sub.current_period_end %>
+      <p class="muted"><%= format(l[:next_renewal], date: date.(sub.current_period_end)) %></p>
+    <% end %>
+  <% end %>
+  <% if sub.past_due? %><div class="notice no"><%= l[:subscription_past_due] %></div><% end %>
+  <% if sub.canceled? %><div class="notice no"><%= l[:subscription_canceled] %></div><% end %>
+  <% if processing %><div class="notice ghost"><%= l[:subscription_processing] %></div><% end %>
+  <% if @subscribe_error %><div class="notice no"><%= l[:subscribe_error] %></div><% end %>
+
+  <% if sub.subscribable? && !processing %>
+    <section class="pay">
+      <div class="muted"><%= format(l[:subscription_hint], interval: l[:"interval_#{sub.interval}"]) %></div>
+      <%= form_tag commerce_public_subscription_subscribe_path(sub.public_token), method: :post do %>
+        <div class="actions">
+          <button type="submit" class="btn primary"><%= format(l[:subscribe_with], method: sub.payment_method.name) %></button>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+  <% if company.footer.present? %><footer class="pre"><%= company.footer %></footer><% end %>
+</main>
+</body>
+</html>

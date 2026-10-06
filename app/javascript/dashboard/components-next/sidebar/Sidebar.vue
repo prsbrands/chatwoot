@@ -863,6 +863,13 @@ const baseMenuItems = computed(() => {
       activeOn: ['commerce_documents', 'commerce_document'],
     },
     {
+      name: 'Subscriptions',
+      label: t('SIDEBAR.SUBSCRIPTIONS'),
+      icon: 'i-lucide-repeat',
+      to: accountScopedRoute('commerce_subscriptions'),
+      activeOn: ['commerce_subscriptions'],
+    },
+    {
       name: 'Catalog',
       label: t('SIDEBAR.CATALOG'),
       icon: 'i-lucide-package',
@@ -1096,6 +1103,7 @@ const MENU_LAYOUT = [
   ['Companies', 'CRM'],
   ['Campaigns', 'CRM'],
   ['Documents', 'CRM'],
+  ['Subscriptions', 'CRM'],
   ['Catalog', 'CRM'],
   ['CrmHub', 'CRM'],
   ['Personas', 'AI'],

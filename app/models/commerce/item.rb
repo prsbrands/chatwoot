@@ -8,13 +8,17 @@ class Commerce::Item < ApplicationRecord
   belongs_to :account
   belongs_to :category, class_name: 'Commerce::Category', optional: true
   has_many_attached :images
+  has_many :subscriptions, class_name: 'Commerce::Subscription', dependent: :nullify
 
   enum :kind, { product: 0, service: 1 }, validate: true
+  # month/year: plano de assinatura (Commerce::Subscription), com preço.
+  enum :billing_interval, { one_time: 0, month: 1, year: 2 }, prefix: :billed, validate: true
 
   validates :name, presence: true, length: { maximum: 160 }
   validates :sku, length: { maximum: 60 }
   validates :price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :currency, inclusion: { in: Commerce::CURRENCIES }
+  validates :price, presence: true, unless: :billed_one_time?
   validates :unit, inclusion: { in: UNITS }
   validate :category_in_account
   validate :images_limit

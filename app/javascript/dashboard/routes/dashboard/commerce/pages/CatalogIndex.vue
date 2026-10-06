@@ -71,13 +71,18 @@ watch(search, () => {
 });
 watch([kind, categoryId], fetchItems);
 
-const priceLine = item =>
-  item.price === null
-    ? t('COMMERCE.CATALOG.ON_QUOTE')
-    : t('COMMERCE.CATALOG.PRICE_PER_UNIT', {
-        price: formatPrice(item.price, item.currency),
+const priceLine = item => {
+  if (item.price === null) return t('COMMERCE.CATALOG.ON_QUOTE');
+  const price = formatPrice(item.price, item.currency);
+  return item.billing_interval === 'one_time'
+    ? t('COMMERCE.CATALOG.PRICE_PER_UNIT', {
+        price,
         unit: t(`COMMERCE.UNIT.${item.unit}`),
+      })
+    : t(`COMMERCE.CATALOG.PRICE_PER_${item.billing_interval.toUpperCase()}`, {
+        price,
       });
+};
 
 const openItem = item => {
   if (isAdmin.value) itemDialog.value.open(item);

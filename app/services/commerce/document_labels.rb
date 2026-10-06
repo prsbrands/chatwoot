@@ -25,7 +25,15 @@ module Commerce::DocumentLabels
       yappy_approve: 'Te enviamos una solicitud de pago a tu app Yappy (Banco General): «¡Te pidieron un Yappy!». ' \
                      'Acéptala en el app; esta página se actualiza sola cuando el pago se confirme.',
       payment_failed: 'El pago fue rechazado o la solicitud venció. Puedes intentarlo de nuevo.',
-      payment_wait_timeout: '¿Ya aceptaste? La confirmación puede tardar unos minutos más.', back_to_document: 'Volver a la factura'
+      payment_wait_timeout: '¿Ya aceptaste? La confirmación puede tardar unos minutos más.', back_to_document: 'Volver a la factura',
+      subscription: 'Suscripción', per_month: 'por mes', per_year: 'por año', subscribe_with: 'Suscribirse con %<method>s',
+      subscription_hint: 'El cobro es automático cada %<interval>s, hasta que canceles.', interval_month: 'mes', interval_year: 'año',
+      subscription_processing: 'Recibimos tu suscripción. En unos instantes te enviaremos el recibo del primer pago.',
+      subscription_active: 'Suscripción activa', next_renewal: 'Próxima renovación: %<date>s',
+      subscription_ends: 'Se cancela el %<date>s, al final del período pagado.',
+      subscription_past_due: 'No pudimos cobrar la última renovación. Revisa tu tarjeta; intentaremos de nuevo.',
+      subscription_canceled: 'Suscripción cancelada.', subscribe_error: 'No pudimos iniciar la suscripción. Inténtalo de nuevo.',
+      subscription_message: '%<plan>s — suscríbete aquí: %<url>s'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -49,7 +57,15 @@ module Commerce::DocumentLabels
       yappy_approve: 'Enviamos uma solicitação de pagamento para o seu app Yappy (Banco General): «¡Te pidieron un Yappy!». ' \
                      'Aceite no app; esta página se atualiza sozinha quando o pagamento for confirmado.',
       payment_failed: 'O pagamento foi recusado ou a solicitação venceu. Você pode tentar de novo.',
-      payment_wait_timeout: 'Já aceitou? A confirmação pode levar mais alguns minutos.', back_to_document: 'Voltar para a fatura'
+      payment_wait_timeout: 'Já aceitou? A confirmação pode levar mais alguns minutos.', back_to_document: 'Voltar para a fatura',
+      subscription: 'Assinatura', per_month: 'por mês', per_year: 'por ano', subscribe_with: 'Assinar com %<method>s',
+      subscription_hint: 'A cobrança é automática a cada %<interval>s, até você cancelar.', interval_month: 'mês', interval_year: 'ano',
+      subscription_processing: 'Recebemos a sua assinatura. Em instantes enviaremos o recibo do primeiro pagamento.',
+      subscription_active: 'Assinatura ativa', next_renewal: 'Próxima renovação: %<date>s',
+      subscription_ends: 'Termina em %<date>s, no fim do período pago.',
+      subscription_past_due: 'Não conseguimos cobrar a última renovação. Confira o seu cartão; vamos tentar de novo.',
+      subscription_canceled: 'Assinatura cancelada.', subscribe_error: 'Não conseguimos iniciar a assinatura. Tente de novo.',
+      subscription_message: '%<plan>s — assine aqui: %<url>s'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -73,7 +89,15 @@ module Commerce::DocumentLabels
       yappy_approve: 'We sent a payment request to your Yappy app (Banco General): "¡Te pidieron un Yappy!". ' \
                      'Accept it in the app; this page updates on its own once the payment is confirmed.',
       payment_failed: 'The payment was declined or the request expired. You can try again.',
-      payment_wait_timeout: 'Already accepted? Confirmation may take a few more minutes.', back_to_document: 'Back to the invoice'
+      payment_wait_timeout: 'Already accepted? Confirmation may take a few more minutes.', back_to_document: 'Back to the invoice',
+      subscription: 'Subscription', per_month: 'per month', per_year: 'per year', subscribe_with: 'Subscribe with %<method>s',
+      subscription_hint: 'You are charged automatically every %<interval>s until you cancel.', interval_month: 'month', interval_year: 'year',
+      subscription_processing: 'We received your subscription. We will send you the receipt of the first payment shortly.',
+      subscription_active: 'Active subscription', next_renewal: 'Next renewal: %<date>s',
+      subscription_ends: 'Ends on %<date>s, at the end of the paid period.',
+      subscription_past_due: 'We could not charge the last renewal. Check your card; we will try again.',
+      subscription_canceled: 'Subscription canceled.', subscribe_error: 'We could not start the subscription. Please try again.',
+      subscription_message: '%<plan>s — subscribe here: %<url>s'
     }
   }.freeze
 

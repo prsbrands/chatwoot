@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_06_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_06_000002) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -940,12 +940,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_06_000001) do
     t.jsonb "details", default: {}, null: false
     t.string "delivered_email"
     t.bigint "payment_method_ids", default: [], null: false, array: true
+    t.bigint "subscription_id"
+    t.date "period_start"
+    t.date "period_end"
     t.index ["account_id", "kind", "status"], name: "index_commerce_documents_on_account_id_and_kind_and_status"
     t.index ["account_id", "kind", "year", "sequence"], name: "index_commerce_documents_on_number", unique: true
     t.index ["contact_id"], name: "index_commerce_documents_on_contact_id"
     t.index ["deal_id"], name: "index_commerce_documents_on_deal_id"
     t.index ["public_token"], name: "index_commerce_documents_on_public_token", unique: true
     t.index ["source_document_id"], name: "index_commerce_documents_on_source_document_id"
+    t.index ["subscription_id"], name: "index_commerce_documents_on_subscription_id"
   end
 
   create_table "commerce_items", force: :cascade do |t|
@@ -962,6 +966,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_06_000001) do
     t.integer "position", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "billing_interval", default: 0, null: false
     t.index ["account_id", "kind", "name"], name: "index_commerce_items_on_account_id_and_kind_and_name"
     t.index ["category_id"], name: "index_commerce_items_on_category_id"
   end
@@ -1014,6 +1019,38 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_06_000001) do
     t.string "invoice_prefix", default: "FAT", null: false
     t.string "receipt_prefix", default: "REC", null: false
     t.index ["account_id"], name: "index_commerce_profiles_on_account_id", unique: true
+  end
+
+  create_table "commerce_subscriptions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id"
+    t.bigint "deal_id"
+    t.bigint "conversation_id"
+    t.bigint "item_id"
+    t.bigint "provider_id"
+    t.bigint "payment_method_id"
+    t.bigint "created_by_id"
+    t.string "name", null: false
+    t.decimal "quantity", precision: 12, scale: 3, default: "1.0", null: false
+    t.decimal "unit_price", precision: 14, scale: 2, null: false
+    t.string "currency", null: false
+    t.integer "interval", null: false
+    t.integer "status", default: 0, null: false
+    t.string "language", default: "es", null: false
+    t.jsonb "customer", default: {}, null: false
+    t.string "public_token", null: false
+    t.string "external_id"
+    t.datetime "current_period_start"
+    t.datetime "current_period_end"
+    t.boolean "cancel_at_period_end", default: false, null: false
+    t.datetime "canceled_at"
+    t.datetime "sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status"], name: "index_commerce_subscriptions_on_account_id_and_status"
+    t.index ["contact_id"], name: "index_commerce_subscriptions_on_contact_id"
+    t.index ["provider_id", "external_id"], name: "index_commerce_subscriptions_on_provider_id_and_external_id", unique: true
+    t.index ["public_token"], name: "index_commerce_subscriptions_on_public_token", unique: true
   end
 
   create_table "companies", force: :cascade do |t|

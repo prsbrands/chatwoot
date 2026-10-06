@@ -1,25 +1,22 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
-import { useMapGetter } from 'dashboard/composables/store';
-import { dynamicTime } from 'shared/helpers/timeHelper';
 import CommerceAPI from 'dashboard/api/commerce';
-import ContactAPI from 'dashboard/api/contacts';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import ConversationPicker from './ConversationPicker.vue';
 
 // Enviar o documento: por uma conversa do cliente (o PDF vai anexo, com o link)
 // ou por e-mail. Em branco, a mensagem e o assunto saem no idioma do documento.
 const emit = defineEmits(['sent']);
 const { t } = useI18n();
-const getInbox = useMapGetter('inboxes/getInbox');
 
 const dialogRef = ref(null);
 const doc = ref(null);
 const channel = ref('conversation');
-const conversations = ref([]);
+const pickerRef = ref(null);
 const conversationId = ref('');
 const content = ref('');
 const to = ref('');
@@ -39,40 +36,15 @@ const open = async document => {
   subject.value = '';
   body.value = '';
   to.value = document.customer.email || '';
-  conversations.value = [];
-  if (document.contact_id) {
-    const { data } = await ContactAPI.getConversations(document.contact_id);
-    // A mais recente primeiro, com a caixa (nome dado pela conta) e a última
-    // mensagem: só o número da conversa não diz qual é.
-    // Caixa API sem webhook (a de voz, que só guarda a transcrição da
-    // ligação) não entrega nada ao cliente: fica fora da lista.
-    const delivers = conversation => {
-      const inbox = getInbox.value(conversation.inbox_id);
-      return (
-        inbox?.channel_type !== 'Channel::Api' || Boolean(inbox.webhook_url)
-      );
-    };
-    conversations.value = data.payload
-      .filter(delivers)
-      .map(conversation => {
-        const last = conversation.last_non_activity_message;
-        return {
-          id: conversation.id,
-          status: conversation.status,
-          inbox: getInbox.value(conversation.inbox_id)?.name || '',
-          preview: last?.content || '',
-          fromCustomer: last?.message_type === 0,
-          lastActivityAt: conversation.last_activity_at,
-        };
-      })
-      .sort((a, b) => b.lastActivityAt - a.lastActivityAt);
-    const own = conversations.value.find(
-      c => c.id === document.conversation_id
-    );
-    conversationId.value = (own || conversations.value[0])?.id || '';
-  }
-  channel.value = conversations.value.length ? 'conversation' : 'email';
+  channel.value = 'conversation';
+  // O conteúdo do Dialog só existe aberto: a lista carrega depois.
   dialogRef.value.open();
+  await nextTick();
+  const count = await pickerRef.value.load(
+    document.contact_id,
+    document.conversation_id
+  );
+  if (!count) channel.value = 'email';
 };
 
 const send = async () => {
@@ -133,73 +105,16 @@ defineExpose({ open });
           {{ $t(`COMMERCE.DOCUMENTS.CHANNEL.${value}`) }}
         </button>
       </div>
-      <template v-if="channel === 'conversation'">
-        <p v-if="!conversations.length" class="text-sm text-n-amber-11">
-          {{ $t('COMMERCE.DOCUMENTS.NO_CONVERSATIONS') }}
-        </p>
-        <div v-else class="flex flex-col gap-1">
-          <span class="text-label-small text-n-slate-11">
-            {{ $t('COMMERCE.DOCUMENTS.CONVERSATION') }}
-          </span>
-          <div
-            class="flex flex-col overflow-y-auto border divide-y rounded-lg max-h-64 border-n-weak divide-n-weak"
-          >
-            <button
-              v-for="conversation in conversations"
-              :key="conversation.id"
-              type="button"
-              class="flex items-start gap-3 px-3 py-2 text-start"
-              :class="
-                conversationId === conversation.id
-                  ? 'bg-n-blue-3'
-                  : 'hover:bg-n-slate-2'
-              "
-              @click="conversationId = conversation.id"
-            >
-              <span
-                class="mt-0.5 size-4 shrink-0"
-                :class="
-                  conversationId === conversation.id
-                    ? 'i-lucide-circle-check text-n-blue-11'
-                    : 'i-lucide-circle text-n-slate-8'
-                "
-              />
-              <span class="flex flex-col min-w-0 gap-0.5">
-                <span class="text-sm font-medium text-n-slate-12">
-                  {{ conversation.inbox }} · #{{ conversation.id }}
-                  <span class="font-normal text-n-slate-11">
-                    ·
-                    {{
-                      $t(
-                        `COMMERCE.DOCUMENTS.CONVERSATION_STATUS.${conversation.status}`
-                      )
-                    }}
-                    · {{ dynamicTime(conversation.lastActivityAt) }}
-                  </span>
-                </span>
-                <span
-                  v-if="conversation.preview"
-                  class="text-xs truncate text-n-slate-11"
-                >
-                  {{
-                    conversation.fromCustomer
-                      ? $t('COMMERCE.DOCUMENTS.LAST_FROM_CUSTOMER')
-                      : $t('COMMERCE.DOCUMENTS.LAST_FROM_US')
-                  }}
-                  {{ conversation.preview }}
-                </span>
-              </span>
-            </button>
-          </div>
-        </div>
+      <div v-show="channel === 'conversation'" class="flex flex-col gap-3">
+        <ConversationPicker ref="pickerRef" v-model="conversationId" />
         <TextArea
           v-model="content"
           :label="$t('COMMERCE.DOCUMENTS.MESSAGE')"
           :placeholder="$t('COMMERCE.DOCUMENTS.MESSAGE_PLACEHOLDER')"
           :max-length="2000"
         />
-      </template>
-      <template v-else>
+      </div>
+      <template v-if="channel === 'email'">
         <Input v-model="to" :label="$t('COMMERCE.DOCUMENTS.EMAIL_TO')" />
         <Input
           v-model="subject"

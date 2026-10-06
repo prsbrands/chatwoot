@@ -7,6 +7,7 @@ class Commerce::PaymentMethod < ApplicationRecord
   # Forma com pagamento ou cobrança registrada fica no histórico: desative em vez de excluir.
   has_many :payments, class_name: 'Commerce::DocumentPayment', dependent: :restrict_with_error
   has_many :checkouts, class_name: 'Commerce::Checkout', dependent: :restrict_with_error
+  has_many :subscriptions, class_name: 'Commerce::Subscription', dependent: :restrict_with_error
 
   enum :kind, { cash: 0, bank_transfer: 1, pix: 2, yappy: 3, card: 4, payment_link: 5, other: 6 }, validate: true
 

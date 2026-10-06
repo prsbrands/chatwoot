@@ -6,6 +6,7 @@ json.sku resource.sku
 json.price resource.price&.to_s
 json.currency resource.currency
 json.unit resource.unit
+json.billing_interval resource.billing_interval
 json.available resource.available
 json.position resource.position
 json.category_id resource.category_id

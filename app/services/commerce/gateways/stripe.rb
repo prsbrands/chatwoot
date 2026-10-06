@@ -1,9 +1,12 @@
 # Stripe com a chave secreta da própria conta: Checkout Session hospedada para
-# pagar a fatura, e o webhook que confirma. O webhook é criado pela API ao
-# conectar e o segredo dele fica guardado (cifrado) no provedor.
+# pagar a fatura ou assinar um plano (Stripe Billing cobra os ciclos), e o
+# webhook que confirma. O webhook é criado pela API ao conectar e o segredo
+# dele fica guardado (cifrado) no provedor.
 class Commerce::Gateways::Stripe
-  EVENTS = %w[checkout.session.completed checkout.session.async_payment_succeeded
-              checkout.session.async_payment_failed checkout.session.expired].freeze
+  CHECKOUT_EVENTS = %w[checkout.session.completed checkout.session.async_payment_succeeded
+                       checkout.session.async_payment_failed checkout.session.expired].freeze
+  SUBSCRIPTION_EVENTS = %w[invoice.paid invoice.payment_failed customer.subscription.deleted].freeze
+  EVENTS = CHECKOUT_EVENTS + SUBSCRIPTION_EVENTS
   LOCALES = { 'es' => 'es', 'pt' => 'pt-BR', 'en' => 'en' }.freeze
   # A Stripe aceita sessões de 30 min a 24 h; a conciliação expira a tentativa
   # depois de Commerce::Checkout::EXPIRES_IN.
@@ -41,14 +44,35 @@ class Commerce::Gateways::Stripe
     result(call { client.v1.checkout.sessions.retrieve(checkout.external_id) })
   end
 
-  # [{ external_id: sessão }, resultado] dos eventos de checkout; nil para os
-  # outros.
+  # O webhook das contas conectadas antes das assinaturas só tinha os eventos de
+  # checkout: a primeira assinatura acrescenta os do Stripe Billing.
+  def start_subscription!(subscription, return_url:)
+    call { client.v1.webhook_endpoints.update(@provider.webhook_endpoint_id, enabled_events: EVENTS) }
+    call { client.v1.checkout.sessions.create(subscription_session_params(subscription, return_url)) }.url
+  end
+
+  def cancel_subscription!(subscription, at_period_end:)
+    call do
+      if at_period_end
+        client.v1.subscriptions.update(subscription.external_id, cancel_at_period_end: true)
+      else
+        client.v1.subscriptions.cancel(subscription.external_id)
+      end
+    end
+  end
+
+  # [{ external_id: sessão }, resultado] dos eventos de checkout de fatura; os
+  # de assinatura são aplicados aqui (Commerce::SubscriptionBilling) e devolvem
+  # nil, como os outros.
   def webhook(http_request)
     event = ::Stripe::Webhook.construct_event(http_request.raw_post, http_request.headers['Stripe-Signature'].to_s,
                                               @provider.webhook_secret.to_s)
-    return unless EVENTS.include?(event.type)
+    return subscription_event(event) if SUBSCRIPTION_EVENTS.include?(event.type)
+    return unless CHECKOUT_EVENTS.include?(event.type)
 
     session = event.data.object
+    return link_subscription(session) if session.mode == 'subscription'
+
     [{ external_id: session.id }, event.type == 'checkout.session.async_payment_failed' ? { status: :failed } : result(session)]
   rescue ::Stripe::SignatureVerificationError, JSON::ParserError
     raise Commerce::Gateways::InvalidSignature
@@ -81,6 +105,71 @@ class Commerce::Gateways::Stripe
       cancel_url: return_url,
       expires_at: SESSION_TTL.from_now.to_i
     }.compact
+  end
+
+  # O plano vai como preço avulso (price_data), sem catálogo no Stripe; a
+  # quantidade já entra no valor, porque a nossa pode ser fracionária.
+  def subscription_session_params(subscription, return_url)
+    email = subscription.customer['email'].to_s
+    {
+      mode: 'subscription',
+      line_items: [{ quantity: 1, price_data: { currency: subscription.currency.downcase, unit_amount: (subscription.amount * 100).to_i,
+                                                recurring: { interval: subscription.interval }, product_data: { name: subscription.name } } }],
+      client_reference_id: "subscription-#{subscription.id}",
+      subscription_data: { metadata: { cortexgen_subscription_id: subscription.id } },
+      customer_email: email.match?(URI::MailTo::EMAIL_REGEXP) ? email : nil,
+      locale: LOCALES.fetch(subscription.language),
+      success_url: "#{return_url}?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: return_url
+    }.compact
+  end
+
+  def link_subscription(session)
+    return unless session.status == 'complete' && session.subscription.present?
+
+    subscription = find_subscription(session.subscription)
+    Commerce::SubscriptionBilling.new(subscription).link!(session.subscription) if subscription
+    nil
+  end
+
+  # A fatura do ciclo traz o id da assinatura em parent (versões novas da API)
+  # ou na raiz (antigas): o webhook usa a versão padrão da conta Stripe.
+  def subscription_event(event)
+    object = event.data.object.to_hash
+    stripe_id = event.type == 'customer.subscription.deleted' ? object[:id] : invoice_subscription_id(object)
+    subscription = stripe_id.present? && find_subscription(stripe_id)
+    return unless subscription
+
+    billing = Commerce::SubscriptionBilling.new(subscription)
+    case event.type
+    when 'invoice.paid' then cycle_paid(billing, object)
+    when 'invoice.payment_failed' then billing.payment_failed!
+    else billing.ended!
+    end
+    nil
+  end
+
+  def invoice_subscription_id(invoice)
+    invoice.dig(:parent, :subscription_details, :subscription) || invoice[:subscription]
+  end
+
+  def cycle_paid(billing, invoice)
+    return unless invoice[:amount_paid].to_i.positive?
+
+    period = invoice.dig(:lines, :data, 0, :period) || { start: invoice[:period_start], end: invoice[:period_end] }
+    billing.cycle_paid!(external_id: invoice[:id], amount: BigDecimal(invoice[:amount_paid].to_s) / 100,
+                        period_start: Time.zone.at(period[:start]).to_date, period_end: Time.zone.at(period[:end]).to_date)
+  end
+
+  # Pelo id do Stripe; o primeiro aviso pode chegar antes do checkout.session
+  # que o liga, então o metadata da assinatura no Stripe diz qual é a nossa.
+  def find_subscription(stripe_id)
+    @provider.subscriptions.find_by(external_id: stripe_id) || begin
+      remote = call { client.v1.subscriptions.retrieve(stripe_id) }
+      @provider.subscriptions.find_by(id: remote.metadata.to_hash[:cortexgen_subscription_id])&.tap do |subscription|
+        Commerce::SubscriptionBilling.new(subscription).link!(stripe_id)
+      end
+    end
   end
 
   def result(session)

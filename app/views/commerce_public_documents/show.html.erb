@@ -14,45 +14,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title><%= kind %> <%= @document.number %></title>
-  <style>
-    body { margin: 0; background: #f4f4f5; color: #18181b; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 820px; margin: 24px auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-    header { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-    header img { max-width: 180px; max-height: 80px; }
-    .company { text-align: right; color: #52525b; font-size: 13px; }
-    .company strong { color: #18181b; font-size: 16px; display: block; }
-    h1 { font-size: 22px; margin: 28px 0 4px; }
-    .muted { color: #71717a; font-size: 13px; }
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
-    .ok { background: #dcfce7; color: #166534; } .no { background: #fee2e2; color: #991b1b; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-    th { text-align: left; background: #f4f4f5; padding: 8px; font-size: 12px; text-transform: uppercase; color: #52525b; }
-    td { padding: 10px 8px; border-bottom: 1px solid #e4e4e7; vertical-align: top; }
-    td.num, th.num { text-align: right; white-space: nowrap; }
-    .totals { margin-left: auto; width: 320px; max-width: 100%; margin-top: 16px; }
-    .totals div { display: flex; justify-content: space-between; padding: 3px 0; }
-    .totals .grand { font-weight: 700; font-size: 18px; border-top: 1px solid #e4e4e7; margin-top: 6px; padding-top: 8px; }
-    section { margin-top: 24px; }
-    h2 { font-size: 12px; text-transform: uppercase; color: #71717a; margin: 0 0 6px; }
-    .pre { white-space: pre-line; }
-    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
-    .btn { border: 0; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
-    .primary { background: #7c3aed; color: #fff; } .ghost { background: #f4f4f5; color: #18181b; }
-    form { margin: 0; }
-    .notice { padding: 12px 16px; border-radius: 8px; margin-top: 20px; font-weight: 600; }
-    .waiting { display: flex; gap: 14px; align-items: flex-start; font-weight: 400; }
-    .spinner { flex: none; width: 22px; height: 22px; border: 3px solid #ddd6fe; border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    [hidden] { display: none !important; }
-    .pay { border: 1px solid #e4e4e7; border-radius: 10px; padding: 16px 20px; }
-    .pay label { display: block; font-size: 13px; color: #52525b; margin-bottom: 4px; }
-    .pay input { font: inherit; padding: 8px 10px; border: 1px solid #d4d4d8; border-radius: 8px; width: 180px; max-width: 100%; }
-    .pay .actions { margin-top: 14px; }
-    .pay .spaced { margin-top: 12px; }
-    .summary { width: 420px; max-width: 100%; margin-top: 16px; }
-    .summary div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e4e4e7; }
-    footer { text-align: center; color: #71717a; font-size: 12px; margin-top: 28px; }
-  </style>
+  <%= render 'commerce_public_documents/style' %>
 </head>
 <body>
 <main>

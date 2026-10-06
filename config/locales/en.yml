@@ -89,6 +89,7 @@ en:
     deal_moved: '%{type} booked'
   commerce:
     online_payment: 'Online payment received: %{amount} for %{invoice} (%{method}). Receipt %{receipt} issued and sent through the invoice channels.'
+    subscription_payment_failed: 'The renewal of the subscription %{subscription} was declined. The provider will retry; the subscription is past due.'
   errors:
     account:
       not_authorized: You are not authorized to access this account

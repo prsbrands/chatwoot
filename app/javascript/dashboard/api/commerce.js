@@ -2,7 +2,8 @@
 import ApiClient from './ApiClient';
 
 // Comercial: catálogo (itens e categorias), dados da empresa, formas de
-// pagamento, provedores de cobrança online, orçamentos, faturas e recibos.
+// pagamento, provedores de cobrança online, orçamentos, faturas, recibos e
+// assinaturas.
 // Imagens e logo sobem pelo /upload e chegam aqui como blob_id.
 class CommerceAPI extends ApiClient {
   constructor() {
@@ -118,6 +119,28 @@ class CommerceAPI extends ApiClient {
     return axios.post(
       `${this.url}/documents/${id}/payments/${paymentId}/receipt`
     );
+  }
+
+  subscriptions(params) {
+    return axios.get(`${this.url}/subscriptions`, { params });
+  }
+
+  subscription(id) {
+    return axios.get(`${this.url}/subscriptions/${id}`);
+  }
+
+  createSubscription(subscription) {
+    return axios.post(`${this.url}/subscriptions`, subscription);
+  }
+
+  deliverSubscription(id, delivery) {
+    return axios.post(`${this.url}/subscriptions/${id}/deliver`, delivery);
+  }
+
+  cancelSubscription(id, atPeriodEnd) {
+    return axios.post(`${this.url}/subscriptions/${id}/cancel`, {
+      at_period_end: atPeriodEnd,
+    });
   }
 
   profile() {

@@ -15,6 +15,7 @@ class Commerce::Document < ApplicationRecord
   belongs_to :conversation, optional: true
   belongs_to :source_document, class_name: 'Commerce::Document', optional: true
   belongs_to :created_by, class_name: 'User', optional: true
+  belongs_to :subscription, class_name: 'Commerce::Subscription', optional: true, inverse_of: :invoices
   has_many :items, -> { order(:position, :id) }, class_name: 'Commerce::DocumentItem', dependent: :delete_all, inverse_of: :document
   has_many :payments, -> { order(:paid_on, :id) }, class_name: 'Commerce::DocumentPayment', dependent: :delete_all, inverse_of: :document
   has_many :checkouts, class_name: 'Commerce::Checkout', dependent: :delete_all

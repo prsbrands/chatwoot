@@ -43,6 +43,11 @@ export const HUBS = {
             to: 'commerce_documents',
           },
           {
+            id: 'SUBSCRIPTIONS',
+            icon: 'i-lucide-repeat',
+            to: 'commerce_subscriptions',
+          },
+          {
             id: 'CATALOG',
             icon: 'i-lucide-package',
             to: 'commerce_catalog',
