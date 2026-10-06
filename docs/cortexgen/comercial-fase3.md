@@ -1,6 +1,6 @@
 # Comercial, fase 3 — cobrança online, recibos e assinaturas (DESENHO v2)
 
-Nada disto está codado. A v2 incorpora as respostas do Paulo de 05/10:
+**3a (Stripe avulso e recibo) entregue na 1.14.0**, com os padrões das perguntas abaixo. O resto (3b–3d) ainda não está codado. A v2 incorpora as respostas do Paulo de 05/10:
 
 - Contas: **Stripe EUA**, **Mercado Pago Brasil**, **Yappy Panamá**.
 - O cliente **pode pagar uma parte** da fatura.

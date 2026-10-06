@@ -8,7 +8,8 @@ Flag por conta: **`commerce`**, no fim de `feature_flags_ext_1`. Liga no Super A
 |---|---|---|---|
 | 1 | Catálogo, empresa e formas de pagamento | 1.12.0–1.12.1 | No ar |
 | 2 | Orçamentos e faturas com PDF, link público, envio, pagamentos, arquivar e reabrir | 1.13.0–1.13.2 | No ar |
-| 3 | Cobrança online: Stripe, Mercado Pago (Pix) e Yappy | — | A desenhar com o Paulo |
+| 3a | Stripe: fatura paga online (inteira ou parte), recibo como documento | 1.14.0 | Pronta; desenho em `comercial-fase3.md` |
+| 3b–3d | Mercado Pago (Pix), Yappy e assinaturas mensais/anuais | — | Próximas |
 | 4 | Catálogo na IA e vitrine pública | — | Depois da 3 |
 
 ## Decisões do Paulo (05/10/2026)
@@ -33,12 +34,14 @@ Os models ficam em `app/models/commerce/` e o prefixo das tabelas é `commerce_`
 | `commerce_categories` | Categorias do catálogo |
 | `commerce_items` | Produto ou serviço, com tipo, SKU, `price` opcional, `currency`, `unit` e `available`. As imagens ficam no ActiveStorage (`images`, até 10) |
 | `commerce_profiles` | Uma linha por conta, criada na primeira leitura (`Profile.for`). Guarda logo, nomes, documento fiscal, contatos, moeda padrão, condições, rodapé e prefixos |
-| `commerce_payment_methods` | Formas de pagamento aceitas, com tipo e instruções ao cliente. Na fase 3 ganham o provedor |
-| `commerce_documents` | Orçamento ou fatura. Tem `number`/`year`/`sequence`, `status`, `language`, `currency` e `tax_mode`. Liga ao contato, negócio, compromisso, conversa e documento de origem. Guarda **cópias** `customer` e `company` (jsonb), totais, textos, datas de cada passo, `archived_at`, `public_token` e os PDFs no ActiveStorage (`pdfs`) |
+| `commerce_payment_methods` | Formas de pagamento aceitas, com tipo e instruções ao cliente. Com `provider_id`, vira cobrança online (o botão "Pagar") |
+| `commerce_payment_providers` | Provedor conectado pela conta (`stripe`; `mercado_pago` e `yappy` depois): ambiente sandbox/production, `credentials` (JSON) e `webhook_secret` **cifrados**, `webhook_token` que vai na URL do webhook, `webhook_endpoint_id` |
+| `commerce_checkouts` | Cada clique em "Pagar": documento, provedor, forma, valor, moeda, situação (pending/paid/failed/expired), `external_id` (sessão do Stripe, único por provedor), `checkout_url` |
+| `commerce_documents` | Orçamento, fatura ou recibo (`kind` 0/1/2). O recibo guarda em `details` o valor, a forma, a data e a posição da fatura (total, pago até ali, saldo); `delivered_email` é o último e-mail usado no envio. Tem `number`/`year`/`sequence`, `status`, `language`, `currency` e `tax_mode`. Liga ao contato, negócio, compromisso, conversa e documento de origem. Guarda **cópias** `customer` e `company` (jsonb), totais, textos, datas de cada passo, `archived_at`, `public_token` e os PDFs no ActiveStorage (`pdfs`) |
 | `commerce_document_items` | Linhas do documento, copiadas do catálogo ou livres, com quantidade, unidade, preço (nulo = a cotar), desconto %, imposto % e os totais da linha |
-| `commerce_document_payments` | Pagamentos recebidos: forma, valor, data e observação |
+| `commerce_document_payments` | Pagamentos recebidos: forma, valor, data e observação; `checkout_id` (único: o mesmo aviso não paga duas vezes) e `receipt_id` |
 
-As migrations vão de `20261005000001` a `…03`.
+As migrations vão de `20261005000001` a `…04`.
 
 ## Serviços
 
@@ -57,6 +60,11 @@ Ficam em `app/services/commerce/`.
   - por **e-mail**, com o `Commerce::DocumentMailer`, em HTML com a marca da empresa, logo `cid:` e PDF anexo.
   
   Canal API sem webhook, como a caixa de voz, recusa o envio.
+- **`CheckoutStarter`** (página pública → "Pagar") valida o valor no servidor (de 1 até o saldo; abaixo de 1, só o saldo), a forma online e a moeda, cria o checkout e abre a sessão no provedor.
+- **`Gateways::Stripe`** usa a chave da própria conta (`Stripe::StripeClient`): `connect!` valida a chave e cria o webhook (eventos `checkout.session.*`), `start!` abre a Checkout Session, `status` consulta e `webhook` verifica a assinatura (`Stripe::Webhook.construct_event`).
+- **`CheckoutSettler`** aplica o resultado do webhook, da volta do cliente (`/d/:token?checkout=`) ou da conciliação. Faz isso com o checkout travado: pago vira `add_payment!` e, depois, o `Commerce::ReceiptJob`.
+- **`ReceiptIssuer`** emite o recibo e o envia pela conversa e pelo último e-mail da fatura. No pagamento online, também deixa uma nota interna na conversa.
+- **Jobs:** `Commerce::ReceiptJob` e `Commerce::CheckoutReconcileJob` (a cada 5 min, no `TriggerScheduledItemsJob`; expira o checkout depois de 24 h).
 - **`DocumentLabels`** guarda os textos que vão **dentro** do documento (PDF, página pública e e-mail) nos três idiomas, além de moeda, data e unidades. Ficam fora do i18n de propósito, porque o idioma é do documento e não de quem usa a tela.
 - **`Commerce::Search`** (em `app/models`) faz a busca sem distinguir acento nem maiúscula, com o `translate()` do Postgres e sem extensão no banco.
 
@@ -65,9 +73,11 @@ Ficam em `app/services/commerce/`.
 - **API** (`/api/v1/accounts/:id/commerce/...`, sob a flag `commerce`):
   - `items`, com `POST images` e `DELETE images/:attachment_id`;
   - `categories`, `payment_methods` e `profile`;
-  - `documents`, com as ações `pdf`, `deliver`, `accept`, `decline`, `void`, `to_invoice`, `reopen`, `archive`, `unarchive`, `payments` e `payments/:id`.
+  - `documents`, com as ações `pdf`, `deliver`, `accept`, `decline`, `void`, `to_invoice`, `reopen`, `archive`, `unarchive`, `payments` (com `send_receipt`), `payments/:id` e `payments/:id/receipt`;
+  - `payment_providers` (index, create, update; só admin). Desligar é `active: false`.
 - **Permissões:** todos consultam. Itens, categorias, empresa e formas de pagamento só o admin altera. Nos documentos, todos criam, editam, geram e enviam; anular e mexer em pagamento é só do admin.
-- **Página pública:** `/d/:token` (`CommercePublicDocumentsController < PublicController`), mais `/d/:token/pdf`, `/accept` e `/decline`. O rascunho dá 404.
+- **Página pública:** `/d/:token` (`CommercePublicDocumentsController < PublicController`), mais `/d/:token/pdf`, `/accept`, `/decline` e `/pay`. O rascunho dá 404.
+- **Webhook:** `POST /commerce/webhooks/:provider/:webhook_token` (`Commerce::WebhooksController`): token desconhecido 404, assinatura inválida 400.
 - **Telas** (`app/javascript/dashboard/routes/dashboard/commerce/`):
   - `/catalog`: Catálogo, com categorias e editor do item com imagens;
   - `/company`: Empresa e pagamentos;
@@ -85,4 +95,4 @@ Ficam em `app/services/commerce/`.
 
 ## Testes
 
-`ops/smoke/commerce.rb` (25 cenários) e `ops/smoke/commerce_documents.rb` (36) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.
+`ops/smoke/commerce.rb` (25 cenários), `ops/smoke/commerce_documents.rb` (36) e `ops/smoke/commerce_checkout.rb` (37, com o Stripe falso por `class_eval` e a assinatura real do webhook) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.
