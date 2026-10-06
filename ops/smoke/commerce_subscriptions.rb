@@ -80,6 +80,8 @@ end
 _, prov = api.(:post, 'payment_providers', { provider: 'stripe', environment: 'sandbox', credentials: { secret_key: 'sk_test_abc123wxyz' } })
 provider = Commerce::PaymentProvider.find(prov['id'])
 _, cartao = api.(:post, 'payment_methods', { name: 'Tarjeta', kind: 'card', provider_id: provider.id })
+_, formas = api.(:get, 'payment_methods', user: beto)
+ok 'lista diz que forma cobra assinatura', formas['payload'].to_h { |m| [m['name'], m['charges_subscriptions']] } == { 'Transferencia' => false, 'Tarjeta' => true }
 
 # --- plano no catálogo --------------------------------------------------------
 st, plano = api.(:post, 'items', { name: 'Plan Pro', kind: 'service', price: '49.90', currency: 'USD', billing_interval: 'month' })

@@ -56,7 +56,7 @@ const open = async () => {
       item => item.billing_interval !== 'one_time' && item.available
     );
     methods.value = paymentMethods.payload.filter(
-      method => method.active && method.provider_id
+      method => method.active && method.charges_subscriptions
     );
     form.value.item_id = plans.value[0]?.id || '';
     form.value.payment_method_id = methods.value[0]?.id || '';

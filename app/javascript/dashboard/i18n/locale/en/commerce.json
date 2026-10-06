@@ -35,6 +35,7 @@
     },
     "CATALOG": {
       "HEADER": "Catalog",
+      "SUBTITLE": "Products, services and subscription plans you sell, used in quotes, invoices and subscriptions.",
       "DESCRIPTION": "Description",
       "LOADING": "Loading catalog",
       "EMPTY": "No items yet.",

@@ -108,7 +108,7 @@ onMounted(async () => {
           {{ $t('COMMERCE.CATALOG.HEADER') }}
         </h1>
         <p class="text-body-main text-n-slate-11">
-          {{ $t('COMMERCE.CATALOG.DESCRIPTION') }}
+          {{ $t('COMMERCE.CATALOG.SUBTITLE') }}
         </p>
       </div>
       <div v-if="isAdmin" class="flex flex-wrap items-center gap-2">

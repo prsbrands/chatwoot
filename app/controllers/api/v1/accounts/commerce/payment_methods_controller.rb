@@ -3,7 +3,7 @@ class Api::V1::Accounts::Commerce::PaymentMethodsController < Api::V1::Accounts:
   before_action -> { check_authorization(@payment_method || ::Commerce::PaymentMethod) }
 
   def index
-    @payment_methods = Current.account.commerce_payment_methods.order(:position, :name)
+    @payment_methods = Current.account.commerce_payment_methods.includes(:provider).order(:position, :name)
   end
 
   def create
