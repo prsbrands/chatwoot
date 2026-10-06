@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.0] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Vitrine pública do catálogo.** Em Company & payments, a seção **Public catalog** publica uma página com os itens disponíveis do Catálogo: foto, categoria, preço com a unidade (ou o ciclo do plano) e "a cotizar" quando não há preço, com filtro por categoria. O link serve para redes sociais, bio e site.
+- Cada item tem o botão **"Lo quiero"**, que abre o WhatsApp da empresa com a mensagem "me interesa" e o nome do item; a conversa continua com a IA, que já conhece o catálogo. Sem WhatsApp cadastrado, o botão abre um e-mail.
+- A página sai no idioma da conta, ou no de `?lang=es`, `pt` ou `en` no link. Desligar tira a página do ar; religar mantém o mesmo link.
+
 ## [1.18.0] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **A IA vende com o catálogo.** Quando o cliente pergunta por produtos, serviços, preços ou planos, a IA recebe os itens disponíveis do Catálogo com os preços e só fala desses preços; item sem preço vira "a cotizar" com a equipe. Nova atividade do Jev, **"Notice interest in products and plans"** (Settings → Integrations → Jev), que já começa decidindo.

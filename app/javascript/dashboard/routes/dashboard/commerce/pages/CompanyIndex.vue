@@ -191,7 +191,8 @@ const saveProfile = async (extra = {}) => {
 };
 
 // A vitrine liga e desliga na hora, sem o botão Salvar dos dados da empresa.
-const toggleStorefront = enabled => saveProfile({ storefront_enabled: enabled });
+const toggleStorefront = enabled =>
+  saveProfile({ storefront_enabled: enabled });
 const copyStorefront = async () => {
   await copyTextToClipboard(profile.value.storefront_url);
   useAlert(t('COMMERCE.STOREFRONT.COPIED'));
@@ -414,7 +415,7 @@ onMounted(async () => {
           <a
             :href="profile.storefront_url"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="flex-1 min-w-0 text-sm truncate text-n-blue-11"
           >
             {{ profile.storefront_url }}

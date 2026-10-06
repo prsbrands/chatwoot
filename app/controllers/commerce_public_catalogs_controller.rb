@@ -11,12 +11,17 @@ class CommercePublicCatalogsController < PublicController
     account = @profile.account
     raise ActiveRecord::RecordNotFound unless account.feature_enabled?('commerce')
 
-    @language = params[:lang].presence_in(::Commerce::Document::LANGUAGES) ||
-                account.locale.to_s.first(2).presence_in(::Commerce::Document::LANGUAGES) || 'es'
-    @labels = ::Commerce::DocumentLabels.for(@language)
-    items = account.commerce_items.where(available: true).includes(:category, images_attachments: :blob).order(:position, :name)
-    @categories = items.filter_map(&:category).uniq.sort_by(&:name)
+    @labels = ::Commerce::DocumentLabels.for(@language = language_of(account))
+    @items = account.commerce_items.where(available: true).includes(:category, images_attachments: :blob).order(:position, :name)
+    @categories = @items.filter_map(&:category).uniq.sort_by(&:name)
     @category = @categories.find { |category| category.id.to_s == params[:category] }
-    @items = @category ? items.where(category: @category) : items
+    @items = @items.where(category: @category) if @category
+  end
+
+  private
+
+  def language_of(account)
+    params[:lang].presence_in(::Commerce::Document::LANGUAGES) ||
+      account.locale.to_s.first(2).presence_in(::Commerce::Document::LANGUAGES) || 'es'
   end
 end
