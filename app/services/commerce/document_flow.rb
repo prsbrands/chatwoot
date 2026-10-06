@@ -101,7 +101,10 @@ class Commerce::DocumentFlow
                :sent
              end
     @document.update!(amount_paid: paid, status: status, paid_at: status == :paid ? (@document.paid_at || Time.current) : nil)
-    win_deal if @document.paid?
+    return unless @document.paid?
+
+    win_deal
+    Commerce::SubscriptionBilling.new(@document.subscription).invoice_paid!(@document) if @document.subscription
   end
 
   def win_deal

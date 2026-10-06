@@ -4,8 +4,10 @@
 # vira uma fatura (documents.subscription_id) já paga, com o recibo enviado
 # pelos canais da assinatura (Commerce::SubscriptionBilling).
 class Commerce::Subscription < ApplicationRecord
-  # Provedores com cobrança recorrente pela API (Yappy depois).
-  PROVIDERS = %w[stripe mercado_pago].freeze
+  # Provedores que cobram assinatura. Os ASSISTED não têm débito automático: a
+  # fatura de cada ciclo vai ao cliente com o link de pagamento.
+  PROVIDERS = %w[stripe mercado_pago yappy].freeze
+  ASSISTED = %w[yappy].freeze
 
   belongs_to :account
   belongs_to :contact, optional: true
@@ -37,6 +39,10 @@ class Commerce::Subscription < ApplicationRecord
 
   def public_url
     "#{ENV.fetch('FRONTEND_URL')}/s/#{public_token}"
+  end
+
+  def assisted?
+    ASSISTED.include?(provider.provider)
   end
 
   # O cliente ainda pode assinar pelo link.

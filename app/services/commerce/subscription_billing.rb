@@ -2,7 +2,10 @@
 # ciclo cobrado vira uma fatura do período já paga (checkout com o id da cobrança,
 # então o mesmo aviso não paga duas vezes) e o recibo sai pelo Commerce::ReceiptJob,
 # pelos canais da assinatura. Cobrança recusada deixa a assinatura em atraso;
-# a equipe cancela no fim do período ou na hora.
+# a equipe cancela no fim do período ou na hora. Quem ativa a assinatura e avança
+# o período é a fatura do ciclo paga (invoice_paid!, chamado pelo DocumentFlow).
+# Sem débito automático (Yappy), a cobrança é assistida: a fatura do ciclo sai
+# antes do vencimento com o link de pagamento (Commerce::SubscriptionCycleJob).
 class Commerce::SubscriptionBilling
   def initialize(subscription)
     @subscription = subscription
@@ -11,8 +14,11 @@ class Commerce::SubscriptionBilling
 
   # Abre o pagamento recorrente no provedor e devolve o endereço para o cliente.
   # O Mercado Pago pede o e-mail de quem paga.
+  # Na assistida, é a página da fatura do primeiro ciclo (a mesma, se o cliente
+  # voltar antes de pagar).
   def start!(return_url, payer_email: nil)
     raise Commerce::Gateways::Error, 'subscription is not open' unless @subscription.subscribable?
+    return Commerce::DocumentFlow.new(open_invoice || issue_invoice!(Date.current)).public_url if @subscription.assisted?
 
     @subscription.provider.gateway.start_subscription!(@subscription, return_url: return_url, payer_email: payer_email)
   end
@@ -28,13 +34,39 @@ class Commerce::SubscriptionBilling
     checkout = @subscription.with_lock do
       @subscription.provider.checkouts.find_by(external_id: external_id) || begin
         invoice = create_invoice!(amount, period_start, period_end)
-        @subscription.update!(current_period_start: period_start, current_period_end: period_end,
-                              status: @subscription.canceled? ? :canceled : :active)
         @account.commerce_checkouts.create!(document: invoice, provider: @subscription.provider, amount: amount, external_id: external_id,
                                             payment_method: @subscription.payment_method, currency: @subscription.currency)
       end
     end
     Commerce::CheckoutSettler.new(checkout).apply!(status: :paid, amount: amount, reference: external_id)
+  end
+
+  # Fatura do ciclo paga, por qualquer caminho (provedor, link ou à mão).
+  def invoice_paid!(invoice)
+    @subscription.update!(current_period_start: invoice.period_start, current_period_end: invoice.period_end,
+                          status: @subscription.canceled? ? :canceled : :active)
+  end
+
+  # Fatura do ciclo seguinte, que vence no fim do período atual, com o link pela
+  # conversa e pelo e-mail da assinatura.
+  def issue_renewal!
+    invoice = issue_invoice!(@subscription.current_period_end.to_date)
+    deliver!(invoice, :renewal_message)
+    Commerce::DocumentSender.new(invoice, nil).to_email!(invoice.delivered_email) if invoice.delivered_email
+  end
+
+  def remind!(invoice)
+    deliver!(invoice, :renewal_reminder)
+    invoice.update!(details: invoice.details.merge('reminded_on' => Date.current.to_s))
+  end
+
+  def overdue!(invoice)
+    @subscription.update!(status: :past_due)
+    note!(I18n.t('commerce.subscription_overdue', invoice: invoice.number, subscription: @subscription.name))
+  end
+
+  def open_invoice
+    @subscription.invoices.find_by(status: %i[sent partially_paid])
   end
 
   def payment_failed!
@@ -44,8 +76,10 @@ class Commerce::SubscriptionBilling
     note!(I18n.t('commerce.subscription_payment_failed', subscription: @subscription.name))
   end
 
+  # A fatura do ciclo ainda sem pagamento é anulada: a assinatura acabou.
   def ended!
     @subscription.update!(status: :canceled, canceled_at: @subscription.canceled_at || Time.current)
+    @subscription.invoices.sent.each { |invoice| Commerce::DocumentFlow.new(invoice).void! }
   end
 
   # No fim do período, o provedor avisa quando acabar (ended!). Sem nenhum ciclo
@@ -57,6 +91,23 @@ class Commerce::SubscriptionBilling
   end
 
   private
+
+  # Fatura do ciclo que começa em `period_start` e vence nesse dia.
+  def issue_invoice!(period_start)
+    invoice = create_invoice!(@subscription.amount, period_start, period_start + 1.public_send(@subscription.interval))
+    invoice.update!(due_date: period_start)
+    invoice
+  end
+
+  def deliver!(invoice, label)
+    conversation = @subscription.conversation
+    return unless conversation && Commerce::DocumentSender.deliverable?(conversation)
+
+    text = format(Commerce::DocumentLabels.for(@subscription.language)[label], plan: @subscription.name, number: invoice.number,
+                                                                                date: Commerce::DocumentLabels.date(invoice.due_date, invoice.language),
+                                                                                url: Commerce::DocumentFlow.new(invoice).public_url)
+    Commerce::DocumentSender.new(invoice, nil).to_conversation!(conversation, text)
+  end
 
   # A linha sai com a quantidade e o preço da assinatura quando o valor cobrado
   # bate; senão, com o valor que o provedor cobrou.

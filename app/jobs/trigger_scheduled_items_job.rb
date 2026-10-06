@@ -32,6 +32,7 @@ class TriggerScheduledItemsJob < ApplicationJob
     # Pagamentos online sem resposta do provedor (Comercial)
     Commerce::CheckoutReconcileJob.perform_later
     Commerce::SubscriptionExpiryJob.perform_later
+    Commerce::SubscriptionCycleJob.perform_later
 
     # Sessões de WhatsApp por QR (OpenWA) que caíram
     Openwa::SessionWatchJob.perform_later if Integrations::Openwa::Client.configured?

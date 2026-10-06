@@ -31,9 +31,13 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_processing: 'Recibimos tu suscripción. En unos instantes te enviaremos el recibo del primer pago.',
       subscription_active: 'Suscripción activa', next_renewal: 'Próxima renovación: %<date>s',
       subscription_ends: 'Se cancela el %<date>s, al final del período pagado.',
-      subscription_past_due: 'No pudimos cobrar la última renovación. Revisa tu tarjeta; intentaremos de nuevo.',
+      subscription_past_due: 'La última renovación no se pudo cobrar o sigue pendiente de pago.',
+      subscription_hint_assisted: 'Cada %<interval>s te enviamos la factura de la renovación con el enlace para pagar.',
       subscription_canceled: 'Suscripción cancelada.', subscribe_error: 'No pudimos iniciar la suscripción. Inténtalo de nuevo.',
-      subscription_message: '%<plan>s — suscríbete aquí: %<url>s', payer_email: 'E-mail de tu cuenta Mercado Pago'
+      subscription_message: '%<plan>s — suscríbete aquí: %<url>s', payer_email: 'E-mail de tu cuenta Mercado Pago',
+      renewal_message: '%<plan>s: tu suscripción se renueva el %<date>s. Factura %<number>s, págala aquí: %<url>s',
+      renewal_reminder: 'Recordatorio: la renovación de %<plan>s vence hoy. Factura %<number>s, págala aquí: %<url>s',
+      pay_renewal: 'Pagar la factura %<number>s'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -63,9 +67,13 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_processing: 'Recebemos a sua assinatura. Em instantes enviaremos o recibo do primeiro pagamento.',
       subscription_active: 'Assinatura ativa', next_renewal: 'Próxima renovação: %<date>s',
       subscription_ends: 'Termina em %<date>s, no fim do período pago.',
-      subscription_past_due: 'Não conseguimos cobrar a última renovação. Confira o seu cartão; vamos tentar de novo.',
+      subscription_past_due: 'A última renovação não pôde ser cobrada ou segue pendente de pagamento.',
+      subscription_hint_assisted: 'A cada %<interval>s enviamos a fatura da renovação com o link para pagar.',
       subscription_canceled: 'Assinatura cancelada.', subscribe_error: 'Não conseguimos iniciar a assinatura. Tente de novo.',
-      subscription_message: '%<plan>s — assine aqui: %<url>s', payer_email: 'E-mail da sua conta Mercado Pago'
+      subscription_message: '%<plan>s — assine aqui: %<url>s', payer_email: 'E-mail da sua conta Mercado Pago',
+      renewal_message: '%<plan>s: a sua assinatura renova em %<date>s. Fatura %<number>s, pague aqui: %<url>s',
+      renewal_reminder: 'Lembrete: a renovação de %<plan>s vence hoje. Fatura %<number>s, pague aqui: %<url>s',
+      pay_renewal: 'Pagar a fatura %<number>s'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -95,9 +103,13 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_processing: 'We received your subscription. We will send you the receipt of the first payment shortly.',
       subscription_active: 'Active subscription', next_renewal: 'Next renewal: %<date>s',
       subscription_ends: 'Ends on %<date>s, at the end of the paid period.',
-      subscription_past_due: 'We could not charge the last renewal. Check your card; we will try again.',
+      subscription_past_due: 'The last renewal could not be charged or is still unpaid.',
+      subscription_hint_assisted: 'Every %<interval>s we send you the renewal invoice with a link to pay.',
       subscription_canceled: 'Subscription canceled.', subscribe_error: 'We could not start the subscription. Please try again.',
-      subscription_message: '%<plan>s — subscribe here: %<url>s', payer_email: 'Email of your Mercado Pago account'
+      subscription_message: '%<plan>s — subscribe here: %<url>s', payer_email: 'Email of your Mercado Pago account',
+      renewal_message: '%<plan>s: your subscription renews on %<date>s. Invoice %<number>s, pay it here: %<url>s',
+      renewal_reminder: 'Reminder: the renewal of %<plan>s is due today. Invoice %<number>s, pay it here: %<url>s',
+      pay_renewal: 'Pay invoice %<number>s'
     }
   }.freeze
 

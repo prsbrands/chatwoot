@@ -43,13 +43,17 @@
     <% end %>
   <% end %>
   <% if sub.past_due? %><div class="notice no"><%= l[:subscription_past_due] %></div><% end %>
+  <% renewal = sub.assisted? && !sub.pending? && Commerce::SubscriptionBilling.new(sub).open_invoice %>
+  <% if renewal %>
+    <div class="actions"><%= link_to format(l[:pay_renewal], number: renewal.number), Commerce::DocumentFlow.new(renewal).public_url, class: 'btn primary' %></div>
+  <% end %>
   <% if sub.canceled? %><div class="notice no"><%= l[:subscription_canceled] %></div><% end %>
   <% if processing %><div class="notice ghost"><%= l[:subscription_processing] %></div><% end %>
   <% if @subscribe_error %><div class="notice no"><%= l[:subscribe_error] %></div><% end %>
 
   <% if sub.subscribable? && !processing %>
     <section class="pay">
-      <div class="muted"><%= format(l[:subscription_hint], interval: l[:"interval_#{sub.interval}"]) %></div>
+      <div class="muted"><%= format(l[sub.assisted? ? :subscription_hint_assisted : :subscription_hint], interval: l[:"interval_#{sub.interval}"]) %></div>
       <%= form_tag commerce_public_subscription_subscribe_path(sub.public_token), method: :post do %>
         <% if sub.provider.mercado_pago? %>
           <label for="payer_email" class="spaced"><%= l[:payer_email] %></label>
