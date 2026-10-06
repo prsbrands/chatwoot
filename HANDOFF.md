@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.16.0** (1.16.1 buildada, esperando deploy) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.16.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -13,7 +13,7 @@
 - **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
 - **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático.
 
-**Comece pelo item 1 da fila:** o deploy da 1.16.1, que já está buildada e com o smoke rodando.
+**Comece pelo item 1 da fila:** provar a cobrança online em uso real (a 1.16.1 foi ao ar em 06/10). **O Google Calendar da conta 1 vence por volta de 09/10** (item 2).
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -47,9 +47,9 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.14.1 | **Formas de pagamento por documento:** migration `20261006000001` (`commerce_documents.payment_method_ids`, bigint[]; os existentes receberam as ativas da conta). Novo documento nasce com todas as ativas; o editor desmarca. Página, PDF, e-mail e `/pay` usam só as escolhidas (`Document#payment_methods`). Diálogo da forma de pagamento trava no Save (o Paulo tinha criado "Credit Card" duas vezes, ids 2 e 3; a 3 nunca foi usada) | Sim, 05/10 |
 | 1.15.0 | **Comercial 3b: Mercado Pago Brasil** (`Commerce::Gateways::MercadoPago`, HTTParty): Access token cifrado, só conta MLB/BRL (`GET /users/me`); Checkout Pro por checkout (`notification_url` na preferência, sem configurar painel; `TEST-` usa `sandbox_init_point`); aviso → `GET /v1/payments/:id` com o token da conta (fonte da verdade), `external_reference` = id do checkout; `x-signature` conferida se o Paulo cadastrar a chave secreta (opcional); conciliação por `payments/search`. Contrato do webhook virou `webhook(request)` → `[{ external_id: }/{ id: }, resultado]`. **Corrigido:** documento em português quebrava PDF/e-mail (`:"pt-BR" is not a valid locale` em `DocumentLabels.money`). Smokes de pagamento contam só a conta deles (antes falhavam conforme a ordem) | Sim, 05/10 (falta o teste do Paulo com credenciais de teste do MP) |
 | 1.16.0 | **Comercial 3c: Yappy** (`Commerce::Gateways::Yappy`, Botón de Pago V2, USD): credenciais `merchant_id`, `secret_key` (cifrada; base64, a 1ª parte antes do `.` é a chave do HMAC) e `domain` opcional (padrão `FRONTEND_URL`, tem de ser o domínio cadastrado no Yappy Comercial). `validate/merchant` ao conectar e a cada ordem; `payment-wc` com `aliasYappy` = celular de 8 dígitos digitado na página; `orderId` = `CG<checkout>`. Confirmação só pelo IPN (**GET** `/commerce/webhooks/yappy/:token`), hash HMAC-SHA256 de orderId+status+domain **obrigatório**; E pago (valor da ordem), R/C falha, X expira. Sem API de consulta: a conciliação só expira em 24 h. Página: campo do celular e "aprueba en tu app" com refresh | Sim, 06/10 (sem credenciais reais ainda) |
-| 1.16.1 | **Página da fatura espera o pagamento sem recarregar** (antes, meta refresh de 5 s, que o Paulo viu como loop no Yappy): indicador + `fetch` a cada 4 s em `GET /d/:token/checkouts/:id` (`checkout_status`, JSON), recarrega uma vez quando sai de pending; formulário "Pagar" escondido enquanto espera; aviso de recusado/vencido; 10 min sem resposta → aviso + link. `CheckoutStarter` em transação (provedor recusou → não fica checkout pendente). Aviso no cartão do provedor conectado sem forma de pagamento ligada (o Paulo ligou o Yappy mas a forma "Yappy" antiga seguia offline) | **Buildada** (`test-b34n`, commit `1bdab3f78`), **esperando deploy** |
+| 1.16.1 | **Página da fatura espera o pagamento sem recarregar** (antes, meta refresh de 5 s, que o Paulo viu como loop no Yappy): indicador + `fetch` a cada 4 s em `GET /d/:token/checkouts/:id` (`checkout_status`, JSON), recarrega uma vez quando sai de pending; formulário "Pagar" escondido enquanto espera; aviso de recusado/vencido; 10 min sem resposta → aviso + link. `CheckoutStarter` em transação (provedor recusou → não fica checkout pendente). Aviso no cartão do provedor conectado sem forma de pagamento ligada (o Paulo ligou o Yappy mas a forma "Yappy" antiga seguia offline) | Sim, 06/10 |
 
-- **Imagem:** `:v1` = `f18b8b73d561` (1.16.0, commit `334b406b1`, clone `src-b19`, imagem `test-b33n`), rollback em `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b34`.
+- **Imagem:** `:v1` = `acc2a9b725d9` (1.16.1, commit `1bdab3f78`, imagem `test-b34n`), rollback em `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b35`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** em dia em 05/10 (`725ad62ec`, tags até `cg-v1.13.3`). O push é do Paulo (o classificador bloqueia para o Claude).
 
@@ -77,7 +77,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b34`.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b35`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 327 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 37, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 21.
@@ -102,26 +102,25 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
-1. **Deploy da 1.16.1** (`test-b34n`, sem migration). **Smoke verde em 06/10:** 15 scripts, 330 cenários, 0 falhas; `BOOT_API 200` (`/opt/cortexgen-chat/smoke-b34n.log`). Falta só o deploy. Depois, um comando por vez, para o Paulo: `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b34` → `docker tag cortexgen-chat:test-b34n cortexgen-chat:v1 && docker compose up -d --force-recreate rails sidekiq`. Fazer o bump do HANDOFF (o rollback seguinte é `v1-pre-b35`).
-2. **Provar a cobrança online em uso real:**
+1. **Provar a cobrança online em uso real:**
    - **Yappy (produção, comércio `…3c90`):** o caminho do aviso já foi **provado em 06/10**. A ordem `CG6` (FAT-2026-0005, USD 2,00) não foi aceita no app e, 5 min depois (14:51:17), o Yappy chamou `GET /commerce/webhooks/yappy/:token?orderId=CG6&status=X&domain=https://prs.cortexgen.cloud&confirmationNumber=…&hash=…`; o hash bateu e o checkout expirou. Ou seja, **a solicitação no app vence em ~5 min**, e o domínio e o hash estão certos. Falta ver um **`status=E`** (aceito): o Paulo precisa ligar a forma "Yappy" (id 1) ao provedor, pagar e **aceitar no app em menos de 5 min**. É dinheiro real (Live);
    - **Mercado Pago (teste, `…1783`):** o checkout 3 (FAT-2026-0004, R$ 10) só abriu o Checkout Pro, e a API não tem pagamento nenhum. Falta pagar **logado como comprador de teste**;
    - **Stripe (teste):** provado em 05/10. Falta ver um caso com **conversa do WhatsApp + negócio aberto**: o recibo pela conversa, a nota interna e o negócio ganho;
-   - pendências do Paulo: apagar a forma duplicada "Credit Card" (id 3) e o app OAuth do Google (abaixo).
-3. **App OAuth do Google** (`cortexgencrm`): páginas `/privacy` e `/terms` no ar desde a 1.13.3; domínio verificado no Search Console (TXT no Cloudflare) em 05/10. Falta o Paulo **publicar** no Google Auth Platform (o Google pediu 24 h depois da verificação). Se a conexão do Calendar da conta 1 tiver vencido (~09/10), reconectar.
-4. **Fase 3d — assinaturas mensais/anuais** (desenho v2, seção 3): plano = item com `billing_interval`; `commerce_subscriptions`; Stripe Billing (Checkout no modo subscription, `invoice.paid` → FAT do ciclo + recibo), preapproval do MP, cobrança assistida no Yappy (fatura + link 3 dias antes); tela Assinaturas. Recomendado esperar pelo menos o teste real do MP.
-5. **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual (o diálogo agora tem "Issue and send the receipt") e Aceptar/Rechazar na página pública.
-6. **Fase 4 do Comercial:** catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
-7. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
-8. **Outros módulos do DeskComm ainda sem equivalente** (para o Paulo escolher depois do Comercial): Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
-9. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
-10. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
-11. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
-12. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
+   - pendências do Paulo: apagar a forma duplicada "Credit Card" (id 3) e o app OAuth do Google (item 2).
+2. **App OAuth do Google** (`cortexgencrm`): páginas `/privacy` e `/terms` no ar desde a 1.13.3; domínio verificado no Search Console (TXT no Cloudflare) em 05/10. Falta o Paulo **publicar** no Google Auth Platform (o Google pediu 24 h depois da verificação). Se a conexão do Calendar da conta 1 tiver vencido (~09/10), reconectar.
+3. **Fase 3d — assinaturas mensais/anuais** (desenho v2, seção 3): plano = item com `billing_interval`; `commerce_subscriptions`; Stripe Billing (Checkout no modo subscription, `invoice.paid` → FAT do ciclo + recibo), preapproval do MP, cobrança assistida no Yappy (fatura + link 3 dias antes); tela Assinaturas. Recomendado esperar pelo menos o teste real do MP.
+4. **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual (o diálogo agora tem "Issue and send the receipt") e Aceptar/Rechazar na página pública.
+5. **Fase 4 do Comercial:** catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
+6. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
+7. **Outros módulos do DeskComm ainda sem equivalente** (para o Paulo escolher depois do Comercial): Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
+8. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
+9. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
+10. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
+11. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
     - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b19` (o vivo é `src-b20`; o `src-b15` é o de lint, com `node_modules`), e `dev-b30` (código montado nos smokes rápidos, script `dev-smoke.sh`);
     - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b31`; manter `v1` e os dois últimos `v1-pre-*`;
     - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
-13. Revisão cosmética antiga (acentos, modo escuro, celular).
+12. Revisão cosmética antiga (acentos, modo escuro, celular).
 
 ### Pendências antigas que continuam valendo
 
