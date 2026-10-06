@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.19.5] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
+
+- **Assinatura pela conversa provada** (21:35, conversa 89): o cliente pediu para assinar, a IA confirmou e o link chegou na mensagem seguinte.
+- A bolha do link (assinatura ou Meet) saía com "Subscribe here:" em inglês quando o Jev não tinha certeza do idioma (mensagem que mistura português e espanhol). Agora, sem idioma decidido, vai só "👉" com o link.
+
 ## [1.19.4] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n
 
 - **O link de assinatura sai mesmo quando o LLM esquece a etiqueta.** Visto no teste da 1.19.3: o cliente pediu para assinar o CortexGen 1, a IA respondeu "el enlace te llega en el siguiente mensaje", mas não escreveu a etiqueta, e a rede de segurança reteve a resposta (correto, mas o cliente ficou sem link). Agora o Jev escolhe, antes do LLM, o plano que o cliente decidiu assinar (com confiança de 0,8 ou mais), a assinatura é criada nessa hora, o LLM só confirma que o link vem a seguir e o link sai na mensagem seguinte. É o mesmo caminho que a Agenda adotou para marcar horário. No Jev real: "quiero assinar la subscripcion CortexGen 1" 1,0; "Si" à oferta 0,99; "cuánto cuesta" e "la cotización en pdf" ficaram em "nenhum" (0,99).
