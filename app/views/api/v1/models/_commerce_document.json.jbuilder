@@ -4,6 +4,7 @@ json.call(resource, :id, :kind, :number, :status, :language, :currency, :tax_mod
 json.display_status resource.display_status
 json.editable resource.editable?
 json.payable resource.payable?
+json.prepared_by_ai resource.prepared_by_ai?
 json.issue_date resource.issue_date
 json.due_date resource.due_date
 %i[subtotal discount_total tax_total total amount_paid].each { |column| json.set! column, resource.public_send(column).to_s }
@@ -12,6 +13,7 @@ json.sent_at resource.sent_at&.to_i
 json.archived_at resource.archived_at&.to_i
 json.public_url "#{ENV.fetch('FRONTEND_URL')}/d/#{resource.public_token}"
 if local_assigns[:full]
+  json.conversation_display_id resource.conversation&.display_id
   json.items resource.items do |line|
     json.call(line, :id, :item_id, :name, :description, :unit)
     %i[quantity unit_price discount_percent tax_rate line_subtotal line_discount line_tax line_total].each do |column|

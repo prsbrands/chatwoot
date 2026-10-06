@@ -1,7 +1,7 @@
 class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Commerce::BaseController
   RESULTS_PER_PAGE = 50
 
-  before_action :fetch_document, except: [:index, :create]
+  before_action :fetch_document, except: [:index, :create, :review_count]
   before_action -> { check_authorization(@document || ::Commerce::Document) }
 
   # Filtros: kind, status, contact_id, deal_id e q (número ou nome do cliente).
@@ -11,6 +11,11 @@ class Api::V1::Accounts::Commerce::DocumentsController < Api::V1::Accounts::Comm
   end
 
   def show; end
+
+  # Para o número em Quotes & invoices: rascunhos da IA esperando revisão.
+  def review_count
+    render json: { count: Current.account.commerce_documents.awaiting_review.count }
+  end
 
   # Recibo não se cria pela tela: nasce de um pagamento (receipt).
   def create

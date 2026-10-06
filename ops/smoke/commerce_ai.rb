@@ -64,12 +64,23 @@ ok 'cliente, conversa e negocio da conversa', doc.contact == contact && doc.conv
 nota = conversa.messages.where(private: true).last
 ok 'nota interna menciona o admin com o numero e o link', nota.content.include?("mention://user/#{ana.id}/") && nota.content.include?(doc.number) &&
                                                          nota.content.include?("/documents/#{doc.id}")
+ok 'rascunho marcado como da IA e contado para revisao', doc.prepared_by_ai? && api.(:get, 'documents/review_count', user: ana)[1] == { 'count' => 1 } &&
+                                                       api.(:get, "documents/#{doc.id}", user: ana)[1]['prepared_by_ai'] == true
 deal.update!(assignee: bot)
+_, de_novo = api.(:post, 'bot/quotes', { conversation_id: conversa.display_id, lines: [{ item_id: cortina.id, quantity: 10 }] })
+ok 'cliente muda a quantidade: o mesmo rascunho e atualizado', de_novo['id'] == doc.id && doc.reload.items.size == 1 &&
+                                                              doc.items.first.quantity == 10 && account.commerce_documents.count == 1
+ok 'com responsavel no negocio, a mencao e dele, avisando a mudanca',
+   conversa.messages.where(private: true).last.content.include?("mention://user/#{bot.id}/") &&
+   conversa.messages.where(private: true).last.content.include?('changed the request')
+Commerce::DocumentFlow.new(doc).mark_sent!
+ok 'enviado, sai da revisao', api.(:get, 'documents/review_count')[1]['count'].zero?
 api.(:post, 'bot/quotes', { conversation_id: conversa.display_id, lines: [{ item_id: cortina.id, quantity: 1 }] })
-ok 'com responsavel no negocio, a mencao e dele', conversa.messages.where(private: true).last.content.include?("mention://user/#{bot.id}/")
+ok 'depois de enviado, um pedido novo vira outro rascunho', account.commerce_documents.count == 2 &&
+                                                          api.(:get, 'documents/review_count')[1]['count'] == 1
 agotado = account.commerce_items.find_by(name: 'Agotado')
 ok 'item indisponivel: 404, nada criado', api.(:post, 'bot/quotes', { conversation_id: conversa.display_id, lines: [{ item_id: agotado.id }] }).first == 404 &&
-                                          account.commerce_documents.count == 2
+                                          account.commerce_documents.count == 2 && account.commerce_documents.order(:id).last.items.first.quantity == 1
 ok 'conversa de outra conta: 404', api.(:post, 'bot/quotes', { conversation_id: 999_999, lines: [{ item_id: cortina.id }] }).first == 404
 
 # --- assinatura -----------------------------------------------------------------

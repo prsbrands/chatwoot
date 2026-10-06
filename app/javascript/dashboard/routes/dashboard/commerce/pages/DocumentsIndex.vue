@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useAccount } from 'dashboard/composables/useAccount';
 import CommerceAPI from 'dashboard/api/commerce';
@@ -20,6 +21,7 @@ import {
 // busca. Recibo não se cria aqui: nasce de um pagamento da fatura.
 const { t } = useI18n();
 const router = useRouter();
+const store = useStore();
 const { accountScopedRoute } = useAccount();
 
 const ALL = '';
@@ -48,6 +50,7 @@ const fetchDocuments = async () => {
       archived: archived.value || undefined,
     });
     documents.value = data.payload;
+    store.dispatch('commerce/fetchReviewCount');
   } catch (error) {
     useAlert(t('COMMERCE.API.ERROR'));
   } finally {
@@ -179,8 +182,18 @@ onMounted(fetchDocuments);
         <span class="w-36 font-medium text-n-slate-12">
           {{ document.number }}
         </span>
-        <span class="flex-1 min-w-0 truncate text-n-slate-12">
-          {{ document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER') }}
+        <span class="flex items-center flex-1 min-w-0 gap-2 text-n-slate-12">
+          <span class="truncate">
+            {{
+              document.customer.name || $t('COMMERCE.DOCUMENTS.NO_CUSTOMER')
+            }}
+          </span>
+          <span
+            v-if="document.prepared_by_ai && document.status === 'draft'"
+            class="px-1.5 py-0.5 text-xs font-medium rounded-md shrink-0 bg-n-violet-3 text-n-violet-11"
+          >
+            {{ $t('COMMERCE.DOCUMENTS.AI_DRAFT') }}
+          </span>
         </span>
         <span class="w-28 text-sm text-n-slate-11">
           {{ formatDate(document.issue_date) }}

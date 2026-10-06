@@ -82,6 +82,10 @@ class CommerceAPI extends ApiClient {
     return axios.get(`${this.url}/documents`, { params });
   }
 
+  reviewCount() {
+    return axios.get(`${this.url}/documents/review_count`);
+  }
+
   document(id) {
     return axios.get(`${this.url}/documents/${id}`);
   }

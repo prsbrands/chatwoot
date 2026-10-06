@@ -267,6 +267,7 @@ Rails.application.routes.draw do
               end
             end
             resources :documents, only: [:index, :show, :create, :update, :destroy] do
+              get :review_count, on: :collection
               member do
                 post :pdf
                 post :deliver

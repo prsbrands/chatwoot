@@ -1,5 +1,5 @@
 <script setup>
-import { h, ref, computed, onMounted, watch } from 'vue';
+import { h, ref, computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useAdmin } from 'dashboard/composables/useAdmin';
@@ -120,6 +120,27 @@ watch(
   },
   { immediate: true }
 );
+
+// Número vermelho em Quotes & invoices: rascunhos da IA esperando revisão. A
+// IA cria pelo bot, fora desta tela, então o número é relido a cada minuto.
+const REVIEW_COUNT_INTERVAL = 60000;
+const hasCommerce = computed(() =>
+  isFeatureEnabledonAccount.value(accountId.value, FEATURE_FLAGS.COMMERCE)
+);
+let reviewCountTimer = null;
+watch(
+  [accountId, hasCommerce],
+  ([currentAccountId, commerce]) => {
+    clearInterval(reviewCountTimer);
+    if (!currentAccountId || !commerce) return;
+    const fetchReviewCount = () =>
+      store.dispatch('commerce/fetchReviewCount').catch(() => {});
+    fetchReviewCount();
+    reviewCountTimer = setInterval(fetchReviewCount, REVIEW_COUNT_INTERVAL);
+  },
+  { immediate: true }
+);
+onBeforeUnmount(() => clearInterval(reviewCountTimer));
 
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
@@ -861,6 +882,10 @@ const baseMenuItems = computed(() => {
       icon: 'i-lucide-receipt-text',
       to: accountScopedRoute('commerce_documents'),
       activeOn: ['commerce_documents', 'commerce_document'],
+      getterKeys: {
+        count: 'commerce/getReviewCount',
+        countClass: 'bg-n-ruby-9 text-white',
+      },
     },
     {
       name: 'Subscriptions',

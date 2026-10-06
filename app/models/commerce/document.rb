@@ -33,6 +33,10 @@ class Commerce::Document < ApplicationRecord
   validates :issue_date, presence: true
   validate :status_fits_kind
 
+  # Rascunho de cotização que a IA preparou (Commerce::AiSales) e ninguém enviou
+  # ainda: o número vermelho em Quotes & invoices.
+  scope :awaiting_review, -> { quote.draft.where("details->>'prepared_by_ai' = 'true'") }
+
   before_validation :assign_number, on: :create
   before_validation -> { self.public_token ||= SecureRandom.urlsafe_base64(24) }, on: :create
 
@@ -55,6 +59,10 @@ class Commerce::Document < ApplicationRecord
 
   def recalculate!
     Commerce::DocumentTotals.new(self).apply!
+  end
+
+  def prepared_by_ai?
+    details['prepared_by_ai'] == true
   end
 
   def latest_pdf

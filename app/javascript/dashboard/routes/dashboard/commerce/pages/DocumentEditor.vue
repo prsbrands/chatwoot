@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useAccount } from 'dashboard/composables/useAccount';
@@ -33,6 +34,7 @@ import {
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const store = useStore();
 const { isAdmin } = useAdmin();
 const { accountScopedRoute } = useAccount();
 
@@ -117,6 +119,7 @@ const togglePaymentMethod = (id, checked) => {
 
 const load = data => {
   doc.value = data;
+  store.dispatch('commerce/fetchReviewCount');
   form.value = {
     language: data.language,
     currency: data.currency,
@@ -212,6 +215,7 @@ const removeDocument = async () => {
     return;
   }
   await CommerceAPI.deleteDocument(doc.value.id);
+  store.dispatch('commerce/fetchReviewCount');
   router.push(accountScopedRoute('commerce_documents'));
 };
 
@@ -340,6 +344,12 @@ onMounted(async () => {
           >
             {{ $t('COMMERCE.DOCUMENTS.ARCHIVED_BADGE') }}
           </span>
+          <span
+            v-if="doc.prepared_by_ai"
+            class="px-2 py-0.5 text-xs font-medium rounded-md bg-n-violet-3 text-n-violet-11"
+          >
+            {{ $t('COMMERCE.DOCUMENTS.AI_DRAFT') }}
+          </span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Button
@@ -419,6 +429,29 @@ onMounted(async () => {
       </header>
 
       <div class="flex flex-col w-full max-w-6xl gap-6 px-6 py-5">
+        <div
+          v-if="doc.prepared_by_ai && doc.status === 'draft'"
+          class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-n-violet-3 text-n-violet-11"
+        >
+          <span class="text-sm">
+            {{
+              $t('COMMERCE.DOCUMENTS.AI_DRAFT_REVIEW', {
+                conversation: doc.conversation_display_id,
+              })
+            }}
+          </span>
+          <router-link
+            v-if="doc.conversation_display_id"
+            class="text-sm font-medium underline"
+            :to="
+              accountScopedRoute('inbox_conversation', {
+                conversation_id: doc.conversation_display_id,
+              })
+            "
+          >
+            {{ $t('COMMERCE.DOCUMENTS.OPEN_CONVERSATION') }}
+          </router-link>
+        </div>
         <div class="grid gap-6 lg:grid-cols-2">
           <section
             class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak"

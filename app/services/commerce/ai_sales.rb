@@ -25,16 +25,19 @@ class Commerce::AiSales
 
   # lines: [{ item_id:, quantity: }]. Itens de fora do catálogo disponível dão
   # 404. language: o idioma do cliente que o Jev viu (es, pt, en); sem ele, o da
-  # conta.
+  # conta. O rascunho da IA ainda não revisado da mesma conversa é atualizado
+  # (o cliente mudou a quantidade), em vez de nascer outro.
   def quote!(conversation, lines, language: nil)
     contact = conversation.contact
-    quote = @account.commerce_documents.new(kind: :quote, issue_date: Date.current, **quote_defaults)
+    quote = Commerce::Document.awaiting_review.find_by(account: @account, conversation: conversation)
+    updated = quote.present?
+    quote ||= @account.commerce_documents.new(kind: :quote, issue_date: Date.current, details: { 'prepared_by_ai' => true }, **quote_defaults)
     Commerce::DocumentEditor.new(quote, {
                                    language: language_or_default(language), contact_id: contact.id, conversation_id: conversation.id,
                                    deal_id: @account.sales_deals.open.find_by(contact: contact)&.id,
                                    customer: Commerce.customer_of(contact), items: lines.map { |line| quote_line(line) }
                                  }).save!
-    notify_team(conversation, quote)
+    notify_team(conversation, quote, updated ? 'commerce.ai_quote_updated' : 'commerce.ai_quote')
     quote
   end
 
@@ -69,12 +72,12 @@ class Commerce::AiSales
   end
 
   # Quem atende o negócio, ou o primeiro admin da conta.
-  def notify_team(conversation, quote)
+  def notify_team(conversation, quote, key)
     user = quote.deal&.assignee || @account.administrators.order(:id).first
     tag = "[@#{user.available_name}](mention://user/#{user.id}/#{ERB::Util.url_encode(user.available_name)})"
     url = "#{ENV.fetch('FRONTEND_URL')}/app/accounts/#{@account.id}/documents/#{quote.id}"
     total = Commerce::DocumentLabels.money(quote.total, quote.currency, 'en')
     conversation.messages.create!(account: @account, inbox: conversation.inbox, message_type: :outgoing, private: true,
-                                  content: I18n.t('commerce.ai_quote', mention: tag, number: quote.number, total: total, url: url))
+                                  content: I18n.t(key, mention: tag, number: quote.number, total: total, url: url))
   end
 end

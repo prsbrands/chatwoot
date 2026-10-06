@@ -321,7 +321,10 @@
       "PAID_TO_DATE": "Paid to date",
       "PDF_FILE": "{number}.pdf · {date}",
       "PAYMENT_METHODS_SHOWN": "Payment methods shown on this document",
-      "PAY_ONLINE_BUTTON": "(Pay button)"
+      "PAY_ONLINE_BUTTON": "(Pay button)",
+      "AI_DRAFT": "Prepared by AI",
+      "AI_DRAFT_REVIEW": "The AI prepared this quote from conversation #{conversation} with the catalog prices. Review the items, quantities and customer, then send it.",
+      "OPEN_CONVERSATION": "Open the conversation"
     },
     "BILLING_INTERVAL": {
       "one_time": "One-time",
