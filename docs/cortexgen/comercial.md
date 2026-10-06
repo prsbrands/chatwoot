@@ -10,7 +10,8 @@ Flag por conta: **`commerce`**, no fim de `feature_flags_ext_1`. Liga no Super A
 | 2 | Orçamentos e faturas com PDF, link público, envio, pagamentos, arquivar e reabrir | 1.13.0–1.13.2 | No ar |
 | 3a | Stripe: fatura paga online (inteira ou parte), recibo como documento | 1.14.0 | Pronta; desenho em `comercial-fase3.md` |
 | 3b | Mercado Pago Brasil: Checkout Pro (Pix, cartão, boleto, saldo), BRL | 1.15.0 | Pronta |
-| 3c–3d | Yappy e assinaturas mensais/anuais | — | Próximas |
+| 3c | Yappy (Botón de Pago V2), USD | 1.16.0 | Pronta |
+| 3d | Assinaturas mensais/anuais | — | Próxima |
 | 4 | Catálogo na IA e vitrine pública | — | Depois da 3 |
 
 ## Decisões do Paulo (05/10/2026)
@@ -63,6 +64,7 @@ Ficam em `app/services/commerce/`.
   Canal API sem webhook, como a caixa de voz, recusa o envio.
 - **`CheckoutStarter`** (página pública → "Pagar") valida o valor no servidor (de 1 até o saldo; abaixo de 1, só o saldo), a forma online e a moeda, cria o checkout e abre a sessão no provedor.
 - **`Gateways::MercadoPago`** usa o Access token da conta (HTTParty). `connect!` aceita só conta Brasil (`site_id` MLB). `start!` cria a preferência do Checkout Pro, com `notification_url` = webhook do provedor e `external_reference` = id do checkout. `webhook` lê o pagamento na API (a fonte da verdade) e confere o `x-signature` quando há chave secreta. `status` busca por `external_reference`.
+- **`Gateways::Yappy`** valida o comércio (`validate/merchant`) e cria a ordem (`payment-wc`) com o celular do cliente (`aliasYappy`). Só o IPN (GET) confirma, com o hash HMAC-SHA256 obrigatório; não há consulta de situação.
 - **`Gateways::Stripe`** usa a chave da própria conta (`Stripe::StripeClient`): `connect!` valida a chave e cria o webhook (eventos `checkout.session.*`), `start!` abre a Checkout Session, `status` consulta e `webhook` verifica a assinatura (`Stripe::Webhook.construct_event`).
 - **`CheckoutSettler`** aplica o resultado do webhook, da volta do cliente (`/d/:token?checkout=`) ou da conciliação. Faz isso com o checkout travado: pago vira `add_payment!` e, depois, o `Commerce::ReceiptJob`.
 - **`ReceiptIssuer`** emite o recibo e o envia pela conversa e pelo último e-mail da fatura. No pagamento online, também deixa uma nota interna na conversa.
@@ -97,4 +99,4 @@ Ficam em `app/services/commerce/`.
 
 ## Testes
 
-`ops/smoke/commerce.rb` (25 cenários), `ops/smoke/commerce_documents.rb` (36) `ops/smoke/commerce_checkout.rb` (41, com o Stripe falso por `class_eval` e a assinatura real do webhook) e `ops/smoke/commerce_mercado_pago.rb` (18) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.
+`ops/smoke/commerce.rb` (25 cenários), `ops/smoke/commerce_documents.rb` (36) `ops/smoke/commerce_checkout.rb` (41, com o Stripe falso por `class_eval` e a assinatura real do webhook) `ops/smoke/commerce_mercado_pago.rb` (18) e `ops/smoke/commerce_yappy.rb` (21) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.
