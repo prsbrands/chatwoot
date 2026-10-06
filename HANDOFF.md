@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-05 · Instância: https://prs.cortexgen.cloud · Versão: **1.14.0** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-05 · Instância: https://prs.cortexgen.cloud · Versão: **1.14.1** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -42,8 +42,9 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.13.2 | **Anexo no WhatsApp por QR:** o webhook levava `data_url` = `file_url` (redireciona) e o SSRF guard do OpenWA (`/app/dist/common/security/ssrf-guard.js`, `assertNoRedirect`) recusa redirecionamento — toda mensagem com anexo morria ("Destination address is not allowed"). `CortexgenMessage` (prepend no `Message`, novo toque no upstream) troca por `download_url` só no webhook. Envio de documento: lista de conversas com caixa/última mensagem/tempo; canal API sem webhook (caixa de voz) fora e recusado no `DocumentSender`. E-mail do documento em HTML próprio (`app/views/commerce/document_mailer/`, `layout false`, logo `cid:`). **`email_continuity_on_api_channel` estava ligado nas 3 contas** (clientes recebiam a conversa do WhatsApp por e-mail): o Paulo desligou no Super Admin em 05/10 | Sim, 05/10 |
 | 1.13.3 | **Política de privacidade e Termos** estáticos em `public/privacy.html` e `public/terms.html` (`/privacy`, `/terms`), es/en/pt, em nome da **PRS Global Business LLC, Santa Fe, NM 87505-4139, EUA**, lei do Novo México. Exigidos pelo Google para publicar o app OAuth (`cortexgencrm`). Contato `prsglobalbusiness@gmail.com` | Sim, 05/10 |
 | 1.14.0 | **Comercial 3a: fatura paga online pelo Stripe e recibo como documento.** Migration `20261005000004` (`commerce_payment_providers`, `commerce_checkouts`; `provider_id` na forma de pagamento; `checkout_id`/`receipt_id` no pagamento; `details`/`delivered_email` no documento; `receipt_prefix`). Stripe com a chave da conta (`Commerce::Gateways::Stripe`, `Stripe::StripeClient`), webhook criado pela API em `/commerce/webhooks/stripe/:token`, assinatura verificada; pagamento parcial (mín. 1); volta `?checkout=` e conciliação a cada 5 min; recibo `REC-` emitido e enviado pelos canais da fatura (conversa + `delivered_email`), nota interna no pagamento online. Detalhe em `docs/cortexgen/comercial.md` | Sim, 05/10 (falta o teste do Paulo em modo teste do Stripe) |
+| 1.14.1 | **Formas de pagamento por documento:** migration `20261006000001` (`commerce_documents.payment_method_ids`, bigint[]; os existentes receberam as ativas da conta). Novo documento nasce com todas as ativas; o editor desmarca. Página, PDF, e-mail e `/pay` usam só as escolhidas (`Document#payment_methods`). Diálogo da forma de pagamento trava no Save (o Paulo tinha criado "Credit Card" duas vezes, ids 2 e 3; a 3 nunca foi usada) | Sim, 05/10 |
 
-- **Imagem:** `:v1` = `836300ff1a45` (1.14.0, commit `bd9a36439`, clone `src-b16`, imagem `test-b30n`), rollback em `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b31`.
+- **Imagem:** `:v1` = `f7f478d13a76` (1.14.1, commit `bf36cfff9`, clone `src-b17`, imagem `test-b31n`), rollback em `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b32`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0). O próximo patch usa esse commit como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** em dia em 05/10 (`725ad62ec`, tags até `cg-v1.13.3`). O push é do Paulo (o classificador bloqueia para o Claude).
 
@@ -71,10 +72,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b31`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 283 cenários no total:
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem. O próximo rollback é `v1-pre-b32`.
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 287 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 36, `commerce_checkout` 37.
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 36, `commerce_checkout` 41.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
 - **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
@@ -91,7 +92,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
   - Workflow agendado (follow-up): depois do Publish, também `docker restart` (ver 01/10).
 - **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261005000004`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261006000001`.
 - **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão. O WhatsApp QR vivo da conta 1 é a **inbox 33**. O **WhatsApp oficial** é a **inbox 34** (`+15055573540`).
 
 ### Fila, na ordem que eu seguiria
@@ -102,7 +103,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
    - fatura do começo ao fim: Create invoice → Generate PDF → Send → Record payment parcial e total → negócio "ganho" com o valor;
    - página pública: Aceptar/Rechazar.
 3. **Fase 3 do Comercial** (desenho v2 em `docs/cortexgen/comercial-fase3.md`, aprovado pelo Paulo em 05/10: Stripe EUA, Mercado Pago Brasil, Yappy Panamá; pagamento parcial; assinaturas mensais/anuais; recibo como documento):
-   - **3a (1.14.0) no ar:** falta o Paulo conectar o Stripe em **modo teste** (Company & payments → Online payments), ligar uma forma de pagamento ao Stripe e pagar uma fatura com o cartão `4242 4242 4242 4242`. Conferir: webhook criado no painel do Stripe, fatura parcial/paga, recibo enviado (conversa + e-mail), nota interna;
+   - **3a (1.14.0–1.14.1) provada em 05/10 no modo teste do Stripe:** FAT-2026-0001 paga inteira e FAT-2026-0003 com 50%, os dois confirmados pelo webhook assinado, recibos REC-0001/0002 por e-mail. Ainda não visto: recibo pela conversa do WhatsApp + nota interna, e negócio ganho (as faturas de teste não tinham conversa nem negócio). Pendente do Paulo: apagar a forma duplicada "Credit Card" (id 3);
    - **3b Mercado Pago** (Checkout Pro com Pix, BRL), **3c Yappy** (Botón de Pago V2, USD; o `cortex-tasty-hub` é só referência), **3d assinaturas** (Stripe Billing, preapproval do MP, cobrança assistida no Yappy).
 4. **Fase 4 do Comercial:** catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
 5. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
