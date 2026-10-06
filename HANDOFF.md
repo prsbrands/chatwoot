@@ -20,7 +20,7 @@
 - **Fase 4, a IA vende pelo catálogo** (1.18.0 a 1.19.6, provada em uso real na conversa 89) e **vitrine pública** `/c/…` (1.19.0, ligada na conta 1). Rascunhos da IA têm o **número vermelho** em Quotes & invoices (1.19.3).
 - **Lição que custou 5 versões só de n8n (1.19.1–1.19.6):** o LLM esquece as etiquetas `[[QUOTE]]`/`[[SUBSCRIBE]]`, como esquecia o `[[BOOK]]`. A ação passou a ser decidida pelo Jev **antes** do LLM. Memória `bot-acao-pelo-jev-antes-do-llm`.
 
-**Comece pelo item 1 da fila.** Antes, peça ao Paulo o **push** (commits e tags `cg-v1.16.2` a `cg-v1.19.6` estão só no Mac; o classificador bloqueia o push do Claude) e lembre o **app OAuth do Google** (vence ~09/10).
+**Comece pelo item 1 da fila.** Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -71,7 +71,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 - **Imagem:** `:v1` = imagem `test-b42n` (1.19.3, commit `d69b3ba6f`, clone `src-b28`), rollback em `:v1-pre-b42` (1.19.0), `:v1-pre-b41` (1.18.0), `:v1-pre-b40` (1.17.2), `:v1-pre-b39` (1.17.1), `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b43`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0); o **bot** está com os do `2f6b7eae9` (1.18.0, publicado em 06/10; cópia anterior em `/home/node/wf-pre-catalogo.json`) passou ao `05026d888` (1.19.1) está no `be71f912a` (1.19.2, publicado em 06/10) passou ao `636b874f6` (1.19.4, publicado em 06/10) e está no `e24635b8a` (1.19.6, publicado em 06/10; a 1.19.5 não foi publicada sozinha). O próximo patch usa o publicado como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
-- **GitHub:** em dia até `725ad62ec` (05/10, tags até `cg-v1.13.3`); o que veio depois, de `cg-v1.14.0` a `cg-v1.19.6`, pode ainda estar só no Mac: confira com `git status -sb` e `git ls-remote --tags origin`. O push é do Paulo (o classificador bloqueia para o Claude).
+- **GitHub:** em dia em 06/10 (tags até `cg-v1.19.6`). O remote deste clone passou a HTTPS (`https://github.com/prsbrands/chatwoot.git`, login do `gh`): em SSH o push dava `Permission denied (publickey)`. O push é do Paulo (o classificador bloqueia para o Claude).
 
 ### Configuração viva (conta 1)
 
