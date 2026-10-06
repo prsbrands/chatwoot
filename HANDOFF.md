@@ -13,7 +13,14 @@
 - **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
 - **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático; **assinaturas** mensais e anuais nos três (1.17); a **IA vende pelo catálogo** (preço, cotização em rascunho, link de assinatura) e a **vitrine pública** (1.18–1.19).
 
-**Comece pelo item 0 da fila:** em 06/10 fecharam a Fase 3 (cobrança online nos três provedores e assinaturas: 1.17.0 Stripe, 1.17.1 Mercado Pago, 1.17.2 Yappy) e a Fase 4 (a IA vende pelo catálogo, 1.18–1.19.6, e a vitrine, 1.19.0). Próxima frente a escolher com o Paulo: fechar a Fase 2 em uso real ou um módulo do DeskComm. **O Google Calendar da conta 1 vence por volta de 09/10** se o app OAuth não for publicado (item 2).
+**O que a sessão de 06/10 (tarde e noite) fez**, de 1.16.1 a 1.19.6:
+- **Comercial em produção:** Stripe, Mercado Pago e Yappy com chaves reais; o **Yappy foi provado com dinheiro real** (FAT-2026-0005, recibo REC-2026-0003). O Paulo decidiu **não** testar Stripe e MP com dinheiro real por enquanto: se aparecer problema, trata-se o caso.
+- **Formas de pagamento:** exclusão pela lista (1.16.3), com histórico protegido. Conta 1: `Credit Card` (id 2, Stripe), `Mercado Pago BR` (id 4), `Yappy Online` (id 5).
+- **Fase 3d, assinaturas** (1.17.0 Stripe Billing, 1.17.1 Mercado Pago preapproval, 1.17.2 Yappy com cobrança assistida). A assinatura 1 (CortexGen 1, pendente) foi criada pela IA no teste; ninguém assinou de verdade ainda.
+- **Fase 4, a IA vende pelo catálogo** (1.18.0 a 1.19.6, provada em uso real na conversa 89) e **vitrine pública** `/c/…` (1.19.0, ligada na conta 1). Rascunhos da IA têm o **número vermelho** em Quotes & invoices (1.19.3).
+- **Lição que custou 5 versões só de n8n (1.19.1–1.19.6):** o LLM esquece as etiquetas `[[QUOTE]]`/`[[SUBSCRIBE]]`, como esquecia o `[[BOOK]]`. A ação passou a ser decidida pelo Jev **antes** do LLM. Memória `bot-acao-pelo-jev-antes-do-llm`.
+
+**Comece pelo item 1 da fila.** Antes, peça ao Paulo o **push** (commits e tags `cg-v1.16.2` a `cg-v1.19.6` estão só no Mac; o classificador bloqueia o push do Claude) e lembre o **app OAuth do Google** (vence ~09/10).
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -64,7 +71,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 - **Imagem:** `:v1` = imagem `test-b42n` (1.19.3, commit `d69b3ba6f`, clone `src-b28`), rollback em `:v1-pre-b42` (1.19.0), `:v1-pre-b41` (1.18.0), `:v1-pre-b40` (1.17.2), `:v1-pre-b39` (1.17.1), `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b43`.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0); o **bot** está com os do `2f6b7eae9` (1.18.0, publicado em 06/10; cópia anterior em `/home/node/wf-pre-catalogo.json`) passou ao `05026d888` (1.19.1) está no `be71f912a` (1.19.2, publicado em 06/10) passou ao `636b874f6` (1.19.4, publicado em 06/10) e está no `e24635b8a` (1.19.6, publicado em 06/10; a 1.19.5 não foi publicada sozinha). O próximo patch usa o publicado como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
-- **GitHub:** em dia em 05/10 (`725ad62ec`, tags até `cg-v1.13.3`). O push é do Paulo (o classificador bloqueia para o Claude).
+- **GitHub:** em dia até `725ad62ec` (05/10, tags até `cg-v1.13.3`); o que veio depois, de `cg-v1.14.0` a `cg-v1.19.6`, pode ainda estar só no Mac: confira com `git status -sb` e `git ls-remote --tags origin`. O push é do Paulo (o classificador bloqueia para o Claude).
 
 ### Configuração viva (conta 1)
 
@@ -77,7 +84,11 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 - **Jornada do Paulo:** seg–sex, fuso **America/Panama**.
 - **Compromissos:** o 2 (segunda 05/10 10:00) teve o lembrete por QR enviado em 04/10 e **já passou: falta registrar presença** (o Radar cobra). O 3 (terça 06/10 11:00) foi **desmarcado pela IA** em 05/10 (1.10.0 provada em uso real).
 - **Persona `nathan-whatsapp`:** o Paulo testou GPT 5.6 Luna em 03/10 e **voltou para DeepSeek 4.1** em 05/10; ele ainda vai comparar os dois. A regra 10 ("No confirmes agenda…") pode atrapalhar marcações; sugestão de texto já passada a ele.
-- **Comercial:** flag `commerce` ligada na conta 1. Empresa "PRS" cadastrada com logo PNG; 2 itens no catálogo; documentos COT-2026-0001 (enviado) e FAT-2026-0001 (rascunho, de teste). Prefixos COT/FAT.
+- **Comercial:** flag `commerce` ligada na conta 1. Empresa "PRS" com logo e WhatsApp `+50765173186`; prefixos COT/FAT/REC.
+  - **Provedores em produção:** Stripe (webhook `we_1UNavI…` criado pela API), Mercado Pago (webhook cadastrado pelo Paulo no painel do MP: `…/commerce/webhooks/mercado_pago/n-P52av9CK5eWHRt4w9VRzA1Yi_qGmxv`, Pagamentos + Planos e assinaturas) e Yappy (comércio `…3c90`).
+  - **Catálogo:** CortexGen 1 (USD 9,90/mês, plano assinável pelo Stripe), Product Test #1 (USD 2) e Project (a cotizar).
+  - **Vitrine** `/c/…` ligada. Jev: atividade `catalog` decidindo (padrão).
+  - Os documentos e a assinatura de 06/10 são testes do Paulo na conversa 89.
 - **E-mail:** SMTP da **Resend** (`smtp.resend.com:465`, remetente `no-reply@cortexgen.cloud`). O ApplicationMailer do Chatwoot **engole falha de SMTP** (só loga "Failed to send Email"): a tela diz "Sent" mesmo se não saiu.
 - **`email_continuity_on_api_channel` desligado nas 3 contas** (05/10). Ligado, todo cliente de WhatsApp por QR com e-mail recebia a conversa por e-mail. Não religar.
 
@@ -91,11 +102,13 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
   - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b43`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 12 scripts em Postgres e Redis **descartáveis**, 327 cenários no total:
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 20 scripts em Postgres e Redis **descartáveis**, 436 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
+  - **Nós do n8n:** `node ops/n8n/test/catalogo.test.js` (21 OK) roda MontaPrompt, Responde e JevRevisao fora do n8n, com `$`, `$input` e HTTP falsos (`ops/n8n/test/harness.js`).
+  - **Critério novo do Jev se mede no Jev real** antes de publicar: script em `rails runner` dentro do container, lendo `jev_api_key` do `account_settings` sem imprimir (memória `bot-acao-pelo-jev-antes-do-llm`).
 - **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
 - **Armadilhas desta sessão:**
   - `includes` + `joins`/`order` por outra tabela vira `eager_load`, e o polimórfico `inbox.channel` quebra. Use **`preload`**. Aconteceu duas vezes: no Radar e no `ReminderJob`.
@@ -115,26 +128,25 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 
 ### Fila, na ordem que eu seguiria
 
-0. **Fase 4 fechada e provada em uso real (06/10):** preço só do catálogo, cotização como rascunho para revisar (número vermelho em Quotes & invoices), assinatura com link pela conversa, vitrine pública. Sugestão ainda aberta: "revisão da resposta" do Jev para decidir. Próximos da fila: fechar a Fase 2 em uso real, módulos do DeskComm (Memória da IA, Casos, Evolução da IA, Campanhas).
-1. **Provar a cobrança online em uso real** (**o Paulo decidiu em 06/10 pular os testes reais do Stripe e do MP em produção; se aparecer problema, trata-se o caso.** **os três provedores estão em produção desde 06/10**; formas de pagamento da conta 1: só `Credit Card` id 2 → Stripe, `Mercado Pago BR` id 4 → MP, `Yappy Online` id 5 → Yappy; as outras o Paulo excluiu. **Yappy provado com dinheiro real em 06/10:** checkout 8 pago, pagamento 3, recibo documento 11; o Paulo está trocando Stripe e Mercado Pago para chaves de produção):
-   - **Yappy (produção, comércio `…3c90`):** o caminho do aviso já foi **provado em 06/10**. A ordem `CG6` (FAT-2026-0005, USD 2,00) não foi aceita no app e, 5 min depois (14:51:17), o Yappy chamou `GET /commerce/webhooks/yappy/:token?orderId=CG6&status=X&domain=https://prs.cortexgen.cloud&confirmationNumber=…&hash=…`; o hash bateu e o checkout expirou. Ou seja, **a solicitação no app vence em ~5 min**, e o domínio e o hash estão certos. Falta ver um **`status=E`** (aceito): o Paulo precisa ligar a forma "Yappy" (id 1) ao provedor, pagar e **aceitar no app em menos de 5 min**. É dinheiro real (Live);
-   - **Mercado Pago (teste, `…1783`):** o checkout 3 (FAT-2026-0004, R$ 10) só abriu o Checkout Pro, e a API não tem pagamento nenhum. Falta pagar **logado como comprador de teste**;
-   - **Stripe (teste):** provado em 05/10. Falta ver um caso com **conversa do WhatsApp + negócio aberto**: o recibo pela conversa, a nota interna e o negócio ganho;
-   - pendências do Paulo: apagar a forma duplicada "Credit Card" (id 3) e o app OAuth do Google (item 2).
-2. **App OAuth do Google** (`cortexgencrm`): páginas `/privacy` e `/terms` no ar desde a 1.13.3; domínio verificado no Search Console (TXT no Cloudflare) em 05/10. Falta o Paulo **publicar** no Google Auth Platform (o Google pediu 24 h depois da verificação). Se a conexão do Calendar da conta 1 tiver vencido (~09/10), reconectar.
-3. ~~**Fase 3d — assinaturas mensais/anuais**~~ entregue: 1.17.0 (Stripe), 1.17.1 (Mercado Pago), 1.17.2 (Yappy, cobrança assistida). Nenhuma assinatura real ainda.
-4. **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual (o diálogo agora tem "Issue and send the receipt") e Aceptar/Rechazar na página pública.
-5. ~~**Fase 4 do Comercial:**~~ (entregue: 1.18.0 IA, 1.19.0 vitrine) catálogo na IA (o bot consulta preço/disponibilidade e monta orçamento pela conversa) e vitrine pública do catálogo.
-6. **Agenda em uso real:** ver o **link do Meet** chegar logo após uma marcação (1.9.3 ainda não observada) e uma **mudança de horário** ("cámbiala al miércoles a las 10"); registrar a presença do compromisso 2.
-7. **Outros módulos do DeskComm ainda sem equivalente** (para o Paulo escolher depois do Comercial): Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
-8. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
-9. **Jev:** "Check the reply before sending" segue em Observing; ler o cartão antes de recomendar passar outras atividades a decidir.
-10. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
-11. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
-    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b19` (o vivo é `src-b28`; o `src-b15` é o de lint, com `node_modules`), e `dev-b30` (código montado nos smokes rápidos, script `dev-smoke.sh`);
-    - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b31`; manter `v1` e os dois últimos `v1-pre-*`;
-    - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json`, `fu-*.json`, `build-*.log`, `smoke-*.log`.
-12. Revisão cosmética antiga (acentos, modo escuro, celular).
+1. **App OAuth do Google** (`cortexgencrm`), **do Paulo e com prazo**: páginas `/privacy` e `/terms` no ar, domínio verificado no Search Console em 05/10. Falta **publicar** no Google Auth Platform. Se a conexão do Calendar da conta 1 vencer (~09/10), reconectar.
+2. **Escolher a próxima frente com o Paulo:**
+   - **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual ("Issue and send the receipt") e Aceptar/Rechazar na página pública;
+   - **Módulos do DeskComm ainda sem equivalente:** Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
+3. **Jev:** sugerido ao Paulo passar **"revisão da resposta"** (`reply_review`) para decidir. Em 06/10 ela marcou promessas falsas com 0,81 e 0,86, mas só observava; as redes `false_booking`/`false_sale` já agem sozinhas. Ler o cartão antes.
+4. **Ver em uso real o que ainda não foi visto:**
+   - assinatura assinada de verdade (Stripe/MP/Yappy), com a fatura do ciclo e o recibo;
+   - renovação assistida do Yappy (fatura 3 dias antes, lembrete, atraso);
+   - Agenda: link do Meet logo após marcar (1.9.3) e mudança de horário; registrar a presença do compromisso 2.
+5. **Pequenos ajustes possíveis do catálogo na IA** (só se aparecerem em uso):
+   - pedido com vários itens ou mudança de quantidade ainda depende da etiqueta `[[QUOTE]]` (o Jev escolhe um item só);
+   - a quantidade vem de regex (`quantidadePedida`, no `MontaPrompt`).
+6. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
+7. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
+8. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
+    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b27` (o vivo é `src-b28`; o `src-b15` é o de lint, com `node_modules`); `dev-b30` fica (smoke rápido, `dev-smoke.sh`);
+    - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b40`; manter `v1` e os dois últimos `v1-pre-*`;
+    - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json` (e os `/home/node/wf-*.json` no container do n8n), `fu-*.json`, `build-*.log`, `smoke-*.log`.
+9. Revisão cosmética antiga (acentos, modo escuro, celular).
 
 ### Pendências antigas que continuam valendo
 
