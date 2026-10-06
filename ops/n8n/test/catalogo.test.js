@@ -14,7 +14,7 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   let r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true, language: 'es' } }, Historico: hist }, {}, { 'commerce/bot/catalog': [200, catalog] });
   const sys = r.out[0].json.body.messages[0].content;
   ok('MontaPrompt: secao CATALOG com itens e regras', sys.includes('# CATALOG') && sys.includes('- [12] Cortina (Cortinas): USD 35.5 per m2\n  Blackout medida') &&
-     sys.includes('[13] Proyecto: price on request') && sys.includes('[14] Plan Pro: USD 49.9 per month (plan); subscribe online') && sys.includes('[[SUBSCRIBE <id>]]') &&
+     sys.includes('[13] Proyecto: price on request') && sys.includes('[14] Plan Pro: USD 49.9 per month (plan); subscribe online') && sys.includes('[[SUBSCRIBE <id>]]') && sys.includes('when they did not say how many, use 1') &&
      sys.indexOf('# CATALOG') < sys.indexOf('# LANGUAGE') && r.out[0].json.catalog === true);
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [500, {}] });
   const sys2 = r.out[0].json.body.messages[0].content;

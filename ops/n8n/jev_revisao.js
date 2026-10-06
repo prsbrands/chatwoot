@@ -162,10 +162,10 @@ if (conferirAgendamento) {
 if (conferirVenda) {
   perguntas.false_sale = {
     type: 'noul',
-    instructions: 'Does `assistant_reply` tell the customer that a quote is being prepared or sent, or that a subscription or payment link is coming?',
+    instructions: 'Does `assistant_reply` tell the customer, as already decided, that a quote is being prepared or sent now, or that a subscription or payment link comes next?',
     criteria: {
-      true: 'The reply says a quote, proposal or budget is being prepared or will be sent, or that a link to subscribe or pay comes next ("te preparo la cotización", "I will send you the link").',
-      false: 'The reply only informs prices, explains the products or plans, asks what the customer wants, or says the team will get in touch.',
+      true: 'The reply states that the quote, proposal or budget is being prepared or sent now, or that the link to subscribe or pay comes next, without asking anything first ("te preparo la cotización", "en un momento te llega el enlace", "I am sending you the link").',
+      false: 'The reply informs prices, explains the products or plans, or asks the customer something before preparing anything (which item, how many, whether to go ahead), even if it says the quote will be sent once they confirm.',
     },
   };
 }

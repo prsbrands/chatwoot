@@ -236,9 +236,9 @@ if (act.booking) {
 if (act.catalog) {
   perguntas.catalog = {
     type: 'noul',
-    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer asking about the products, services, plans or prices offered, asking for a quote or proposal, or wanting to buy or subscribe?',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer asking about the products, services, plans or prices offered, asking for a quote or proposal, or wanting to buy or subscribe? Customers often write with typos or mix Spanish, Portuguese and English ("cuando esta" meaning "cuánto está", "assinatura", "suscripcion", "plano", "precio", "valor").',
     criteria: {
-      true: 'The customer asks what is offered, how much something costs, what a plan includes, asks for a quote, proposal or budget, says what and how many they want, or wants to buy, hire or subscribe.',
+      true: 'The customer asks what is offered, how much something costs, what a plan or subscription includes, names a product, service or plan of the business, asks for a quote, proposal or budget, says what and how many they want, or wants to buy, hire or subscribe.',
       false: 'Anything else, including booking an appointment, a greeting, a complaint or a question about something already bought.',
     },
   };
