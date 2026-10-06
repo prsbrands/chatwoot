@@ -69,7 +69,12 @@ export const ONLINE_PROVIDERS = {
   },
 };
 // Mesmas situações do Commerce::Subscription.
-export const SUBSCRIPTION_STATUSES = ['pending', 'active', 'past_due', 'canceled'];
+export const SUBSCRIPTION_STATUSES = [
+  'pending',
+  'active',
+  'past_due',
+  'canceled',
+];
 export const SUBSCRIPTION_STATUS_CLASSES = {
   pending: 'bg-n-slate-3 text-n-slate-11',
   active: 'bg-n-teal-3 text-n-teal-11',

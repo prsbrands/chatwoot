@@ -164,7 +164,10 @@ defineExpose({ open });
       <p v-if="!plans.length" class="text-sm text-n-amber-11">
         {{ $t('COMMERCE.SUBSCRIPTIONS.NO_PLANS') }}
       </p>
-      <label v-else class="flex flex-col gap-1 text-label-small text-n-slate-11">
+      <label
+        v-else
+        class="flex flex-col gap-1 text-label-small text-n-slate-11"
+      >
         {{ $t('COMMERCE.SUBSCRIPTIONS.PLAN') }}
         <Select v-model="form.item_id" :options="planOptions" />
       </label>
@@ -178,7 +181,10 @@ defineExpose({ open });
       <p v-if="!methods.length" class="text-sm text-n-amber-11">
         {{ $t('COMMERCE.SUBSCRIPTIONS.NO_ONLINE_METHODS') }}
       </p>
-      <label v-else class="flex flex-col gap-1 text-label-small text-n-slate-11">
+      <label
+        v-else
+        class="flex flex-col gap-1 text-label-small text-n-slate-11"
+      >
         {{ $t('COMMERCE.SUBSCRIPTIONS.PAYMENT_METHOD') }}
         <Select v-model="form.payment_method_id" :options="methodOptions" />
         <span class="text-n-slate-10">

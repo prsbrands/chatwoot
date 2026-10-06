@@ -29,7 +29,7 @@ class Commerce::Subscription < ApplicationRecord
   validate :provider_charges_recurring
   validate :item_is_plan, on: :create
 
-  before_validation -> { self.public_token ||= SecureRandom.urlsafe_base64(24) }, on: :create
+  before_validation :copy_plan, :copy_customer, on: :create
 
   def amount
     (quantity * unit_price).round(2)
@@ -45,6 +45,25 @@ class Commerce::Subscription < ApplicationRecord
   end
 
   private
+
+  # A assinatura guarda a cópia do plano e do cliente, e o provedor da forma de
+  # pagamento: o catálogo e o contato podem mudar depois.
+  def copy_plan
+    self.public_token ||= SecureRandom.urlsafe_base64(24)
+    self.provider ||= payment_method&.provider
+    assign_attributes(name: item.name, unit_price: item.price, currency: item.currency, interval: item.billing_interval) if item && name.blank?
+  end
+
+  # Com os dados fiscais lembrados do último documento (billing_*) e o negócio
+  # aberto do contato, que é ganho no primeiro ciclo pago.
+  def copy_customer
+    return if contact.nil? || customer.present?
+
+    self.deal ||= account.sales_deals.open.find_by(contact: contact)
+    billing = (contact.additional_attributes || {}).slice('billing_tax_id_label', 'billing_tax_id', 'billing_address')
+                                                   .transform_keys { |key| key.delete_prefix('billing_') }
+    self.customer = { 'name' => contact.name, 'email' => contact.email, 'phone' => contact.phone_number }.merge(billing).compact_blank
+  end
 
   def item_is_plan
     errors.add(:item, :invalid) if item&.billed_one_time?

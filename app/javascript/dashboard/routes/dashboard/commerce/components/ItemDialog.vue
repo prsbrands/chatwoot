@@ -207,7 +207,10 @@ defineExpose({ open });
       <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
         {{ $t('COMMERCE.CATALOG.BILLING') }}
         <Select v-model="form.billing_interval" :options="billingOptions" />
-        <span v-if="form.billing_interval !== 'one_time'" class="text-n-slate-10">
+        <span
+          v-if="form.billing_interval !== 'one_time'"
+          class="text-n-slate-10"
+        >
           {{ $t('COMMERCE.CATALOG.BILLING_HELP') }}
         </span>
       </label>
@@ -216,10 +219,18 @@ defineExpose({ open });
         {{ $t('COMMERCE.CATALOG.AVAILABLE') }}
       </label>
 
-      <section v-if="item" class="flex flex-col gap-2 pt-2 border-t border-n-weak">
+      <section
+        v-if="item"
+        class="flex flex-col gap-2 pt-2 border-t border-n-weak"
+      >
         <div class="flex items-center justify-between gap-2">
           <span class="text-label-small text-n-slate-11">
-            {{ $t('COMMERCE.CATALOG.IMAGES', { count: images.length, max: MAX_IMAGES }) }}
+            {{
+              $t('COMMERCE.CATALOG.IMAGES', {
+                count: images.length,
+                max: MAX_IMAGES,
+              })
+            }}
           </span>
           <Button
             sm
@@ -246,7 +257,11 @@ defineExpose({ open });
             :key="image.id"
             class="relative overflow-hidden border rounded-lg aspect-square border-n-weak group"
           >
-            <img :src="image.url" :alt="image.filename" class="object-cover w-full h-full" />
+            <img
+              :src="image.url"
+              :alt="image.filename"
+              class="object-cover w-full h-full"
+            />
             <Button
               xs
               ruby

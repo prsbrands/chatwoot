@@ -233,7 +233,10 @@ defineExpose({ open });
         class="flex flex-wrap justify-end gap-2 pt-2 border-t border-n-weak"
       >
         <Button
-          v-if="subscription.status !== 'pending' && !subscription.cancel_at_period_end"
+          v-if="
+            subscription.status !== 'pending' &&
+            !subscription.cancel_at_period_end
+          "
           sm
           slate
           outline

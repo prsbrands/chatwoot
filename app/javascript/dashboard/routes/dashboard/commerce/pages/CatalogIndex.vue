@@ -167,7 +167,10 @@ onMounted(async () => {
         :key="item.id"
         type="button"
         class="flex flex-col overflow-hidden text-start border rounded-xl border-n-weak bg-n-solid-1"
-        :class="{ 'hover:border-n-strong': isAdmin, 'cursor-default': !isAdmin }"
+        :class="{
+          'hover:border-n-strong': isAdmin,
+          'cursor-default': !isAdmin,
+        }"
         @click="openItem(item)"
       >
         <div

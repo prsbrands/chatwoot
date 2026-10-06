@@ -12,16 +12,19 @@ class CreateCommerceSubscriptions < ActiveRecord::Migration[7.1]
       t.date :period_end
     end
     add_index :commerce_documents, :subscription_id
+    create_subscriptions
+    add_index :commerce_subscriptions, [:account_id, :status]
+    add_index :commerce_subscriptions, :public_token, unique: true
+    add_index :commerce_subscriptions, [:provider_id, :external_id], unique: true
+  end
 
+  private
+
+  def create_subscriptions
     create_table :commerce_subscriptions do |t|
       t.references :account, null: false, index: false
       t.references :contact, index: true
-      t.references :deal, index: false
-      t.references :conversation, index: false
-      t.references :item, index: false
-      t.references :provider, index: false
-      t.references :payment_method, index: false
-      t.references :created_by, index: false
+      t.bigint :deal_id, :conversation_id, :item_id, :provider_id, :payment_method_id, :created_by_id
       t.string :name, null: false
       t.decimal :quantity, precision: 12, scale: 3, null: false, default: 1
       t.decimal :unit_price, precision: 14, scale: 2, null: false
@@ -32,15 +35,9 @@ class CreateCommerceSubscriptions < ActiveRecord::Migration[7.1]
       t.jsonb :customer, null: false, default: {}
       t.string :public_token, null: false
       t.string :external_id
-      t.datetime :current_period_start
-      t.datetime :current_period_end
+      t.datetime :current_period_start, :current_period_end, :canceled_at, :sent_at
       t.boolean :cancel_at_period_end, null: false, default: false
-      t.datetime :canceled_at
-      t.datetime :sent_at
       t.timestamps
     end
-    add_index :commerce_subscriptions, [:account_id, :status]
-    add_index :commerce_subscriptions, :public_token, unique: true
-    add_index :commerce_subscriptions, [:provider_id, :external_id], unique: true
   end
 end

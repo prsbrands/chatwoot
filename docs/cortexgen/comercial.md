@@ -34,7 +34,7 @@ Os models ficam em `app/models/commerce/` e o prefixo das tabelas é `commerce_`
 | Tabela | Para quê |
 |---|---|
 | `commerce_categories` | Categorias do catálogo |
-| `commerce_items` | Produto ou serviço, com tipo, SKU, `price` opcional, `currency`, `unit` e `available`. As imagens ficam no ActiveStorage (`images`, até 10) |
+| `commerce_items` | Produto ou serviço, com tipo, SKU, `price` opcional, `currency`, `unit` e `available`. `billing_interval` (`one_time`, `month`, `year`): mensal ou anual é **plano** de assinatura e exige preço. As imagens ficam no ActiveStorage (`images`, até 10) |
 | `commerce_profiles` | Uma linha por conta, criada na primeira leitura (`Profile.for`). Guarda logo, nomes, documento fiscal, contatos, moeda padrão, condições, rodapé e prefixos |
 | `commerce_payment_methods` | Formas de pagamento aceitas, com tipo e instruções ao cliente. Com `provider_id`, vira cobrança online (o botão "Pagar") |
 | `commerce_payment_providers` | Provedor conectado pela conta (`stripe`; `mercado_pago` e `yappy` depois): ambiente sandbox/production, `credentials` (JSON) e `webhook_secret` **cifrados**, `webhook_token` que vai na URL do webhook, `webhook_endpoint_id` |
@@ -42,8 +42,9 @@ Os models ficam em `app/models/commerce/` e o prefixo das tabelas é `commerce_`
 | `commerce_documents` | Orçamento, fatura ou recibo (`kind` 0/1/2). `payment_method_ids` são as formas que o documento mostra (página, PDF, e-mail e `/pay`); nasce com todas as ativas. O recibo guarda em `details` o valor, a forma, a data e a posição da fatura (total, pago até ali, saldo); `delivered_email` é o último e-mail usado no envio. Tem `number`/`year`/`sequence`, `status`, `language`, `currency` e `tax_mode`. Liga ao contato, negócio, compromisso, conversa e documento de origem. Guarda **cópias** `customer` e `company` (jsonb), totais, textos, datas de cada passo, `archived_at`, `public_token` e os PDFs no ActiveStorage (`pdfs`) |
 | `commerce_document_items` | Linhas do documento, copiadas do catálogo ou livres, com quantidade, unidade, preço (nulo = a cotar), desconto %, imposto % e os totais da linha |
 | `commerce_document_payments` | Pagamentos recebidos: forma, valor, data e observação; `checkout_id` (único: o mesmo aviso não paga duas vezes) e `receipt_id` |
+| `commerce_subscriptions` | Assinatura de um plano: **cópia** do plano (`name`, `unit_price`, `currency`, `interval` month/year) e do cliente (`customer`), `quantity`, contato, negócio, conversa, forma de pagamento e provedor; `status` (pending/active/past_due/canceled), `current_period_start/end`, `cancel_at_period_end`, `external_id` (a assinatura no provedor, única por provedor) e `public_token` (`/s/:token`). Cada ciclo pago vira uma fatura com `subscription_id`, `period_start` e `period_end` |
 
-As migrations vão de `20261005000001` a `…04`.
+As migrations vão de `20261005000001` a `20261006000002`.
 
 ## Serviços
 
@@ -66,6 +67,7 @@ Ficam em `app/services/commerce/`.
 - **`Gateways::MercadoPago`** usa o Access token da conta (HTTParty). `connect!` aceita só conta Brasil (`site_id` MLB). `start!` cria a preferência do Checkout Pro, com `notification_url` = webhook do provedor e `external_reference` = id do checkout. `webhook` lê o pagamento na API (a fonte da verdade) e confere o `x-signature` quando há chave secreta. `status` busca por `external_reference`.
 - **`Gateways::Yappy`** valida o comércio (`validate/merchant`) e cria a ordem (`payment-wc`) com o celular do cliente (`aliasYappy`). Só o IPN (GET) confirma, com o hash HMAC-SHA256 obrigatório; não há consulta de situação.
 - **`Gateways::Stripe`** usa a chave da própria conta (`Stripe::StripeClient`): `connect!` valida a chave e cria o webhook (eventos `checkout.session.*`), `start!` abre a Checkout Session, `status` consulta e `webhook` verifica a assinatura (`Stripe::Webhook.construct_event`).
+- **Assinaturas (1.17.0, só Stripe):** `SubscriptionBilling#start!` abre a Checkout Session no modo `subscription` (`price_data` com `recurring`, sem catálogo no Stripe; `subscription_data.metadata.cortexgen_subscription_id`). O Stripe Billing cobra os ciclos. No webhook, `invoice.paid` → `cycle_paid!`: fatura do período (enviada, com a linha da assinatura) + checkout com o id da fatura do Stripe (o aviso repetido acha o mesmo checkout) + `CheckoutSettler` (pagamento, recibo, nota, negócio ganho). `invoice.payment_failed` → `past_due` + nota; `customer.subscription.deleted` → `canceled`. A assinatura do Stripe é achada pelo `external_id` ou, no primeiro aviso, pelo metadata (`subscriptions.retrieve`). O id dela vem em `invoice.parent.subscription_details.subscription` nas versões novas da API e em `invoice.subscription` nas antigas: o webhook usa a versão padrão da conta Stripe. A primeira assinatura acrescenta os eventos de Billing ao webhook das contas conectadas antes (`webhook_endpoints.update`). Cancelar: no fim do período (`cancel_at_period_end`) ou na hora (`subscriptions.cancel`).
 - **`CheckoutSettler`** aplica o resultado do webhook, da volta do cliente (`/d/:token?checkout=`) ou da conciliação. Faz isso com o checkout travado: pago vira `add_payment!` e, depois, o `Commerce::ReceiptJob`.
 - **`ReceiptIssuer`** emite o recibo e o envia pela conversa e pelo último e-mail da fatura. No pagamento online, também deixa uma nota interna na conversa.
 - **Jobs:** `Commerce::ReceiptJob` e `Commerce::CheckoutReconcileJob` (a cada 5 min, no `TriggerScheduledItemsJob`; expira o checkout depois de 24 h).
@@ -78,17 +80,19 @@ Ficam em `app/services/commerce/`.
   - `items`, com `POST images` e `DELETE images/:attachment_id`;
   - `categories`, `payment_methods` e `profile`;
   - `documents`, com as ações `pdf`, `deliver`, `accept`, `decline`, `void`, `to_invoice`, `reopen`, `archive`, `unarchive`, `payments` (com `send_receipt`), `payments/:id` e `payments/:id/receipt`;
-  - `payment_providers` (index, create, update; só admin). Desligar é `active: false`.
+  - `payment_providers` (index, create, update; só admin). Desligar é `active: false`;
+  - `subscriptions` (index, show, create), com `deliver` (link pela conversa) e `cancel` (`at_period_end`, padrão true; só admin).
 - **Permissões:** todos consultam. Itens, categorias, empresa e formas de pagamento só o admin altera. Nos documentos, todos criam, editam, geram e enviam; anular e mexer em pagamento é só do admin.
-- **Página pública:** `/d/:token` (`CommercePublicDocumentsController < PublicController`), mais `/d/:token/pdf`, `/accept`, `/decline` e `/pay`. O rascunho dá 404.
+- **Página pública:** `/d/:token` (`CommercePublicDocumentsController < PublicController`), mais `/d/:token/pdf`, `/accept`, `/decline` e `/pay`. O rascunho dá 404. A da assinatura é `/s/:token` e `/s/:token/subscribe` (`CommercePublicSubscriptionsController`); as duas usam o estilo de `commerce_public_documents/_style`.
 - **Webhook:** `POST /commerce/webhooks/:provider/:webhook_token` (`Commerce::WebhooksController`): token desconhecido 404, assinatura inválida 400.
 - **Telas** (`app/javascript/dashboard/routes/dashboard/commerce/`):
   - `/catalog`: Catálogo, com categorias e editor do item com imagens;
   - `/company`: Empresa e pagamentos;
   - `/documents`: lista, com Quotes/Invoices, situação, busca e Arquivados;
-  - `/documents/:id`: editor.
+  - `/documents/:id`: editor;
+  - `/subscriptions`: lista por situação, nova assinatura e o detalhe (link, envio pela conversa, faturas e cancelamento).
   
-  O menu fica no grupo CRM ("Quotes & invoices" e "Catalog"), e o hub "View all in CRM" tem os cartões das três telas.
+  O menu fica no grupo CRM ("Quotes & invoices", "Subscriptions" e "Catalog"), e o hub "View all in CRM" tem os cartões das telas. A lista de conversas do cliente para envio é o `ConversationPicker`.
 
 ## Armadilhas já vividas
 
@@ -99,4 +103,4 @@ Ficam em `app/services/commerce/`.
 
 ## Testes
 
-`ops/smoke/commerce.rb` (25 cenários), `ops/smoke/commerce_documents.rb` (36) `ops/smoke/commerce_checkout.rb` (41, com o Stripe falso por `class_eval` e a assinatura real do webhook) `ops/smoke/commerce_mercado_pago.rb` (18) e `ops/smoke/commerce_yappy.rb` (21) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.
+`ops/smoke/commerce.rb` (25 cenários), `ops/smoke/commerce_documents.rb` (41), `ops/smoke/commerce_checkout.rb` (41, com o Stripe falso por `class_eval` e a assinatura real do webhook), `ops/smoke/commerce_mercado_pago.rb` (18), `ops/smoke/commerce_yappy.rb` (24) e `ops/smoke/commerce_subscriptions.rb` (31) rodam no `ops/smoke/run.sh`, contra Postgres e Redis descartáveis. O e-mail fica em `:test`.

@@ -1,7 +1,7 @@
 # Textos que saem DENTRO do documento (PDF, página pública, e-mail ao cliente).
 # Cada documento escolhe o idioma — uma conta atende clientes em vários países —,
 # então eles ficam aqui nos três idiomas, e não no i18n da interface.
-module Commerce::DocumentLabels
+module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
   LABELS = {
     'es' => {
       quote: 'Cotización', invoice: 'Factura', number: 'N.º', issue_date: 'Fecha', valid_until: 'Válida hasta',

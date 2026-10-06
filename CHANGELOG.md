@@ -14,6 +14,16 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.17.0] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Assinaturas mensais e anuais, cobradas pelo Stripe.** No catálogo, um item ganhou o campo **Billing**: "Monthly plan" ou "Yearly plan" faz dele um plano (com preço obrigatório).
+- **Tela Subscriptions** (menu CRM): lista por situação (aguardando, ativa, em atraso, cancelada), busca e **New subscription** (cliente, plano, quantidade e a forma de pagamento ligada ao Stripe). O detalhe tem o link para o cliente, com **Copy link** e **Send link to this conversation**, a renovação, as faturas de cada ciclo com o recibo e o cancelamento.
+- **O cliente assina pelo link** `/s/…`: vê o plano e o valor por mês ou por ano e assina na página do Stripe. A primeira cobrança é na hora; a renovação cai no mesmo dia do mês ou do ano.
+- **Cada ciclo pago** vira uma fatura FAT do período, já paga, e o recibo vai pela conversa e pelo e-mail do cliente, com nota interna, como no pagamento avulso. O primeiro ciclo marca o negócio aberto do contato como ganho.
+- **Renovação recusada** deixa a assinatura em atraso, com nota na conversa; o Stripe tenta de novo e, quando cobra, ela volta a ativa.
+- **Cancelar** (admin): no fim do período (o cliente usa até onde pagou) ou na hora. Um segundo clique confirma.
+- Mercado Pago e Yappy ainda não cobram assinatura; vêm nas próximas versões.
+
 ## [1.16.3] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Excluir forma de pagamento direto da lista.** Em Company & payments, cada forma de pagamento ganhou um ícone de lixeira, com confirmação. Antes, o único jeito era clicar na linha e achar o botão no fim do diálogo.

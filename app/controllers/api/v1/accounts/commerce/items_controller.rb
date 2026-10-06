@@ -49,7 +49,8 @@ class Api::V1::Accounts::Commerce::ItemsController < Api::V1::Accounts::Commerce
 
   # Preço em branco = sob orçamento. A categoria tem que ser da conta.
   def item_params
-    params.permit(:kind, :name, :description, :sku, :price, :currency, :unit, :billing_interval, :available, :position, :category_id).tap do |permitted|
+    permitted_keys = %i[kind name description sku price currency unit billing_interval available position category_id]
+    params.permit(*permitted_keys).tap do |permitted|
       permitted[:price] = nil if permitted.key?(:price) && permitted[:price].blank?
       Current.account.commerce_categories.find(permitted[:category_id]) if permitted[:category_id].present?
     end

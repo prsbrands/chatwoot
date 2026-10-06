@@ -1,5 +1,6 @@
 # Assinaturas da conta. Criar copia o plano (item com billing_interval) e o
-# cliente; o link /s/:token vai pela conversa e o cliente assina pelo provedor.
+# cliente (Commerce::Subscription); o link /s/:token vai pela conversa e o
+# cliente assina pelo provedor.
 class Api::V1::Accounts::Commerce::SubscriptionsController < Api::V1::Accounts::Commerce::BaseController
   before_action :fetch_subscription, except: [:index, :create]
   before_action -> { check_authorization(@subscription || ::Commerce::Subscription) }
@@ -13,17 +14,14 @@ class Api::V1::Accounts::Commerce::SubscriptionsController < Api::V1::Accounts::
 
   def show; end
 
+  # quantity e language são opcionais (1 e o idioma da conta).
   def create
-    item = Current.account.commerce_items.find(params.require(:item_id))
-    method = Current.account.commerce_payment_methods.find(params.require(:payment_method_id))
-    contact = Current.account.contacts.find(params.require(:contact_id))
-    @subscription = Current.account.commerce_subscriptions.create!(
-      contact: contact, item: item, name: item.name, unit_price: item.price, currency: item.currency, interval: item.billing_interval,
-      quantity: params[:quantity].presence || 1, payment_method: method, provider: method.provider, customer: customer_for(contact),
-      conversation: params[:conversation_id].presence && Current.account.conversations.find_by!(display_id: params[:conversation_id]),
-      deal: Current.account.sales_deals.open.find_by(contact: contact), created_by: Current.user,
-      language: params[:language].presence || Current.account.locale.to_s.first(2).presence_in(::Commerce::Document::LANGUAGES) || 'es'
-    )
+    account = Current.account
+    contact = account.contacts.find(params.require(:contact_id))
+    attrs = { contact: contact, created_by: Current.user,
+              item: account.commerce_items.find(params.require(:item_id)), language: account_language,
+              payment_method: account.commerce_payment_methods.find(params.require(:payment_method_id)) }
+    @subscription = account.commerce_subscriptions.create!(attrs.merge(params.permit(:quantity, :language).compact_blank.to_h))
     render :show
   end
 
@@ -52,10 +50,7 @@ class Api::V1::Accounts::Commerce::SubscriptionsController < Api::V1::Accounts::
     @subscription = Current.account.commerce_subscriptions.find(params[:id])
   end
 
-  # Os dados fiscais lembrados do último documento (billing_*) vão junto.
-  def customer_for(contact)
-    billing = (contact.additional_attributes || {}).slice('billing_tax_id_label', 'billing_tax_id', 'billing_address')
-                                                   .transform_keys { |key| key.delete_prefix('billing_') }
-    { 'name' => contact.name, 'email' => contact.email, 'phone' => contact.phone_number }.merge(billing).compact_blank
+  def account_language
+    Current.account.locale.to_s.first(2).presence_in(::Commerce::Document::LANGUAGES) || 'es'
   end
 end
