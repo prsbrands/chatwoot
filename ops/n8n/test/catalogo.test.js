@@ -53,6 +53,10 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   const m2 = r.calls.filter(c => c.url.endsWith('/messages'));
   ok('Responde: link da assinatura do MontaPrompt, sem criar outra pela etiqueta',
      m2.length === 2 && m2[1].body.content === 'Suscríbete aquí: https://x/s/plan' && !r.calls.some(c => c.url.includes('commerce/bot')));
+  r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: { catalog: true, subscriptionUrl: 'https://x/s/plan' }, JevEntrada: { jev: {} } },
+    { reply: 'Listo.', accountId: 1, conversationId: 89 }, { '/conversations/89': [200, { meta: {} }] });
+  ok('Responde: sem idioma decidido, o link vai sem rotulo em ingles',
+     r.calls.filter(c => c.url.endsWith('/messages'))[1].body.content === '👉 https://x/s/plan');
   r = await run(R + 'responde.js', { Guard: guard, MontaPrompt: mp, JevEntrada: { jev: {} } }, input,
     { '/conversations/89': [200, { meta: { assignee_type: 'User' } }] });
   ok('Responde: humano assumiu, nada criado', !r.calls.some(c => c.url.includes('commerce/bot')));

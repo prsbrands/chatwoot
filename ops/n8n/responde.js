@@ -192,6 +192,10 @@ function getJson(url) {
 // manda nada, e o lembrete leva o link de qualquer jeito.
 const LINK = { es: 'Enlace de la reunión:', pt: 'Link da reunião:', en: 'Meeting link:' };
 const ASSINATURA = { es: 'Suscríbete aquí:', pt: 'Assine aqui:', en: 'Subscribe here:' };
+// Sem o idioma decidido pelo Jev (mensagem que mistura idiomas, visto em 06/10:
+// "quiero assinar la subscripcion", pt com 0,37), a bolha vai sem texto, so
+// com o link, em vez de cair no ingles.
+const rotulo = (rotulos, idioma) => (rotulos[idioma] ? rotulos[idioma] + ' ' : '👉 ');
 async function mandarBolhaFinal(texto) {
   if (g.splitReplies) {
     await postar('/toggle_typing_status', { typing_status: 'on' });
@@ -210,7 +214,7 @@ async function mandarLinkDaReuniao() {
   }
   if (!compromisso || !compromisso.meeting_url) return;
   const idioma = ($('JevEntrada').first().json.jev || {}).language;
-  await mandarBolhaFinal((LINK[idioma] || LINK.en) + ' ' + compromisso.meeting_url);
+  await mandarBolhaFinal(rotulo(LINK, idioma) + compromisso.meeting_url);
 }
 
 if (!g.splitReplies) {
@@ -229,9 +233,9 @@ if (linhasDaCotacao.length) await chamarComercial('quotes', { lines: linhasDaCot
 // etiqueta [[SUBSCRIBE]] que o LLM escreva assim mesmo so sai do texto.
 const linkPronto = $('MontaPrompt').first().json.subscriptionUrl;
 if (linkPronto) {
-  await mandarBolhaFinal((ASSINATURA[idiomaDoCliente] || ASSINATURA.en) + ' ' + linkPronto);
+  await mandarBolhaFinal(rotulo(ASSINATURA, idiomaDoCliente) + linkPronto);
 } else if (assinar) {
   const assinatura = await chamarComercial('subscriptions', { item_id: Number(assinar[1]), language: idiomaDoCliente });
-  if (assinatura) await mandarBolhaFinal((ASSINATURA[idiomaDoCliente] || ASSINATURA.en) + ' ' + assinatura.public_url);
+  if (assinatura) await mandarBolhaFinal(rotulo(ASSINATURA, idiomaDoCliente) + assinatura.public_url);
 }
 return [{ json: i }];
