@@ -1,0 +1,82 @@
+<% l = @labels %>
+<% company = @profile %>
+<% name = company.trade_name.presence || company.legal_name.to_s %>
+<% whatsapp = company.whatsapp.to_s.gsub(/\D/, '') %>
+<% contact_url = lambda do |item|
+     text = format(l[:storefront_message], item: item.name)
+     if whatsapp.present? then "https://wa.me/#{whatsapp}?text=#{ERB::Util.url_encode(text)}"
+     elsif company.email.present? then "mailto:#{company.email}?subject=#{ERB::Util.url_encode(text)}"
+     end
+   end %>
+<% price = lambda do |item|
+     next l[:on_quote] if item.price.nil?
+
+     money = Commerce::DocumentLabels.money(item.price, item.currency, @language)
+     item.billed_one_time? ? "#{money} / #{Commerce::DocumentLabels.unit(@language, item.unit)}" : "#{money} #{l[:"per_#{item.billing_interval}"]}"
+   end %>
+<!DOCTYPE html>
+<html lang="<%= @language %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= l[:storefront] %> · <%= name %></title>
+  <%= render 'commerce_public_documents/style' %>
+  <style>
+    main { max-width: 1040px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .chip { padding: 6px 14px; border-radius: 999px; background: #f4f4f5; color: #18181b; text-decoration: none; font-size: 14px; }
+    .chip.on { background: #7c3aed; color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; margin-top: 20px; }
+    .card { border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .card img, .card .noimg { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #f4f4f5; display: block; }
+    .card .body { padding: 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .card .price { font-weight: 700; }
+    .card .btn { margin-top: auto; text-align: center; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><% if company.logo.attached? %><%= image_tag url_for(company.logo), alt: name %><% end %></div>
+    <div class="company">
+      <strong><%= name %></strong>
+      <% %i[phone email website].each do |field| %><% if company[field].present? %><div class="pre"><%= company[field] %></div><% end %><% end %>
+    </div>
+  </header>
+
+  <h1><%= l[:storefront] %></h1>
+  <% if @categories.size > 1 %>
+    <nav class="filters">
+      <%= link_to l[:all_categories], commerce_public_catalog_path(params[:token], lang: params[:lang]), class: "chip#{' on' unless @category}" %>
+      <% @categories.each do |category| %>
+        <%= link_to category.name, commerce_public_catalog_path(params[:token], lang: params[:lang], category: category.id),
+                    class: "chip#{' on' if @category == category}" %>
+      <% end %>
+    </nav>
+  <% end %>
+
+  <% if @items.empty? %>
+    <p class="muted"><%= l[:storefront_empty] %></p>
+  <% else %>
+    <div class="grid">
+      <% @items.each do |item| %>
+        <article class="card">
+          <% image = item.images.first %>
+          <% if image %><%= image_tag url_for(image.variant(resize_to_limit: [640, 640])), alt: item.name, loading: 'lazy' %><% else %><div class="noimg"></div><% end %>
+          <div class="body">
+            <% if item.category %><div class="muted"><%= item.category.name %></div><% end %>
+            <strong><%= item.name %></strong>
+            <div class="price"><%= price.(item) %></div>
+            <% if item.description.present? %><div class="muted pre"><%= item.description.truncate(220) %></div><% end %>
+            <% if (url = contact_url.(item)) %>
+              <%= link_to l[:want_it], url, class: 'btn primary', target: '_blank', rel: 'noopener' %>
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  <% end %>
+  <% if company.footer.present? %><footer class="pre"><%= company.footer %></footer><% end %>
+</main>
+</body>
+</html>

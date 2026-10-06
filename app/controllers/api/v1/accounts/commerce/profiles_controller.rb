@@ -22,6 +22,6 @@ class Api::V1::Accounts::Commerce::ProfilesController < Api::V1::Accounts::Comme
 
   def profile_params
     params.permit(:trade_name, :legal_name, :tax_id_label, :tax_id, :address, :phone, :whatsapp, :email, :website,
-                  :default_currency, :default_terms, :footer, :quote_prefix, :invoice_prefix, :receipt_prefix)
+                  :default_currency, :default_terms, :footer, :quote_prefix, :invoice_prefix, :receipt_prefix, :storefront_enabled)
   end
 end

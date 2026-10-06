@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import CommerceAPI from 'dashboard/api/commerce';
 import { uploadFile } from 'dashboard/helper/uploadHelper';
+import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -187,6 +188,13 @@ const saveProfile = async (extra = {}) => {
   } finally {
     isSaving.value = false;
   }
+};
+
+// A vitrine liga e desliga na hora, sem o botão Salvar dos dados da empresa.
+const toggleStorefront = enabled => saveProfile({ storefront_enabled: enabled });
+const copyStorefront = async () => {
+  await copyTextToClipboard(profile.value.storefront_url);
+  useAlert(t('COMMERCE.STOREFRONT.COPIED'));
 };
 
 const onLogo = async event => {
@@ -381,6 +389,51 @@ onMounted(async () => {
             @click="saveProfile()"
           />
         </div>
+      </section>
+
+      <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-heading-3 text-n-slate-12">
+            {{ $t('COMMERCE.STOREFRONT.TITLE') }}
+          </h2>
+          <p class="text-sm text-n-slate-11">
+            {{ $t('COMMERCE.STOREFRONT.DESCRIPTION') }}
+          </p>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-n-slate-12">
+          <Checkbox
+            :model-value="profile.storefront_enabled"
+            @update:model-value="toggleStorefront"
+          />
+          {{ $t('COMMERCE.STOREFRONT.ENABLE') }}
+        </label>
+        <div
+          v-if="profile.storefront_enabled && profile.storefront_url"
+          class="flex flex-wrap items-center gap-2"
+        >
+          <a
+            :href="profile.storefront_url"
+            target="_blank"
+            rel="noopener"
+            class="flex-1 min-w-0 text-sm truncate text-n-blue-11"
+          >
+            {{ profile.storefront_url }}
+          </a>
+          <Button
+            sm
+            slate
+            outline
+            icon="i-lucide-copy"
+            :label="$t('COMMERCE.STOREFRONT.COPY')"
+            @click="copyStorefront"
+          />
+        </div>
+        <p
+          v-if="profile.storefront_enabled && !profile.whatsapp"
+          class="text-xs text-n-amber-11"
+        >
+          {{ $t('COMMERCE.STOREFRONT.NO_WHATSAPP') }}
+        </p>
       </section>
 
       <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">

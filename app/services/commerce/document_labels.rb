@@ -37,7 +37,8 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_message: '%<plan>s — suscríbete aquí: %<url>s', payer_email: 'E-mail de tu cuenta Mercado Pago',
       renewal_message: '%<plan>s: tu suscripción se renueva el %<date>s. Factura %<number>s, págala aquí: %<url>s',
       renewal_reminder: 'Recordatorio: la renovación de %<plan>s vence hoy. Factura %<number>s, págala aquí: %<url>s',
-      pay_renewal: 'Pagar la factura %<number>s'
+      pay_renewal: 'Pagar la factura %<number>s', storefront: 'Catálogo', all_categories: 'Todo', want_it: 'Lo quiero',
+      storefront_message: 'Hola, me interesa: %<item>s', storefront_empty: 'No hay productos disponibles por ahora.'
     },
     'pt' => {
       quote: 'Orçamento', invoice: 'Fatura', number: 'N.º', issue_date: 'Data', valid_until: 'Válido até',
@@ -73,7 +74,8 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_message: '%<plan>s — assine aqui: %<url>s', payer_email: 'E-mail da sua conta Mercado Pago',
       renewal_message: '%<plan>s: a sua assinatura renova em %<date>s. Fatura %<number>s, pague aqui: %<url>s',
       renewal_reminder: 'Lembrete: a renovação de %<plan>s vence hoje. Fatura %<number>s, pague aqui: %<url>s',
-      pay_renewal: 'Pagar a fatura %<number>s'
+      pay_renewal: 'Pagar a fatura %<number>s', storefront: 'Catálogo', all_categories: 'Tudo', want_it: 'Quero este',
+      storefront_message: 'Olá, tenho interesse em: %<item>s', storefront_empty: 'Não há produtos disponíveis no momento.'
     },
     'en' => {
       quote: 'Quote', invoice: 'Invoice', number: 'No.', issue_date: 'Date', valid_until: 'Valid until',
@@ -109,7 +111,8 @@ module Commerce::DocumentLabels # rubocop:disable Metrics/ModuleLength
       subscription_message: '%<plan>s — subscribe here: %<url>s', payer_email: 'Email of your Mercado Pago account',
       renewal_message: '%<plan>s: your subscription renews on %<date>s. Invoice %<number>s, pay it here: %<url>s',
       renewal_reminder: 'Reminder: the renewal of %<plan>s is due today. Invoice %<number>s, pay it here: %<url>s',
-      pay_renewal: 'Pay invoice %<number>s'
+      pay_renewal: 'Pay invoice %<number>s', storefront: 'Catalog', all_categories: 'All', want_it: 'I want this',
+      storefront_message: 'Hi, I am interested in: %<item>s', storefront_empty: 'No products available right now.'
     }
   }.freeze
 

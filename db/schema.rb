@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_06_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_06_000003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1018,7 +1018,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_06_000002) do
     t.string "quote_prefix", default: "COT", null: false
     t.string "invoice_prefix", default: "FAT", null: false
     t.string "receipt_prefix", default: "REC", null: false
+    t.boolean "storefront_enabled", default: false, null: false
+    t.string "storefront_token"
     t.index ["account_id"], name: "index_commerce_profiles_on_account_id", unique: true
+    t.index ["storefront_token"], name: "index_commerce_profiles_on_storefront_token", unique: true
   end
 
   create_table "commerce_subscriptions", force: :cascade do |t|

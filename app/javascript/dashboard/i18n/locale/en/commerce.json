@@ -117,6 +117,14 @@
         "receipt_prefix": "REC"
       }
     },
+    "STOREFRONT": {
+      "TITLE": "Public catalog",
+      "DESCRIPTION": "A public page with the available catalog items, photos and prices, to share on social media or your site. Each item has a button that opens your WhatsApp with a message about it.",
+      "ENABLE": "Publish the catalog page",
+      "COPY": "Copy link",
+      "COPIED": "Link copied",
+      "NO_WHATSAPP": "Fill in WhatsApp in the company data above: without it, the button opens an email to you instead."
+    },
     "ONLINE": {
       "TITLE": "Online payments",
       "DESCRIPTION": "Let customers pay invoices online, in full or in part. The payment is recorded and the receipt is sent automatically.",
