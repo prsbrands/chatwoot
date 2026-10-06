@@ -14,6 +14,14 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.18.0] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **A IA vende com o catálogo.** Quando o cliente pergunta por produtos, serviços, preços ou planos, a IA recebe os itens disponíveis do Catálogo com os preços e só fala desses preços; item sem preço vira "a cotizar" com a equipe. Nova atividade do Jev, **"Notice interest in products and plans"** (Settings → Integrations → Jev), que já começa decidindo.
+- **Orçamento pela conversa:** quando o cliente pede uma cotização formal e está claro o que e quanto ele quer, a IA diz que está preparando e cria a cotização como **rascunho**, com os itens, as quantidades e os preços do catálogo. Uma nota interna menciona o responsável do negócio (ou o admin) com o link; vocês revisam e enviam.
+- **Assinatura pela conversa:** quando o cliente decide assinar um plano que pode ser pago online, a IA manda o link da assinatura logo depois da resposta.
+- Rede de segurança: se a IA disser que prepara uma cotização ou que manda um link sem de fato criar, a resposta não sai e a conversa vai para a equipe.
+- **É preciso publicar o workflow do bot no n8n** para isso funcionar (os nós Guard, JevEntrada, MontaPrompt, Responde e JevRevisao mudaram).
+
 ## [1.17.2] — 2026-10-06 · base Chatwoot 4.18.0
 
 - **Assinaturas pelo Yappy (USD), com cobrança assistida.** O Yappy não tem débito automático, então o sistema cobra por você: ao assinar, o cliente vai direto à fatura do primeiro ciclo e paga com o celular Yappy. Três dias antes de cada vencimento, a fatura da renovação sai pela conversa e pelo e-mail com o link para pagar; no dia do vencimento vai um lembrete pela conversa; cinco dias depois sem pagamento, a assinatura fica em atraso, com nota interna. Ao pagar, ela volta a ativa.
