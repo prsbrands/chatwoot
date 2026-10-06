@@ -8,12 +8,12 @@
 
 **⚠️ O repositório mudou de disco (06/10).** O "1TB-STORAGE 2" começou a perder arquivos (`Input/output error` em `lib/`, arquivos de `app/models/concerns/` sumidos). O projeto agora vive em **`/Volumes/KINGSTON/prsbrands/chatwoot`**, clonado do GitHub, com as tags, a `docs/comercial/` (base de conhecimento, fora do git), `.env`, `.claude/` e `.codex/` resgatados. A memória do Claude foi copiada para `~/.claude/projects/-Volumes-KINGSTON-prsbrands-chatwoot/memory`. **Não usar mais o caminho antigo.** Sobras no disco interno, que podem ser apagadas: `~/prsbrands/chatwoot` (clone) e `~/prsbrands/resgate-chatwoot` (os arquivos resgatados).
 
-**Estado em uma linha:** entre 02 e 06/10 saíram 1.1.0 → 1.16.1, seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`). Os grandes blocos:
+**Estado em uma linha:** entre 02 e 06/10 saíram 1.1.0 → 1.17.2, seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`). Os grandes blocos:
 - **Agenda com a IA** (1.6–1.10): Google Calendar por pessoa, tipos e horários livres, a IA marca, desmarca e muda horário pelo WhatsApp, lembretes, Meet;
 - **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
-- **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático.
+- **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático; **assinaturas** mensais e anuais nos três (1.17).
 
-**Comece pelo item 0 da fila:** provar a cobrança online em uso real (a 1.16.1 foi ao ar em 06/10). **O Google Calendar da conta 1 vence por volta de 09/10** (item 2).
+**Comece pelo item 0 da fila:** a Fase 3 fechou em 06/10 (cobrança online nos três provedores, todos em produção, e assinaturas: 1.17.0 Stripe, 1.17.1 Mercado Pago, 1.17.2 Yappy). Próxima frente a escolher com o Paulo: Fase 4 (catálogo na IA e vitrine) ou fechar a Fase 2 em uso real. **O Google Calendar da conta 1 vence por volta de 09/10** se o app OAuth não for publicado (item 2).
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
