@@ -14,6 +14,12 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.16.3] — 2026-10-06 · base Chatwoot 4.18.0
+
+- **Excluir forma de pagamento direto da lista.** Em Company & payments, cada forma de pagamento ganhou um ícone de lixeira, com confirmação. Antes, o único jeito era clicar na linha e achar o botão no fim do diálogo.
+- A forma excluída sai também dos orçamentos e faturas que a mostravam. Antes, esses documentos davam erro ao salvar depois da exclusão.
+- Uma forma que já tem pagamento ou cobrança online registrada não pode ser excluída, para não apagar o histórico. A tela explica isso e sugere desmarcar "Active".
+
 ## [1.16.2] — 2026-10-06 · base Chatwoot 4.18.0
 
 - A página da fatura agora cita o aviso do app Yappy com o texto que o cliente realmente vê: «¡Te pidieron un Yappy!» (antes: «Te solicitan un Yappy»).

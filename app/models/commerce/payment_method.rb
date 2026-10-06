@@ -25,7 +25,7 @@ class Commerce::PaymentMethod < ApplicationRecord
   # Os documentos guardam os ids escolhidos; um id que sumiu faria o editor recusar o salvamento.
   def remove_from_documents
     account.commerce_documents.where('? = ANY(payment_method_ids)', id)
-           .update_all(['payment_method_ids = array_remove(payment_method_ids, ?)', id])
+           .update_all(['payment_method_ids = array_remove(payment_method_ids, ?)', id]) # rubocop:disable Rails/SkipsModelValidations
   end
 
   def provider_in_account

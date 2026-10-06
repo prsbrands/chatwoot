@@ -132,3 +132,13 @@ _, ingles = api.(:post, 'documents', { kind: 'quote', language: 'en', items: [{ 
 api.(:post, "documents/#{ingles['id']}/pdf")
 ok 'prefixo da empresa e PDF com caractere fora do Windows-1252', ingles['number'].start_with?('PRE-') &&
                                                                   Commerce::Document.find(ingles['id']).latest_pdf.download.start_with?('%PDF')
+
+efectivo = account.commerce_payment_methods.create!(name: 'Efectivo', kind: :cash)
+_, com_efectivo = api.(:post, 'documents', { kind: 'quote', items: [] })
+ok 'documento novo traz a forma ativa', com_efectivo['payment_method_ids'].include?(efectivo.id)
+ok 'apaga forma sem pagamento', api.(:delete, "payment_methods/#{efectivo.id}").first == 200 && !Commerce::PaymentMethod.exists?(efectivo.id)
+restantes = Commerce::Document.find(com_efectivo['id']).payment_method_ids
+ok 'forma apagada sai do documento e ele segue salvando',
+   restantes == [yappy.id] && api.(:patch, "documents/#{com_efectivo['id']}", { payment_method_ids: restantes }).first == 200
+ok 'forma com pagamento nao se apaga: 422',
+   yappy.payments.exists? && api.(:delete, "payment_methods/#{yappy.id}").first == 422 && Commerce::PaymentMethod.exists?(yappy.id)

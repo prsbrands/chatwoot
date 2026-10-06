@@ -515,32 +515,32 @@ onMounted(async () => {
             class="flex items-start justify-between flex-1 min-w-0 gap-3 text-start"
             @click="openMethod(row)"
           >
-          <div class="flex flex-col min-w-0 gap-0.5">
-            <span class="font-medium text-n-slate-12">{{ row.name }}</span>
-            <span class="text-xs text-n-slate-11">
-              {{ $t(`COMMERCE.PAYMENT_KIND.${row.kind}`) }}
-              <template v-if="row.provider_id">
-                ·
-                {{
-                  $t('COMMERCE.PAYMENT_METHODS.ONLINE_BADGE', {
-                    provider: providerName(row.provider_id),
-                  })
-                }}
-              </template>
-            </span>
+            <div class="flex flex-col min-w-0 gap-0.5">
+              <span class="font-medium text-n-slate-12">{{ row.name }}</span>
+              <span class="text-xs text-n-slate-11">
+                {{ $t(`COMMERCE.PAYMENT_KIND.${row.kind}`) }}
+                <template v-if="row.provider_id">
+                  ·
+                  {{
+                    $t('COMMERCE.PAYMENT_METHODS.ONLINE_BADGE', {
+                      provider: providerName(row.provider_id),
+                    })
+                  }}
+                </template>
+              </span>
+              <span
+                v-if="row.instructions"
+                class="text-sm text-n-slate-11 line-clamp-2 whitespace-pre-line"
+              >
+                {{ row.instructions }}
+              </span>
+            </div>
             <span
-              v-if="row.instructions"
-              class="text-sm text-n-slate-11 line-clamp-2 whitespace-pre-line"
+              v-if="!row.active"
+              class="px-1.5 py-0.5 text-xs rounded-md bg-n-slate-3 text-n-slate-11 shrink-0"
             >
-              {{ row.instructions }}
+              {{ $t('COMMERCE.PAYMENT_METHODS.INACTIVE') }}
             </span>
-          </div>
-          <span
-            v-if="!row.active"
-            class="px-1.5 py-0.5 text-xs rounded-md bg-n-slate-3 text-n-slate-11 shrink-0"
-          >
-            {{ $t('COMMERCE.PAYMENT_METHODS.INACTIVE') }}
-          </span>
           </button>
           <Button
             xs
@@ -611,7 +611,11 @@ onMounted(async () => {
     <Dialog
       ref="deleteMethodDialog"
       type="alert"
-      :title="$t('COMMERCE.PAYMENT_METHODS.DELETE_TITLE', { name: methodToDelete.name })"
+      :title="
+        $t('COMMERCE.PAYMENT_METHODS.DELETE_TITLE', {
+          name: methodToDelete.name,
+        })
+      "
       :description="$t('COMMERCE.PAYMENT_METHODS.DELETE_DESCRIPTION')"
       :confirm-button-label="$t('COMMERCE.PAYMENT_METHODS.DELETE')"
       @confirm="deleteMethod"
