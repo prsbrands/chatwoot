@@ -298,7 +298,8 @@
           "REVIEW": "Check before sending",
           "FOLLOWUP": "Follow up when the customer goes quiet",
           "SALES": "Sales pipeline",
-          "BOOKING": "Book appointments"
+          "BOOKING": "Book appointments",
+          "CATALOG": "Sell from the catalog"
         },
         "WEEK": "Last 7 days",
         "METRIC": {
@@ -326,7 +327,8 @@
           "followup": "Last 30 days: Jev would skip {signals} of {runs} follow-ups.",
           "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages.",
           "language": "Last 30 days: Jev told the language in {signals} of {runs} messages.",
-          "booking": "Last 30 days: Jev saw a wish to book in {signals} of {runs} messages."
+          "booking": "Last 30 days: Jev saw a wish to book in {signals} of {runs} messages.",
+          "catalog": "Last 30 days: Jev saw interest in products, prices or plans in {signals} of {runs} messages."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -388,6 +390,11 @@
             "TITLE": "Notice a wish to book",
             "WHAT": "Jev notices when the customer wants to book or reschedule, asks which times are free, or picks a time the bot offered.",
             "DECIDES": "The bot gets the free times of the appointment type marked \"The AI can book this type\" (Agenda settings), asks which day and time suit the customer, offers up to 3 times and books the one the customer accepts — on the person's Google Calendar too."
+          },
+          "catalog": {
+            "TITLE": "Notice interest in products and plans",
+            "WHAT": "Jev notices when the customer asks about the products, services, plans or prices you sell, asks for a quote, or wants to subscribe.",
+            "DECIDES": "The bot gets the available catalog items with their prices and quotes only those. When the customer asks for a formal quote, it prepares a draft quote with the items and quantities and mentions the team to review and send it. When the customer decides to subscribe to a plan that can be paid online, it sends the subscription link."
           }
         },
         "TEAM": {

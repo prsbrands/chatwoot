@@ -34,8 +34,14 @@ const agenda = $('MontaPrompt').first().json;
 const jaMarcado = Boolean(agenda.booked || agenda.cancelled);
 const conferirAgendamento = !jaMarcado && !ETIQUETA_BOOK.test(String(i.reply || '')) && g.jev && g.jev.activities.booking === 'deciding' &&
   Boolean(($('JevEntrada').first().json.jev || {}).booking);
+// A mesma rede para o catalogo: com os itens no prompt e sem a etiqueta
+// [[QUOTE]] ou [[SUBSCRIBE]], uma resposta que diz que a cotizacao esta sendo
+// preparada ou que o link vem a seguir deixaria o cliente esperando por nada.
+const ETIQUETA_VENDA = /\[\[(QUOTE|SUBSCRIBE) [^\]]+\]\]/;
+const conferirVenda = Boolean(agenda.catalog) && !ETIQUETA_VENDA.test(String(i.reply || '')) && g.jev &&
+  g.jev.activities.catalog === 'deciding';
 
-if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento)) return segue();
+if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento && !conferirVenda)) return segue();
 const state = g.jev.activities.reply_review;
 
 const scrub = text => String(text || '')
@@ -109,9 +115,10 @@ async function gravar(row) {
 
 // Resposta que fecha um agendamento traz a etiqueta [[BOOK ...]] (MontaPrompt),
 // ou confirma o horario que o MontaPrompt ja marcou: quem marca é o sistema,
-// não uma pessoa. A etiqueta sai do texto revisado e a pergunta de promessa
-// fica de fora, senão toda confirmação de horário seria retida.
-const ETIQUETA = /\s*\[\[BOOK [^\]]+\]\]\s*/g;
+// não uma pessoa. O mesmo com [[QUOTE ...]] e [[SUBSCRIBE ...]] (o Responde
+// cria o rascunho e a assinatura). A etiqueta sai do texto revisado e a
+// pergunta de promessa fica de fora, senão toda confirmação seria retida.
+const ETIQUETA = /\s*\[\[(BOOK|QUOTE|SUBSCRIBE) [^\]]+\]\]\s*/g;
 const agendando = jaMarcado || ETIQUETA.test(String(i.reply || ''));
 const respostaRevisada = String(i.reply || '').replace(ETIQUETA, ' ').trim();
 
@@ -152,6 +159,16 @@ if (conferirAgendamento) {
     },
   };
 }
+if (conferirVenda) {
+  perguntas.false_sale = {
+    type: 'noul',
+    instructions: 'Does `assistant_reply` tell the customer that a quote is being prepared or sent, or that a subscription or payment link is coming?',
+    criteria: {
+      true: 'The reply says a quote, proposal or budget is being prepared or will be sent, or that a link to subscribe or pay comes next ("te preparo la cotización", "I will send you the link").',
+      false: 'The reply only informs prices, explains the products or plans, asks what the customer wants, or says the team will get in touch.',
+    },
+  };
+}
 const regras = (g.jev.reviewRules || []).slice(0, 10);
 regras.forEach((regra, k) => {
   perguntas['rule_' + k] = {
@@ -188,6 +205,8 @@ if (noul('promises') >= FLAG_NOUL) motivos.push('promises something only a perso
 if (noul('leaks') >= FLAG_NOUL) motivos.push('talks about its own instructions');
 const falsoAgendamento = noul('false_booking') !== null && noul('false_booking') >= FLAG_NOUL;
 if (falsoAgendamento) motivos.push('tells the customer the appointment is booked, but nothing was booked in the Agenda');
+const falsaVenda = noul('false_sale') !== null && noul('false_sale') >= FLAG_NOUL;
+if (falsaVenda) motivos.push('promises a quote or a subscription link, but none was created');
 regras.forEach((regra, k) => {
   if (noul('rule_' + k) >= FLAG_NOUL) motivos.push('breaks the rule "' + regra + '"');
 });
@@ -202,7 +221,7 @@ const row = {
   decisions: { reply_review: decision },
 };
 
-if (decision.signal && (state === 'deciding' || falsoAgendamento)) {
+if (decision.signal && (state === 'deciding' || falsoAgendamento || falsaVenda)) {
   decision.acted = true;
   await gravar(row);
   return [{ json: Object.assign({}, i, {

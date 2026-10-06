@@ -88,6 +88,7 @@ en:
     ai_cancelled: '%{mention} the customer cancelled "%{title}" on %{when} through the AI. Reason: %{reason}'
     deal_moved: '%{type} booked'
   commerce:
+    ai_quote: '%{mention} the AI prepared the draft quote %{number} (%{total}) from this conversation. Review it and send it to the customer: %{url}'
     online_payment: 'Online payment received: %{amount} for %{invoice} (%{method}). Receipt %{receipt} issued and sent through the invoice channels.'
     subscription_overdue: 'The renewal invoice %{invoice} of the subscription %{subscription} is unpaid 5 days after its due date. The subscription is past due.'
     subscription_payment_failed: 'The renewal of the subscription %{subscription} was declined. The provider will retry; the subscription is past due.'

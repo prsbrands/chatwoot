@@ -48,9 +48,9 @@ function getJson(url, headers) {
       res.on('data', chunk => { body += chunk; });
       res.on('end', () => (res.statusCode >= 200 && res.statusCode < 300
         ? resolve(JSON.parse(body))
-        : reject(new Error('MontaPrompt: agenda HTTP ' + res.statusCode + ' ' + body.slice(0, 200)))));
+        : reject(new Error('MontaPrompt: ' + url + ' HTTP ' + res.statusCode + ' ' + body.slice(0, 200)))));
     });
-    req.setTimeout(10000, () => req.destroy(new Error('MontaPrompt: agenda timeout')));
+    req.setTimeout(10000, () => req.destroy(new Error('MontaPrompt: ' + url + ' timeout')));
     req.on('error', reject);
   });
 }
@@ -206,6 +206,44 @@ if (jev.booking) {
   }
 }
 
+// Catalogo: quando o Jev ve o cliente perguntando por produtos, precos ou
+// planos, ou querendo um orcamento ou assinar, os itens disponiveis da conta
+// (Commerce::AiSales, no Rails) entram no prompt com os unicos precos que a IA
+// pode dar. Orcamento formal: a IA fecha com [[QUOTE <id>x<qtd>, ...]] e o
+// Responde cria o rascunho da cotizacao para a equipe revisar e enviar. Plano
+// que se assina online: [[SUBSCRIBE <id>]], e o Responde manda o link. Fora do
+// ar, o catalogo nao cala o bot: ele responde sem inventar preco.
+let regraDeCatalogo = '';
+let catalogoNoPrompt = false;
+if (jev.catalog) {
+  try {
+    const catalogo = await getJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/commerce/bot/catalog',
+      { api_access_token: g.chatUserToken });
+    const preco = item => {
+      if (item.price === null) return 'price on request';
+      const valor = item.currency + ' ' + item.price;
+      return item.billing_interval === 'one_time' ? valor + ' per ' + item.unit : valor + ' per ' + item.billing_interval + ' (plan)';
+    };
+    const linhas = catalogo.items.map(item => '- [' + item.id + '] ' + item.name + (item.category ? ' (' + item.category + ')' : '') + ': ' +
+      preco(item) + (item.subscribable ? '; subscribe online' : '') + (item.description ? '\n  ' + item.description.replace(/\s+/g, ' ') : ''));
+    const assinaveis = catalogo.items.some(item => item.subscribable);
+    catalogoNoPrompt = linhas.length > 0;
+    regraDeCatalogo = '\n\n---\n\n# CATALOG\n\n' + (linhas.length
+      ? 'These are the products, services and plans this business sells, with the only prices you may quote. The [id] is for the lines described below; never show it to the customer.\n' +
+        linhas.join('\n') + '\n\n' +
+        '1. Quote only prices from this list, in its currency. Never invent a price, a discount or an item. An item with "price on request" has no fixed price: say the team will prepare a quote for it.\n' +
+        '2. If the customer asks for a formal quote (a quote, proposal or budget in writing) and it is clear which items and how many they want, say that you are preparing the quote and the team will send it shortly, and end your reply with a last line containing exactly [[QUOTE <id>x<quantity>, <id>x<quantity>]] with the ids above. If the items or quantities are not clear, ask first and do not write the line. Never say a quote is being prepared or sent unless that same reply ends with the line.\n' +
+        (assinaveis
+          ? '3. Items with "subscribe online" are plans the customer can subscribe to by themselves. When the customer clearly decides to subscribe to one, say that the subscription link comes in the next message and end your reply with a last line containing exactly [[SUBSCRIBE <id>]]. Never write a link yourself, and never say a link is coming unless that same reply ends with the line.\n'
+          : '') +
+        'The customer never sees the [[...]] line.'
+      : 'The catalog is empty. Do not quote prices that are not in the knowledge base: say the team will send the details.');
+  } catch (error) {
+    console.error(error.message);
+    regraDeCatalogo = '\n\n---\n\n# CATALOG\n\nThe catalog cannot be read right now. Do not quote prices that are not in the knowledge base and do not promise a quote or a subscription link: say someone from the team will send the details shortly.';
+  }
+}
+
 // O idioma vai por ultimo, depois da base. Prompt e base costumam estar num
 // idioma so (na conta 1, espanhol) e o modelo seguia o bloco maior: visto em
 // 02/10, cliente em ingles, a 1a resposta (so a persona) em ingles e a 2a (com
@@ -216,7 +254,7 @@ const idioma = IDIOMAS[jev.language]
   : 'the language the customer is writing in (their latest messages)';
 const regraDeIdioma = '\n\n---\n\n# LANGUAGE\n\nReply in ' + idioma +
   ', even when these instructions or the knowledge base are written in another language.';
-const systemText = (String(composto || '') + regraDeAgenda + regraDeIdioma)
+const systemText = (String(composto || '') + regraDeAgenda + regraDeCatalogo + regraDeIdioma)
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')
   .split('{{contact.call_summary}}').join(g.callSummary || '(vacio)');
@@ -299,4 +337,5 @@ return [{ json: {
   turns: messages.filter(m => m.role === 'user').length,
   booked: marcado,
   cancelled: desmarcado ? desmarcado.id : null,
+  catalog: catalogoNoPrompt,
 } }];

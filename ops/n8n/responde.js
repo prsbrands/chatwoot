@@ -33,6 +33,20 @@ const ETIQUETA = /\s*\[\[BOOK ([^\]]+)\]\]\s*/;
 const marcado = $('MontaPrompt').first().json.booked ? null : String(i.reply || '').match(ETIQUETA);
 let texto = String(i.reply || '').replace(new RegExp(ETIQUETA.source, 'g'), '\n').trim();
 
+// Catalogo (MontaPrompt): [[QUOTE 12x2, 15x1]] vira o rascunho da cotizacao,
+// que a equipe revisa e envia (o Rails deixa a nota com mencao); [[SUBSCRIBE
+// 12]] cria a assinatura do plano e o link vai numa bolha depois da resposta.
+// As etiquetas nunca chegam ao cliente.
+const COTACAO = /\s*\[\[QUOTE ([^\]]+)\]\]\s*/;
+const ASSINAR = /\s*\[\[SUBSCRIBE (\d+)\]\]\s*/;
+const cotacao = String(i.reply || '').match(COTACAO);
+const assinar = String(i.reply || '').match(ASSINAR);
+texto = texto.replace(new RegExp(COTACAO.source, 'g'), '\n').replace(new RegExp(ASSINAR.source, 'g'), '\n').trim();
+const linhasDaCotacao = cotacao
+  ? cotacao[1].split(/;|,\s+/).map(parte => parte.trim().match(/^(\d+)(?:\s*[x×*]\s*(\d+(?:[.,]\d+)?))?$/)).filter(Boolean)
+    .map(m => ({ item_id: Number(m[1]), quantity: m[2] ? m[2].replace(',', '.') : '1' }))
+  : [];
+
 function agendar(startsAt) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ conversation_id: i.conversationId, starts_at: startsAt });
@@ -50,6 +64,29 @@ function agendar(startsAt) {
     });
     req.setTimeout(20000, () => req.destroy(new Error('Responde: agendar timeout')));
     req.on('error', reject);
+    req.end(data);
+  });
+}
+
+// POST na API da conta com o token de usuario (o mesmo da Agenda): devolve o
+// JSON, ou null com o erro no log, sem derrubar a resposta ao cliente.
+function chamarComercial(caminho, corpo) {
+  return new Promise(resolve => {
+    const data = JSON.stringify(Object.assign({ conversation_id: i.conversationId }, corpo));
+    const req = https.request('https://prs.cortexgen.cloud/api/v1/accounts/' + i.accountId + '/commerce/bot/' + caminho, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data), api_access_token: g.chatUserToken },
+    }, res => {
+      let raw = '';
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) return resolve(JSON.parse(raw));
+        console.error('Responde: commerce/bot/' + caminho + ' ' + data + ' HTTP ' + res.statusCode + ' ' + raw.slice(0, 200));
+        resolve(null);
+      });
+    });
+    req.setTimeout(20000, () => req.destroy(new Error('timeout')));
+    req.on('error', error => { console.error('Responde: commerce/bot/' + caminho + ' ' + error.message); resolve(null); });
     req.end(data);
   });
 }
@@ -154,6 +191,14 @@ function getJson(url) {
 // ainda nao rodou (google_synced_at vazio), espera uma vez. Tipo sem Meet nao
 // manda nada, e o lembrete leva o link de qualquer jeito.
 const LINK = { es: 'Enlace de la reunión:', pt: 'Link da reunião:', en: 'Meeting link:' };
+const ASSINATURA = { es: 'Suscríbete aquí:', pt: 'Assine aqui:', en: 'Subscribe here:' };
+async function mandarBolhaFinal(texto) {
+  if (g.splitReplies) {
+    await postar('/toggle_typing_status', { typing_status: 'on' });
+    await espera(atraso(texto));
+  }
+  await postar('/messages', { content: texto, message_type: 'outgoing' });
+}
 async function mandarLinkDaReuniao() {
   const alvo = Math.floor(new Date(marcadoAgora).getTime() / 1000);
   const url = 'https://prs.cortexgen.cloud/api/v1/accounts/' + i.accountId + '/agenda/appointments?contact_id=' + g.contactId;
@@ -165,12 +210,7 @@ async function mandarLinkDaReuniao() {
   }
   if (!compromisso || !compromisso.meeting_url) return;
   const idioma = ($('JevEntrada').first().json.jev || {}).language;
-  const texto = (LINK[idioma] || LINK.en) + ' ' + compromisso.meeting_url;
-  if (g.splitReplies) {
-    await postar('/toggle_typing_status', { typing_status: 'on' });
-    await espera(atraso(texto));
-  }
-  await postar('/messages', { content: texto, message_type: 'outgoing' });
+  await mandarBolhaFinal((LINK[idioma] || LINK.en) + ' ' + compromisso.meeting_url);
 }
 
 if (!g.splitReplies) {
@@ -183,4 +223,10 @@ if (!g.splitReplies) {
   }
 }
 if (marcadoAgora) await mandarLinkDaReuniao();
+const idiomaDoCliente = ($('JevEntrada').first().json.jev || {}).language;
+if (linhasDaCotacao.length) await chamarComercial('quotes', { lines: linhasDaCotacao, language: idiomaDoCliente });
+if (assinar) {
+  const assinatura = await chamarComercial('subscriptions', { item_id: Number(assinar[1]), language: idiomaDoCliente });
+  if (assinatura) await mandarBolhaFinal((ASSINATURA[idiomaDoCliente] || ASSINATURA.en) + ' ' + assinatura.public_url);
+}
 return [{ json: i }];

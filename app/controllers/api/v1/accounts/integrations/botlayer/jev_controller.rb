@@ -6,10 +6,11 @@
 # que escreve essas colunas.
 class Api::V1::Accounts::Integrations::Botlayer::JevController < Api::V1::Accounts::Integrations::Botlayer::BaseController
   MODELS_URL = 'https://api.typesafe.ai/v1/models'.freeze
-  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup deal_stage language booking].freeze
+  ACTIVITIES = %w[knowledge model_routing no_reply human_request mood opt_out manipulation reply_review followup deal_stage language booking
+                  catalog].freeze
   # Sem estado gravado a atividade observa. O idioma e o agendamento entram
   # decidindo (decisão do Paulo em 02/10). O Guard do n8n tem a mesma tabela.
-  DEFAULT_STATES = { 'language' => 'deciding', 'booking' => 'deciding' }.freeze
+  DEFAULT_STATES = { 'language' => 'deciding', 'booking' => 'deciding', 'catalog' => 'deciding' }.freeze
   STATES = %w[observing deciding off].freeze
   MAX_REVIEW_RULES = 10
   # Sugestao de etiqueta e prioridade e condicoes por IA nas automacoes (codigo

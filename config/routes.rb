@@ -282,6 +282,9 @@ Rails.application.routes.draw do
                 post 'payments/:payment_id/receipt', action: :issue_receipt
               end
             end
+            get 'bot/catalog', to: 'bot#catalog'
+            post 'bot/quotes', to: 'bot#quote'
+            post 'bot/subscriptions', to: 'bot#subscribe'
             resources :subscriptions, only: [:index, :show, :create] do
               member do
                 post :deliver

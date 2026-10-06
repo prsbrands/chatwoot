@@ -35,6 +35,8 @@ const KNOWLEDGE_KEEP_NOUL = 0.3;
 // Agendar: errar para mais só põe a lista de horários no prompt; errar para
 // menos deixa o cliente sem horário.
 const BOOKING_NOUL = 0.6;
+// Catalogo: errar para mais so poe os itens e precos no prompt.
+const CATALOG_NOUL = 0.6;
 const MAX_SECTIONS = 80;
 
 const g = $('Guard').first().json;
@@ -228,6 +230,19 @@ if (act.booking) {
     },
   };
 }
+// Produtos, servicos, precos, planos, um orcamento ou assinar: o catalogo da
+// conta (com precos) vai para o prompt, e a IA pode montar o rascunho da
+// cotizacao ou mandar o link de assinatura (MontaPrompt e Responde).
+if (act.catalog) {
+  perguntas.catalog = {
+    type: 'noul',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, is the customer asking about the products, services, plans or prices offered, asking for a quote or proposal, or wanting to buy or subscribe?',
+    criteria: {
+      true: 'The customer asks what is offered, how much something costs, what a plan includes, asks for a quote, proposal or budget, says what and how many they want, or wants to buy, hire or subscribe.',
+      false: 'Anything else, including booking an appointment, a greeting, a complaint or a question about something already bought.',
+    },
+  };
+}
 const temModelos = rota.light_model || rota.strong_model;
 if (act.model_routing && temModelos) {
   perguntas.model_routing = {
@@ -322,6 +337,9 @@ if (a.language && a.language.choice) {
 if (noul('booking') !== null) {
   decisions.booking = { state: act.booking, value: noul('booking'), signal: noul('booking') >= BOOKING_NOUL, acted: false };
 }
+if (noul('catalog') !== null) {
+  decisions.catalog = { state: act.catalog, value: noul('catalog'), signal: noul('catalog') >= CATALOG_NOUL, acted: false };
+}
 let modelo = null;
 if (a.model_routing && a.model_routing.choice) {
   const escolha = a.model_routing.choice;
@@ -357,6 +375,7 @@ if (respostaDaBase && respostaDaBase.answers) {
 if (decide('model_routing') && modelo && modelo !== rota.model) decisions.model_routing.acted = true;
 if (decide('language') && decisions.language && decisions.language.signal) decisions.language.acted = true;
 if (decide('booking') && decisions.booking && decisions.booking.signal) decisions.booking.acted = true;
+if (decide('catalog') && decisions.catalog && decisions.catalog.signal) decisions.catalog.acted = true;
 
 // ---- agir --------------------------------------------------------------------
 
@@ -380,6 +399,7 @@ if (handoff) {
   if (decisions.model_routing) decisions.model_routing.acted = false;
   if (decisions.language) decisions.language.acted = false;
   if (decisions.booking) decisions.booking.acted = false;
+  if (decisions.catalog) decisions.catalog.acted = false;
   await gravar(row);
   // Nota com briefing, etiqueta, bloqueio (opt_out) e abrir a conversa ficam
   // no no Passagem, o mesmo dos outros caminhos de handoff.
@@ -392,6 +412,7 @@ if (decisions.no_reply && decisions.no_reply.signal && decide('no_reply')) {
   if (decisions.model_routing) decisions.model_routing.acted = false;
   if (decisions.language) decisions.language.acted = false;
   if (decisions.booking) decisions.booking.acted = false;
+  if (decisions.catalog) decisions.catalog.acted = false;
   await gravar(row);
   return [];
 }
@@ -402,4 +423,5 @@ return segue({
   model: decisions.model_routing && decisions.model_routing.acted ? modelo : null,
   language: decisions.language && decisions.language.acted ? decisions.language.value : null,
   booking: Boolean(decisions.booking && decisions.booking.acted),
+  catalog: Boolean(decisions.catalog && decisions.catalog.acted),
 });

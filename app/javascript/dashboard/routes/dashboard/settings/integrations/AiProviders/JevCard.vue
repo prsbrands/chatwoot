@@ -20,6 +20,7 @@ const GROUPS = [
   },
   { id: 'LANGUAGE', activities: ['language'] },
   { id: 'BOOKING', activities: ['booking'] },
+  { id: 'CATALOG', activities: ['catalog'] },
   { id: 'REVIEW', activities: ['reply_review'] },
   { id: 'FOLLOWUP', activities: ['followup'] },
   { id: 'SALES', activities: ['deal_stage'] },

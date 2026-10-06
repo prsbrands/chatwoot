@@ -60,15 +60,12 @@ class Commerce::Subscription < ApplicationRecord
     assign_attributes(name: item.name, unit_price: item.price, currency: item.currency, interval: item.billing_interval) if item && name.blank?
   end
 
-  # Com os dados fiscais lembrados do último documento (billing_*) e o negócio
-  # aberto do contato, que é ganho no primeiro ciclo pago.
+  # E o negócio aberto do contato, que é ganho no primeiro ciclo pago.
   def copy_customer
     return if contact.nil? || customer.present?
 
     self.deal ||= account.sales_deals.open.find_by(contact: contact)
-    billing = (contact.additional_attributes || {}).slice('billing_tax_id_label', 'billing_tax_id', 'billing_address')
-                                                   .transform_keys { |key| key.delete_prefix('billing_') }
-    self.customer = { 'name' => contact.name, 'email' => contact.email, 'phone' => contact.phone_number }.merge(billing).compact_blank
+    self.customer = Commerce.customer_of(contact)
   end
 
   def item_is_plan
