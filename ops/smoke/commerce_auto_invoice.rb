@@ -58,7 +58,8 @@ fatura = Commerce::Document.invoice.find_by(source_document_id: c2.id)
 ok 'fatura nasce da cotacao, enviada', fatura && fatura.sent? && fatura.total == c2.total && fatura.conversation == conversa &&
                                        fatura.delivered_email == 'maria@cliente.test'
 novas = conversa.messages.where('id > ?', ultima).to_a
-ok 'fatura vai pela conversa com o PDF e o link', novas.any? { |m| !m.private && m.attachments.any? && m.content.to_s.include?('/d/') }
+ok 'fatura vai pela conversa: o PDF e o texto com o link', novas.any? { |m| !m.private && m.attachments.any? } &&
+                                                        novas.any? { |m| !m.private && m.content.to_s.include?('Te enviamos la factura') && m.content.include?('/d/') }
 ok 'nota interna para a equipe', novas.any? { |m| m.private && m.content.include?(fatura.number) && m.content.include?(c2.number) }
 ok 'fatura vai pelo e-mail da cotacao', ActionMailer::Base.deliveries.size == emails + 1 && ActionMailer::Base.deliveries.last.to == ['maria@cliente.test']
 

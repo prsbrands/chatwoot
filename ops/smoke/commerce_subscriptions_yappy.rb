@@ -94,9 +94,9 @@ ok 'job de novo: nao repete a fatura', sub.invoices.count == 2
 segunda.update!(due_date: Date.current)
 antes = conversa.messages.count
 Commerce::SubscriptionCycleJob.perform_now
-ok 'no dia do vencimento: lembrete pela conversa', conversa.messages.count == antes + 1 && conversa.messages.last.content.include?('vence hoy')
+ok 'no dia do vencimento: lembrete pela conversa (PDF e texto)', conversa.messages.count == antes + 2 && conversa.messages.last.content.include?('vence hoy')
 Commerce::SubscriptionCycleJob.perform_now
-ok 'lembrete so uma vez', conversa.messages.count == antes + 1
+ok 'lembrete so uma vez', conversa.messages.count == antes + 2
 
 segunda.update!(due_date: 6.days.ago.to_date)
 Commerce::SubscriptionCycleJob.perform_now

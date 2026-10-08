@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.21.1] — 2026-10-08 · base Chatwoot 4.18.0
+
+- **Cotização, fatura e recibo pelo WhatsApp com mensagem explicando.** O PDF chegava sozinho: o adaptador do OpenWA manda só o arquivo e descarta o texto que vai junto do anexo. Agora o PDF vai numa mensagem e logo depois um texto no idioma do documento, com o nome do cliente, o valor e o link, por exemplo «¡Hola, María! Te enviamos la factura FAT-2026-0007 por $ 4,00. Puedes verla y pagarla aquí: …» (em português: «Olá, Maria! Segue a fatura…»; em inglês: «Hi, Maria! Here is invoice…»). Na fatura, o valor é o saldo a pagar. Vale para o envio pela tela, a fatura automática, o recibo e as faturas de renovação de assinatura.
+
 ## [1.21.0] — 2026-10-08 · base Chatwoot 4.18.0
 
 - **Fatura automática no aceite.** Nova chave em Company & payments → **Automation**: quando o cliente clica em "Aceptar" no link da cotização, a fatura nasce na hora e vai sozinha pelos mesmos canais da cotização (a conversa, com o PDF e o link de pagamento, e o e-mail), com uma nota interna avisando a equipe. Desligada por padrão; cotização que já tem fatura não gera outra. Pedido do Paulo depois de testar a Fase 2: aceitar, gerar a fatura e enviar eram três cliques da equipe.

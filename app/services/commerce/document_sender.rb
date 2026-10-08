@@ -1,5 +1,6 @@
-# Envia o documento ao cliente: pela conversa (o PDF vai como anexo, com o link
-# público) ou por e-mail (PDF anexo). Envia sempre o PDF mais recente do
+# Envia o documento ao cliente: pela conversa (o PDF numa mensagem e, logo
+# depois, o texto com o link público: o adaptador do OpenWA manda só o arquivo e
+# descarta o texto que vai junto do anexo) ou por e-mail (PDF anexo). Envia sempre o PDF mais recente do
 # arquivo, gerando um se ainda não houver; o envio tira o documento do rascunho.
 # Guarda a conversa e o e-mail usados: o recibo segue pelos mesmos canais.
 class Commerce::DocumentSender
@@ -22,11 +23,8 @@ class Commerce::DocumentSender
     end
 
     pdf = pdf_attachment
-    Messages::MessageBuilder.new(@user, conversation, {
-                                   message_type: 'outgoing',
-                                   content: content.presence || default_message,
-                                   attachments: [pdf.blob.signed_id]
-                                 }).perform
+    Messages::MessageBuilder.new(@user, conversation, { message_type: 'outgoing', attachments: [pdf.blob.signed_id] }).perform
+    Messages::MessageBuilder.new(@user, conversation, { message_type: 'outgoing', content: content.presence || default_message }).perform
     @document.update!(conversation: conversation)
     @flow.mark_sent!
   end
@@ -55,7 +53,10 @@ class Commerce::DocumentSender
   end
 
   def default_message
-    format(@labels[:message], document: document_name, number: @document.number, url: @flow.public_url)
+    name = @document.customer['name'].to_s.split.first
+    hello = name ? format(@labels[:hello_name], name: name) : @labels[:hello]
+    total = Commerce::DocumentLabels.money(@document.invoice? ? @document.balance : @document.total, @document.currency, @document.language)
+    "#{hello} #{format(@labels[:"chat_#{@document.kind}"], number: @document.number, total: total, url: @flow.public_url)}"
   end
 
   # O link vai no botão do e-mail (Commerce::DocumentMailer), não no texto.

@@ -65,9 +65,11 @@ api.(:post, "documents/#{cot['id']}/pdf")
 ok 'cada geracao fica no arquivo', Commerce::Document.find(cot['id']).pdfs.count == 2
 
 st, enviado = api.(:post, "documents/#{cot['id']}/deliver", { channel: 'conversation', conversation_id: conversa.display_id })
-msg = conversa.messages.outgoing.last
-ok 'enviado pela conversa: PDF anexo e link', st == 200 && enviado['status'] == 'sent' && msg.attachments.count == 1 &&
-                                               msg.content.include?('/d/')
+msg, texto = conversa.messages.outgoing.reorder(:id).last(2)
+ok 'enviado pela conversa: PDF numa mensagem, depois o texto com o link', st == 200 && enviado['status'] == 'sent' &&
+                                                                         msg.attachments.count == 1 && texto.attachments.none? &&
+                                                                         texto.content.start_with?('¡Hola, María! Te enviamos la cotización ') &&
+                                                                         texto.content.include?('$ 294,25') && texto.content.include?('/d/')
 ci_voz = ContactInbox.create!(contact: contact, inbox: voz, source_id: SecureRandom.uuid)
 conversa_voz = Conversation.create!(account: account, inbox: voz, contact: contact, contact_inbox: ci_voz)
 ok 'caixa sem webhook (voz) recusa o envio: 422',
