@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-06 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.19.6** (n8n; Rails 1.19.3) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-08 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.19.6** (n8n; Rails 1.19.3) · **1.20.0 pronta para deploy** (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -19,6 +19,8 @@
 - **Fase 3d, assinaturas** (1.17.0 Stripe Billing, 1.17.1 Mercado Pago preapproval, 1.17.2 Yappy com cobrança assistida). A assinatura 1 (CortexGen 1, pendente) foi criada pela IA no teste; ninguém assinou de verdade ainda.
 - **Fase 4, a IA vende pelo catálogo** (1.18.0 a 1.19.6, provada em uso real na conversa 89) e **vitrine pública** `/c/…` (1.19.0, ligada na conta 1). Rascunhos da IA têm o **número vermelho** em Quotes & invoices (1.19.3).
 - **Lição que custou 5 versões só de n8n (1.19.1–1.19.6):** o LLM esquece as etiquetas `[[QUOTE]]`/`[[SUBSCRIBE]]`, como esquecia o `[[BOOK]]`. A ação passou a ser decidida pelo Jev **antes** do LLM. Memória `bot-acao-pelo-jev-antes-do-llm`.
+
+**08/10: Memória da IA (1.20.0), pronta e não publicada.** Resumo e fatos por contato, em todos os canais: o workflow novo **"CortexGen Memória"** (a cada 10 min, modelo leve da persona) atualiza a memória das conversas paradas há 30 min; o `MontaPrompt` lê `GET ai_memory/bot/contact` e põe a seção `# CUSTOMER MEMORY` antes do `# LANGUAGE`; a equipe edita no bloco **AI memory** do painel da conversa e na aba **AI memory** do contato (fato manual, corrigido ou fixado a IA não toca). Junto: **juntar contatos** agora leva negócio, tarefas, compromissos, documentos, assinaturas e memória (antes negócio/tarefas eram apagados com o absorvido). Imagem `test-b43n` (commit `f27a5ffdf`, clone `src-b29`). Detalhe e ordem do deploy na seção **Memória da IA** abaixo.
 
 **Comece pelo item 1 da fila.** Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
@@ -67,9 +69,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.19.3 | **Número vermelho de rascunhos da IA em Quotes & invoices** (ideia do Paulo: a menção ia só para o sino). `Document.awaiting_review` (cotização em rascunho com `details.prepared_by_ai`), `GET documents/review_count`, store `commerce` relido a cada minuto, `countClass` no `SidebarGroupHeader` (toque no upstream). Selo "Prepared by AI" na lista e aviso no editor com link para a conversa. Cliente que muda o pedido atualiza o rascunho da IA ainda não enviado (nota "changed the request") | Sim, 06/10 |
 | 1.19.4 | **Teste da assinatura (21:29, conversa 89):** catálogo 0,98, mas o LLM disse "el enlace te llega" sem `[[SUBSCRIBE]]`; `false_sale` 0,97 reteve e passou para a equipe. Correção (como a Agenda em 03/10): no `MontaPrompt`, `choice` do Jev entre os planos assináveis (+ `none`, ≥ 0,8) → `POST bot/subscriptions` antes do LLM; a regra 4 só pede a confirmação; o `Responde` manda o link de `subscriptionUrl` (a etiqueta vira reserva); o `JevRevisao` trata como feito. Jev real: 1,0 / 0,99 / none 0,99 / none 0,99 / anual 1,0. `node ops/n8n/test/catalogo.test.js`: 18 OK. **Só n8n** (MontaPrompt, Responde, JevRevisao) | Publicada em 06/10 (export conferido). **Provada às 21:35:** "quiero assinar la subscripcion CortexGen 1" → assinatura 1 criada (Credit Card) e o link `/s/…` na mensagem seguinte |
 | 1.19.5 | Bolha do link (assinatura e Meet) sem rótulo quando o Jev não decide o idioma ("👉 <link>"; antes caía no inglês "Subscribe here:"; visto às 21:35 com "assinar" + espanhol, idioma pt 0,37). 19 OK no teste dos nós. **Só n8n** (Responde) | Não publicada sozinha: entra na 1.19.6 |
+| 1.20.0 | **Memória da IA por contato.** Migration `20261008000001` (`ai_memory_summaries`: um por contato, `body` ≤ 1500, `last_message_id` = maior id já lido, `claimed_at` = reserva de 1 h; `ai_memory_facts`: `body` ≤ 300, `source` ai/manual, `pinned`, `conversation_id`). `AiMemory::Bot`: `claim` (conversas das caixas do bot com `last_activity_at` entre 7 dias e 30 min atrás e mensagem do cliente acima do `last_message_id`; um contato por rodada), `apply!` (IA só muda/apaga fato `ai` não fixado; repetido por texto normalizado não entra; teto 30, saem os mais antigos da IA), `for_conversation`. Rotas `ai_memory/bot/{contact,claims,updates}` (admin) e `ai_memory/contacts/:id`, `ai_memory/facts` (tela). Workflow **CortexGen Memória** (`ops/n8n/build_memoria.py`: Candidatos → MontaMemoria → EscolheProvider → LLMMemoria/Custom → GravaMemoria), uso como `kind 'memory'` (`db/botlayer/bot_ai_memory.sql`). `MontaPrompt`: seção `# CUSTOMER MEMORY` (teto 1500 caracteres, fixados primeiro; Rails fora → segue sem). Tela `AiMemoryPanel.vue`. `CortexgenContactMerge` (prepend no `ContactMergeAction`). Smoke `ai_memory` 38; `node ops/n8n/test/memoria.test.js` 17 | **Não publicada** (08/10): ver a seção Memória da IA |
 | 1.19.6 | **Cotização pelo Jev antes do LLM** (21:37, conversa 89: "genere... cotizacion del product test #1 de 10 unidades" → promessa sem `[[QUOTE]]`, `false_sale` reteve, nenhum rascunho, e por isso o número vermelho não apareceu). No `MontaPrompt`, a mesma chamada do Jev tem `subscribe` e `quote` (choice entre os itens, ≥ 0,65); quantidade por regex da mensagem (`quantidadePedida`: "10 unidades", "de 10", ignora o "#1" do nome e "%"); `POST bot/quotes` antes do LLM; saída `quoted` (Responde não repete pela etiqueta; JevRevisao trata como feito). Jev real: 0,99 / 0,71 / 0,97; preço e assinar fora. 21 OK no teste dos nós. **Só n8n** (MontaPrompt, Responde, JevRevisao) | Publicada em 06/10 (export conferido). **Provada às 21:46:** o rascunho COT-2026-0004 (10 un. do Product Test #1, `prepared_by_ai`) nasceu antes do LLM, com nota e menção; a IA confirmou "10 unidades... el equipo la revisa"; o Paulo enviou às 21:48 e o número voltou a 0. A quantidade veio do pedido das 21:37, que ficou junto com o "Una" no mesmo turno do cliente (mensagens seguidas do cliente se juntam no `MontaPrompt`) |
 
-- **Imagem:** `:v1` = imagem `test-b42n` (1.19.3, commit `d69b3ba6f`, clone `src-b28`), rollback em `:v1-pre-b42` (1.19.0), `:v1-pre-b41` (1.18.0), `:v1-pre-b40` (1.17.2), `:v1-pre-b39` (1.17.1), `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b43`.
+- **Imagem:** `:v1` = imagem `test-b42n` (1.19.3, commit `d69b3ba6f`, clone `src-b28`), rollback em `:v1-pre-b42` (1.19.0), `:v1-pre-b41` (1.18.0), `:v1-pre-b40` (1.17.2), `:v1-pre-b39` (1.17.1), `:v1-pre-b38` (1.17.0), `:v1-pre-b37` (1.16.3, sem as colunas novas, que são só aditivas), `:v1-pre-b36` (1.16.2), `:v1-pre-b35` (1.16.1), `:v1-pre-b34` (1.16.0), `:v1-pre-b33` (1.15.0), `:v1-pre-b32` (1.14.1), `:v1-pre-b31` (1.14.0), `:v1-pre-b30` (1.13.3), `:v1-pre-b29` (1.13.2), `:v1-pre-b28` (1.13.1 + b25), `:v1-pre-b27` (1.13.1), `:v1-pre-b26` (1.13.0), `:v1-pre-b25` (1.12.1), `:v1-pre-b24` (1.12.0), `:v1-pre-b23` (1.11.0), `:v1-pre-b22` (1.10.0) e `:v1-pre-b21` (1.9.0). Entre 03 e 05/10 a limpeza da VPS apagou todas as `test-*` e a `v1-pre-b20`: a `test-b17n` teve de ser refeita. **Na limpeza, poupar a `test-*` que espera deploy.** O próximo rollback é `v1-pre-b43`. A `test-b43n` (1.20.0) espera deploy: **poupar na limpeza**.
 - **Workflows:** bot e follow-up publicados com os nós do commit `a273e3970` (1.11.0); o **bot** está com os do `2f6b7eae9` (1.18.0, publicado em 06/10; cópia anterior em `/home/node/wf-pre-catalogo.json`) passou ao `05026d888` (1.19.1) está no `be71f912a` (1.19.2, publicado em 06/10) passou ao `636b874f6` (1.19.4, publicado em 06/10) e está no `e24635b8a` (1.19.6, publicado em 06/10; a 1.19.5 não foi publicada sozinha). O próximo patch usa o publicado como base. O Passagem ao vivo tinha 3 rótulos de `reply_review` editados fora do repo ("Jev retuvo…"); o repo agora tem esses rótulos. As versões anteriores saíram de `ops/n8n/patch_agenda.py`.
 - **GitHub:** em dia em 06/10 (tags até `cg-v1.19.6`). O remote deste clone passou a HTTPS (`https://github.com/prsbrands/chatwoot.git`, login do `gh`): em SSH o push dava `Permission denied (publickey)`. O push é do Paulo (o classificador bloqueia para o Claude).
 
@@ -102,12 +105,12 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
   - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b43`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 20 scripts em Postgres e Redis **descartáveis**, 436 cenários no total:
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 21 scripts em Postgres e Redis **descartáveis**, 474 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13.
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `ai_memory` 38.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
-  - **Nós do n8n:** `node ops/n8n/test/catalogo.test.js` (21 OK) roda MontaPrompt, Responde e JevRevisao fora do n8n, com `$`, `$input` e HTTP falsos (`ops/n8n/test/harness.js`).
+  - **Nós do n8n:** `node ops/n8n/test/catalogo.test.js` (21 OK) e `node ops/n8n/test/memoria.test.js` (17 OK) rodam os nós fora do n8n, com `$`, `$input`, `$env` e HTTP falsos (`ops/n8n/test/harness.js`; nó de vários itens: passe uma lista, e `itemMatching(k)` pega o k-ésimo).
   - **Critério novo do Jev se mede no Jev real** antes de publicar: script em `rails runner` dentro do container, lendo `jev_api_key` do `account_settings` sem imprimir (memória `bot-acao-pelo-jev-antes-do-llm`).
 - **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
 - **Armadilhas desta sessão:**
@@ -123,15 +126,29 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
   - Workflow agendado (follow-up): depois do Publish, também `docker restart` (ver 01/10).
 - **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261006000001`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261008000001`.
 - **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão. O WhatsApp QR vivo da conta 1 é a **inbox 33**. O **WhatsApp oficial** é a **inbox 34** (`+15055573540`).
+
+### Memória da IA (1.20.0) — deploy, um comando por vez
+
+Tudo validado em 08/10: smoke `ai_memory` 38/38 sobre a `v1` (dev-smoke) e lint limpo (rubocop e eslint) nos arquivos novos; o `run.sh` completo roda na `test-b43n`. Os dois workflows já estão no container do n8n em `/home/node/`: `wf-memoria-bot.json` (o bot publicado com o `MontaPrompt` novo; só esse nó mudou, base `e24635b8a`; cópia do publicado em `/home/node/wf-pre-memoria.json`) e `wf-memoria.json` (o CortexGen Memória, id `8vQczvOX0APBIO9k`, clonando o IF e os LLM do bot com a credencial do OpenRouter).
+
+Ordem (o Paulo roda):
+1. Supabase: `db/botlayer/bot_ai_memory.sql` no `supabase-db` (põe `memory` na constraint de `bot_interactions.kind`). **Antes** de publicar o workflow da memória.
+2. Migration com a `test-b43n`, depois `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b43`, `docker tag cortexgen-chat:test-b43n cortexgen-chat:v1` e o recreate de rails e sidekiq.
+3. Bot: `n8n import:workflow --input=/home/node/wf-memoria-bot.json` → recarregar a página → Publish. **Depois do Rails**: sem a rota `ai_memory/bot/contact` o `MontaPrompt` só loga o 404 e segue sem a seção (não cala o bot), mas não adianta antes.
+4. Memória: `n8n import:workflow --input=/home/node/wf-memoria.json` → Publish → `docker restart n8n-y4jd-n8n-1` (workflow agendado).
+5. Conferir: exports com `versionId == activeVersionId`; depois de ~40 min, uma conversa parada da conta 1 com memória no bloco AI memory e "Customer memory" no AI usage.
+
+O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
 
 ### Fila, na ordem que eu seguiria
 
+0. **Deploy da 1.20.0** (seção acima).
 1. **App OAuth do Google** (`cortexgencrm`), **do Paulo e com prazo**: páginas `/privacy` e `/terms` no ar, domínio verificado no Search Console em 05/10. Falta **publicar** no Google Auth Platform. Se a conexão do Calendar da conta 1 vencer (~09/10), reconectar.
 2. **Escolher a próxima frente com o Paulo:**
    - **Fechar a Fase 2 em uso real:** fatura do começo ao fim com pagamento manual ("Issue and send the receipt") e Aceptar/Rechazar na página pública;
-   - **Módulos do DeskComm ainda sem equivalente:** Memória da IA (fatos e resumo por cliente), Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR).
+   - **Módulos do DeskComm ainda sem equivalente:** Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR). A Memória da IA saiu na 1.20.0; a "memória da organização" do DeskComm já é a nossa base de conhecimento.
 3. **Jev:** sugerido ao Paulo passar **"revisão da resposta"** (`reply_review`) para decidir. Em 06/10 ela marcou promessas falsas com 0,81 e 0,86, mas só observava; as redes `false_booking`/`false_sale` já agem sozinhas. Ler o cartão antes.
 4. **Ver em uso real o que ainda não foi visto:**
    - assinatura assinada de verdade (Stripe/MP/Yappy), com a fatura do ciclo e o recibo;
@@ -159,7 +176,9 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - os `include` no `Account` e no `Contact`, e o `prepend(CortexgenMessage)` no fim do `Message`;
   - o `Sidebar.vue` (`MENU_LAYOUT`, `baseMenuItems`);
   - a `badgeClass` e a `countClass` no `SidebarGroupHeader`;
-  - o `overflow-y-auto` passado ao `Dialog`.
+  - o `overflow-y-auto` passado ao `Dialog`;
+  - o `prepend(CortexgenContactMerge)` no fim do `ContactMergeAction`;
+  - o item `ai_memory` no `ContactPanel.vue`/`useUISettings.js` e a aba no `ContactManageView.vue` (com `AI_MEMORY` no `contact.json`).
 
 ---
 
