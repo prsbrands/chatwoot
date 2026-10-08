@@ -193,6 +193,8 @@ const saveProfile = async (extra = {}) => {
 // A vitrine liga e desliga na hora, sem o botão Salvar dos dados da empresa.
 const toggleStorefront = enabled =>
   saveProfile({ storefront_enabled: enabled });
+const toggleAutoInvoice = enabled =>
+  saveProfile({ auto_invoice_on_accept: enabled });
 const copyStorefront = async () => {
   await copyTextToClipboard(profile.value.storefront_url);
   useAlert(t('COMMERCE.STOREFRONT.COPIED'));
@@ -435,6 +437,24 @@ onMounted(async () => {
         >
           {{ $t('COMMERCE.STOREFRONT.NO_WHATSAPP') }}
         </p>
+      </section>
+
+      <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-heading-3 text-n-slate-12">
+            {{ $t('COMMERCE.AUTOMATION.TITLE') }}
+          </h2>
+          <p class="text-sm text-n-slate-11">
+            {{ $t('COMMERCE.AUTOMATION.DESCRIPTION') }}
+          </p>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-n-slate-12">
+          <Checkbox
+            :model-value="profile.auto_invoice_on_accept"
+            @update:model-value="toggleAutoInvoice"
+          />
+          {{ $t('COMMERCE.AUTOMATION.AUTO_INVOICE') }}
+        </label>
       </section>
 
       <section class="flex flex-col gap-3 p-4 border rounded-xl border-n-weak">

@@ -39,7 +39,10 @@ class CommercePublicDocumentsController < PublicController
   end
 
   def accept
-    ::Commerce::DocumentFlow.new(@document).accept! if answerable?
+    if answerable?
+      ::Commerce::DocumentFlow.new(@document).accept!
+      ::Commerce::AutoInvoiceJob.perform_later(@document.id) if @document.account.commerce_profile&.auto_invoice_on_accept?
+    end
     redirect_to commerce_public_document_path(@document.public_token)
   end
 

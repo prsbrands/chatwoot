@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.21.0] — 2026-10-08 · base Chatwoot 4.18.0
+
+- **Fatura automática no aceite.** Nova chave em Company & payments → **Automation**: quando o cliente clica em "Aceptar" no link da cotização, a fatura nasce na hora e vai sozinha pelos mesmos canais da cotização (a conversa, com o PDF e o link de pagamento, e o e-mail), com uma nota interna avisando a equipe. Desligada por padrão; cotização que já tem fatura não gera outra. Pedido do Paulo depois de testar a Fase 2: aceitar, gerar a fatura e enviar eram três cliques da equipe.
+
 ## [1.20.0] — 2026-10-08 · base Chatwoot 4.18.0 · Rails + n8n
 
 - **Memória da IA por cliente.** A IA passa a lembrar do cliente entre conversas e canais. O que ele disse no WhatsApp ela sabe no site e na voz: quem é, o negócio, o que quer, o que foi combinado e as preferências. Quando uma conversa fica parada 30 minutos, o workflow novo "CortexGen Memória" (a cada 10 min, com o modelo leve da persona) atualiza um resumo curto e uma lista de fatos do contato. Antes de responder, o bot lê essa memória e não pergunta de novo o que o cliente já contou.

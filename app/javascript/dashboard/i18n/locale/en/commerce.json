@@ -125,6 +125,11 @@
       "COPIED": "Link copied",
       "NO_WHATSAPP": "Fill in WhatsApp in the company data above: without it, the button opens an email to you instead."
     },
+    "AUTOMATION": {
+      "TITLE": "Automation",
+      "DESCRIPTION": "Steps that run by themselves, without anyone from the team.",
+      "AUTO_INVOICE": "When the customer accepts a quote on its link, create the invoice and send it through the same channels as the quote (chat and email)"
+    },
     "ONLINE": {
       "TITLE": "Online payments",
       "DESCRIPTION": "Let customers pay invoices online, in full or in part. The payment is recorded and the receipt is sent automatically.",
