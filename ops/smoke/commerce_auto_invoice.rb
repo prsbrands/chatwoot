@@ -44,6 +44,10 @@ ok 'perfil: fatura automatica desligada por padrao', perfil['auto_invoice_on_acc
 c1 = cotacao.()
 ok 'cotacao enviada pela conversa e e-mail', c1.sent? && c1.conversation == conversa && c1.delivered_email == 'maria@cliente.test'
 ok 'desligada: aceite nao agenda a fatura', aceitar.(c1).empty? && c1.reload.accepted?
+nota = conversa.messages.where(private: true).reorder(:id).last
+ok 'desligada: aceite deixa nota mencionando o admin, com o link da cotacao', nota.content.include?("mention://user/#{ana.id}/") &&
+                                                                             nota.content.include?("accepted the quote #{c1.number}") &&
+                                                                             nota.content.include?("/documents/#{c1.id}")
 
 st, perfil = api.(:patch, 'profile', { auto_invoice_on_accept: true })
 ok 'ligar pela tela', st == 200 && perfil['auto_invoice_on_accept'] == true
@@ -60,12 +64,19 @@ ok 'fatura nasce da cotacao, enviada', fatura && fatura.sent? && fatura.total ==
 novas = conversa.messages.where('id > ?', ultima).to_a
 ok 'fatura vai pela conversa: o PDF e o texto com o link', novas.any? { |m| !m.private && m.attachments.any? } &&
                                                         novas.any? { |m| !m.private && m.content.to_s.include?('Te enviamos la factura') && m.content.include?('/d/') }
-ok 'nota interna para a equipe', novas.any? { |m| m.private && m.content.include?(fatura.number) && m.content.include?(c2.number) }
+ok 'nota interna mencionando o admin, com o link da fatura', novas.any? { |m| m.private && m.content.include?(fatura.number) && m.content.include?(c2.number) &&
+                                                                                   m.content.include?("mention://user/#{ana.id}/") && m.content.include?("/documents/#{fatura.id}") }
 ok 'fatura vai pelo e-mail da cotacao', ActionMailer::Base.deliveries.size == emails + 1 && ActionMailer::Base.deliveries.last.to == ['maria@cliente.test']
 
 Commerce::AutoInvoiceJob.perform_now(c2.id)
 ok 'job repetido nao gera outra fatura', Commerce::Document.invoice.where(source_document_id: c2.id).count == 1
 ok 'aceitar de novo pelo link nao agenda outra', aceitar.(c2).empty?
 
-s.post "/d/#{cotacao.().public_token}/decline"
+c3 = cotacao.()
+s.post "/d/#{c3.public_token}/decline"
+nota = conversa.messages.where(private: true).reorder(:id).last
+ok 'recusa pelo link: recusada, nota mencionando o admin', c3.reload.declined? && nota.content.include?("declined the quote #{c3.number}") &&
+                                                          nota.content.include?("mention://user/#{ana.id}/")
+s.post "/d/#{c3.public_token}/decline"
+ok 'recusar de novo nao repete a nota', conversa.messages.where(private: true).reorder(:id).last.id == nota.id
 ok 'recusar nao gera fatura', ActiveJob::Base.queue_adapter.enqueued_jobs.none? { |j| j['job_class'] == 'Commerce::AutoInvoiceJob' && j['arguments'] != [c2.id] }

@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.21.2] — 2026-10-08 · base Chatwoot 4.18.0
+
+- **A equipe fica sabendo do aceite e da recusa.** Quando o cliente clica em "Aceptar" ou "Rechazar" no link da cotização, sai uma nota interna na conversa mencionando o responsável do negócio (ou o primeiro admin), com o valor e o link do documento; a menção cai no sino. Antes a recusa passava em silêncio, e o aceite só avisava com a fatura automática ligada. A nota da fatura automática também passou a mencionar o responsável, com o link da fatura.
+
 ## [1.21.1] — 2026-10-08 · base Chatwoot 4.18.0
 
 - **Cotização, fatura e recibo pelo WhatsApp com mensagem explicando.** O PDF chegava sozinho: o adaptador do OpenWA manda só o arquivo e descarta o texto que vai junto do anexo. Agora o PDF vai numa mensagem e logo depois um texto no idioma do documento, com o nome do cliente, o valor e o link, por exemplo «¡Hola, María! Te enviamos la factura FAT-2026-0007 por $ 4,00. Puedes verla y pagarla aquí: …» (em português: «Olá, Maria! Segue a fatura…»; em inglês: «Hi, Maria! Here is invoice…»). Na fatura, o valor é o saldo a pagar. Vale para o envio pela tela, a fatura automática, o recibo e as faturas de renovação de assinatura.

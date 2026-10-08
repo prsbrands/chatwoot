@@ -90,7 +90,9 @@ en:
   commerce:
     ai_quote: '%{mention} the AI prepared the draft quote %{number} (%{total}) from this conversation. Review it and send it to the customer: %{url}'
     ai_quote_updated: '%{mention} the customer changed the request: the AI updated the draft quote %{number} (%{total}). Review it and send it to the customer: %{url}'
-    auto_invoice: 'The customer accepted the quote %{quote} on its link. Invoice %{invoice} was created and sent through the quote channels.'
+    auto_invoice: '%{mention} the customer accepted the quote %{number} (%{total}) on its link. Invoice %{invoice} was created and sent through the quote channels: %{url}'
+    quote_accepted: '%{mention} the customer accepted the quote %{number} (%{total}) on its link. Create the invoice: %{url}'
+    quote_declined: '%{mention} the customer declined the quote %{number} (%{total}) on its link: %{url}'
     online_payment: 'Online payment received: %{amount} for %{invoice} (%{method}). Receipt %{receipt} issued and sent through the invoice channels.'
     subscription_overdue: 'The renewal invoice %{invoice} of the subscription %{subscription} is unpaid 5 days after its due date. The subscription is past due.'
     subscription_payment_failed: 'The renewal of the subscription %{subscription} was declined. The provider will retry; the subscription is past due.'

@@ -37,7 +37,7 @@ class Commerce::AiSales
                                    deal_id: @account.sales_deals.open.find_by(contact: contact)&.id,
                                    customer: Commerce.customer_of(contact), items: lines.map { |line| quote_line(line) }
                                  }).save!
-    notify_team(conversation, quote, updated ? 'commerce.ai_quote_updated' : 'commerce.ai_quote')
+    Commerce::TeamNote.post(quote, updated ? 'commerce.ai_quote_updated' : 'commerce.ai_quote')
     quote
   end
 
@@ -69,15 +69,5 @@ class Commerce::AiSales
 
   def language_or_default(language)
     language.presence_in(Commerce::Document::LANGUAGES) || @account.locale.to_s.first(2).presence_in(Commerce::Document::LANGUAGES) || 'es'
-  end
-
-  # Quem atende o negócio, ou o primeiro admin da conta.
-  def notify_team(conversation, quote, key)
-    user = quote.deal&.assignee || @account.administrators.order(:id).first
-    tag = "[@#{user.available_name}](mention://user/#{user.id}/#{ERB::Util.url_encode(user.available_name)})"
-    url = "#{ENV.fetch('FRONTEND_URL')}/app/accounts/#{@account.id}/documents/#{quote.id}"
-    total = Commerce::DocumentLabels.money(quote.total, quote.currency, 'en')
-    conversation.messages.create!(account: @account, inbox: conversation.inbox, message_type: :outgoing, private: true,
-                                  content: I18n.t(key, mention: tag, number: quote.number, total: total, url: url))
   end
 end

@@ -41,13 +41,20 @@ class CommercePublicDocumentsController < PublicController
   def accept
     if answerable?
       ::Commerce::DocumentFlow.new(@document).accept!
-      ::Commerce::AutoInvoiceJob.perform_later(@document.id) if @document.account.commerce_profile&.auto_invoice_on_accept?
+      if @document.account.commerce_profile&.auto_invoice_on_accept?
+        ::Commerce::AutoInvoiceJob.perform_later(@document.id)
+      else
+        ::Commerce::TeamNote.post(@document, 'commerce.quote_accepted')
+      end
     end
     redirect_to commerce_public_document_path(@document.public_token)
   end
 
   def decline
-    ::Commerce::DocumentFlow.new(@document).decline! if answerable?
+    if answerable?
+      ::Commerce::DocumentFlow.new(@document).decline!
+      ::Commerce::TeamNote.post(@document, 'commerce.quote_declined')
+    end
     redirect_to commerce_public_document_path(@document.public_token)
   end
 
