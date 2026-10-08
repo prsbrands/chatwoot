@@ -14,6 +14,13 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.20.0] — 2026-10-08 · base Chatwoot 4.18.0 · Rails + n8n
+
+- **Memória da IA por cliente.** A IA passa a lembrar do cliente entre conversas e canais. O que ele disse no WhatsApp ela sabe no site e na voz: quem é, o negócio, o que quer, o que foi combinado e as preferências. Quando uma conversa fica parada 30 minutos, o workflow novo "CortexGen Memória" (a cada 10 min, com o modelo leve da persona) atualiza um resumo curto e uma lista de fatos do contato. Antes de responder, o bot lê essa memória e não pergunta de novo o que o cliente já contou.
+- **A equipe vê e corrige a memória** no bloco **AI memory** do painel da conversa e na aba **AI memory** do contato: dá para editar o resumo e acrescentar, corrigir, fixar ou apagar fatos. Fato escrito ou corrigido por uma pessoa, e fato fixado, a IA não muda nem apaga.
+- O custo entra no **AI usage** como "Customer memory" e respeita o teto mensal da conta.
+- **Juntar contatos não perde mais nada:** negócios e tarefas do contato absorvido eram apagados com ele, e compromissos, orçamentos, faturas e assinaturas ficavam sem dono. Agora tudo passa para o contato que fica, e a memória dos dois se junta.
+
 ## [1.19.6] — 2026-10-06 · base Chatwoot 4.18.0 · só n8n (inclui a 1.19.5)
 
 - **A cotização sai mesmo quando o LLM esquece a etiqueta.** Visto às 21:37: "genere para mi una cotización del product test #1 de 10 unidades" foi respondida com a promessa, sem `[[QUOTE]]`; a rede de segurança reteve e nenhum rascunho nasceu (por isso o número vermelho não apareceu). Agora o Jev escolhe, antes do LLM, o item da cotização pedida (confiança de 0,65 ou mais, porque é só um rascunho que a equipe revisa), a quantidade vem da mensagem ("10 unidades", "de 10"; sem número, 1) e o rascunho nasce nessa hora; o LLM só confirma o item e a quantidade. No Jev real: a mensagem das 21:37 0,99; "Enviame porfa" depois da oferta 0,71; "la cotización en pdf" do CortexGen 1 0,97; perguntar preço e pedir para assinar ficam fora. Pedido com vários itens ou mudança de quantidade segue pela etiqueta.

@@ -332,6 +332,33 @@ if (jev.catalog) {
   }
 }
 
+// Memoria do cliente (AiMemory, no Rails): o resumo e os fatos que o workflow
+// "CortexGen Memória" tirou das conversas anteriores, em qualquer canal, mais
+// os que a equipe escreveu. Fixados primeiro; corta no teto para nao inchar o
+// prompt. Sem memoria ou com o Rails fora, o bot segue sem a secao.
+const MEMORIA_MAX = 1500;
+let regraDeMemoria = '';
+try {
+  const memoria = await getJson('https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/ai_memory/bot/contact?conversation_id=' +
+    g.conversationId, { api_access_token: g.chatUserToken });
+  const fatos = [];
+  let tamanho = memoria.summary.length;
+  for (const fato of memoria.facts) {
+    if (tamanho + fato.length > MEMORIA_MAX) break;
+    tamanho += fato.length;
+    fatos.push('- ' + fato);
+  }
+  if (memoria.summary || fatos.length) {
+    regraDeMemoria = '\n\n---\n\n# CUSTOMER MEMORY\n\n' +
+      'What is known about this customer from earlier conversations, in any channel. Use it to avoid asking again what they already told you and to continue where things stand. ' +
+      'Their latest messages win over this memory. Never mention that you keep notes or a memory about them.\n' +
+      (memoria.summary ? '\n' + memoria.summary + '\n' : '') +
+      (fatos.length ? '\n' + fatos.join('\n') : '');
+  }
+} catch (error) {
+  console.error(error.message);
+}
+
 // O idioma vai por ultimo, depois da base. Prompt e base costumam estar num
 // idioma so (na conta 1, espanhol) e o modelo seguia o bloco maior: visto em
 // 02/10, cliente em ingles, a 1a resposta (so a persona) em ingles e a 2a (com
@@ -342,7 +369,7 @@ const idioma = IDIOMAS[jev.language]
   : 'the language the customer is writing in (their latest messages)';
 const regraDeIdioma = '\n\n---\n\n# LANGUAGE\n\nReply in ' + idioma +
   ', even when these instructions or the knowledge base are written in another language.';
-const systemText = (String(composto || '') + regraDeAgenda + regraDeCatalogo + regraDeIdioma)
+const systemText = (String(composto || '') + regraDeAgenda + regraDeCatalogo + regraDeMemoria + regraDeIdioma)
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')
   .split('{{contact.call_summary}}').join(g.callSummary || '(vacio)');

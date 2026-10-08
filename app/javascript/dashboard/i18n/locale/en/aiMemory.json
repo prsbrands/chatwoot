@@ -1,0 +1,23 @@
+{
+  "AI_MEMORY": {
+    "TITLE": "AI memory",
+    "EMPTY": "Nothing remembered yet. The AI fills this in when a conversation has been quiet for 30 minutes, and reads it before answering in any channel.",
+    "SUMMARY": "Summary",
+    "NO_SUMMARY": "No summary yet.",
+    "EDIT_SUMMARY": "Edit summary",
+    "REFRESHED_AT": "Updated by the AI on {date}",
+    "FACTS": "Facts",
+    "NEW_FACT": "Add a fact about this customer",
+    "ADD_FACT": "Add fact",
+    "EDIT_FACT": "Edit fact",
+    "DELETE_FACT": "Delete fact",
+    "PIN": "Pin: the AI reads it first and never changes it",
+    "UNPIN": "Unpin",
+    "BY_TEAM": "team",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "API": {
+      "ERROR": "Could not save the AI memory. Try again."
+    }
+  }
+}

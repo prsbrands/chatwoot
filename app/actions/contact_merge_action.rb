@@ -72,3 +72,5 @@ class ContactMergeAction
 end
 
 ContactMergeAction.prepend_mod_with('ContactMergeAction')
+# CortexGen: juntar contatos leva negócio, agenda, comercial e memória da IA (CortexgenContactMerge)
+ContactMergeAction.prepend(CortexgenContactMerge)

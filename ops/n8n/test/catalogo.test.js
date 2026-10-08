@@ -6,6 +6,7 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
 (async () => {
   const guard = { accountId: 1, conversationId: 89, chatUserToken: 't', botAccessToken: 'b', content: 'cuanto cuesta', contactName: 'Ana', splitReplies: false, contactId: 5, channel: 'Channel::Api', jev: { key: 'k', activities: { catalog: 'deciding' } } };
   const persona = { persona_id: 1, composed_prompt: 'PERSONA', system_prompt: 'PERSONA', model: 'm' };
+  const semMemoria = { summary: '', facts: [] };
   const hist = { payload: [{ message_type: 0, content: 'Hola, cuanto cuesta la cortina?', private: false }] };
   const catalog = { items: [
     { id: 12, name: 'Cortina', category: 'Cortinas', description: 'Blackout\nmedida', price: '35.5', currency: 'USD', unit: 'm2', billing_interval: 'one_time', subscribable: false },
@@ -16,14 +17,14 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   ok('MontaPrompt: secao CATALOG com itens e regras', sys.includes('# CATALOG') && sys.includes('- [12] Cortina (Cortinas): USD 35.5 per m2\n  Blackout medida') &&
      sys.includes('[13] Proyecto: price on request') && sys.includes('[14] Plan Pro: USD 49.9 per month (plan); subscribe online') && sys.includes('[[SUBSCRIBE <id>]]') && sys.includes('when they did not say how many, use 1') &&
      sys.indexOf('# CATALOG') < sys.indexOf('# LANGUAGE') && r.out[0].json.catalog === true);
-  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [500, {}] });
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [500, {}], 'ai_memory/bot/contact': [200, semMemoria] });
   const sys2 = r.out[0].json.body.messages[0].content;
   ok('MontaPrompt: catalogo fora do ar nao cala o bot', sys2.includes('cannot be read right now') && r.out[0].json.catalog === false && r.logs.length === 1);
-  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [401, {}] });
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true } }, Historico: hist }, {}, { 'commerce/bot/catalog': [401, {}], 'ai_memory/bot/contact': [200, semMemoria] });
   ok('MontaPrompt: conta sem o Comercial (401) segue sem secao nem erro', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.logs.length);
   ok('MontaPrompt: regra de nao pedir nome e e-mail', sys.includes('Do not ask for their name, email or company'));
-  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: {} }, Historico: hist }, {}, {});
-  ok('MontaPrompt: sem o Jev ver catalogo, nada muda', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.calls.length);
+  r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: {} }, Historico: hist }, {}, { 'ai_memory/bot/contact': [200, semMemoria] });
+  ok('MontaPrompt: sem o Jev ver catalogo, nada muda', !r.out[0].json.body.messages[0].content.includes('CATALOG') && !r.calls.some(c => c.url.includes('commerce')));
 
   const hist2 = { payload: [{ message_type: 0, content: 'Hola, quiero assinar el Plan Pro', private: false }] };
   r = await run(R + 'monta_prompt.js', { Guard: guard, Persona: persona, JevEntrada: { jev: { catalog: true, language: 'es' } }, Historico: hist2 }, {},

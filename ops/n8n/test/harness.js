@@ -25,12 +25,14 @@ const orig = Module._load;
 Module._load = function (req, ...rest) { return req === 'https' ? fakeHttps : orig.call(this, req, ...rest); };
 module.exports = async function run(file, nodes, input, r) {
   routes = r || {}; calls.length = 0;
-  const $ = name => ({ first: () => ({ json: nodes[name] }) });
-  const $input = { first: () => ({ json: input }) };
+  // Varios itens: o no (ou a entrada) e uma lista, e itemMatching(k) pega o k-esimo.
+  const $ = name => ({ first: () => ({ json: nodes[name] }), itemMatching: k => ({ json: [].concat(nodes[name])[k] }) });
+  const $input = { first: () => ({ json: input }), all: () => [].concat(input).map(json => ({ json })) };
+  const $env = { SUPABASE_REST_URL: 'https://sb.test', SUPABASE_SERVICE_ROLE_KEY: 'sk' };
   const code = fs.readFileSync(file, 'utf8');
-  const fn = new Function('$', '$input', 'require', 'console', '$getWorkflowStaticData', 'return (async()=>{' + code + '})()');
+  const fn = new Function('$', '$input', 'require', 'console', '$getWorkflowStaticData', '$env', 'return (async()=>{' + code + '})()');
   const logs = [];
   const estatico = {};
-  const out = await fn($, $input, require, { error: m => logs.push(m), log: () => {} }, () => estatico);
+  const out = await fn($, $input, require, { error: m => logs.push(m), log: () => {} }, () => estatico, $env);
   return { out, calls: calls.slice(), logs };
 };

@@ -297,6 +297,14 @@ Rails.application.routes.draw do
             resources :payment_providers, only: [:index, :create, :update]
             resource :profile, only: [:show, :update]
           end
+          # CortexGen: memória da IA por contato
+          namespace :ai_memory do
+            resources :contacts, only: [:show, :update]
+            resources :facts, only: [:create, :update, :destroy]
+            get 'bot/contact', to: 'bot#contact'
+            post 'bot/claims', to: 'bot#claims'
+            post 'bot/updates', to: 'bot#update'
+          end
           namespace :sales do
             resources :pipelines, only: [:index, :create, :update, :destroy] do
               resources :stages, only: [:create, :update, :destroy]

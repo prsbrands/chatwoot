@@ -232,7 +232,8 @@
       "KIND": {
         "reply": "Answers to customers",
         "briefing": "Handoff summaries",
-        "followup": "Follow-ups"
+        "followup": "Follow-ups",
+        "memory": "Customer memory"
       },
       "LLM": "Language model",
       "JEV": "Jev decisions",

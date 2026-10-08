@@ -25,6 +25,7 @@ import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
 import ConversationDeal from 'dashboard/routes/dashboard/salesPipeline/components/ConversationDeal.vue';
+import AiMemoryPanel from 'dashboard/routes/dashboard/aiMemory/AiMemoryPanel.vue';
 
 const props = defineProps({
   conversationId: {
@@ -319,6 +320,18 @@ onMounted(() => {
                 :contact-id="contactId"
                 :conversation-id="conversationId"
               />
+            </AccordionItem>
+          </div>
+          <div v-else-if="element.name === 'ai_memory'">
+            <AccordionItem
+              :title="$t('AI_MEMORY.TITLE')"
+              :is-open="isContactSidebarItemOpen('is_ai_memory_open')"
+              compact
+              @toggle="
+                value => toggleSidebarUIState('is_ai_memory_open', value)
+              "
+            >
+              <AiMemoryPanel :contact-id="contactId" />
             </AccordionItem>
           </div>
           <div v-else-if="element.name === 'contact_notes'">

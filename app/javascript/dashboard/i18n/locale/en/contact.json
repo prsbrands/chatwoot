@@ -517,7 +517,8 @@
         "HISTORY": "History",
         "NOTES": "Notes",
         "MEDIA": "Media",
-        "MERGE": "Merge"
+        "MERGE": "Merge",
+        "AI_MEMORY": "AI memory"
       },
       "HISTORY": {
         "EMPTY_STATE": "There are no previous conversations associated to this contact"

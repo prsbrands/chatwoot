@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_06_000003) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_08_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -252,6 +252,32 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_06_000003) do
     t.index ["document_ids"], name: "index_agent_sessions_on_document_ids", using: :gin
     t.index ["used_faq_ids"], name: "index_agent_sessions_on_used_faq_ids", using: :gin
     t.index ["user_id"], name: "index_agent_sessions_on_user_id"
+  end
+
+  create_table "ai_memory_facts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id", null: false
+    t.string "body", null: false
+    t.integer "source", default: 0, null: false
+    t.boolean "pinned", default: false, null: false
+    t.bigint "conversation_id"
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["contact_id", "pinned", "created_at"], name: "index_ai_memory_facts_on_contact_id_and_pinned_and_created_at"
+  end
+
+  create_table "ai_memory_summaries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id", null: false
+    t.text "body", default: "", null: false
+    t.bigint "last_message_id", default: 0, null: false
+    t.datetime "refreshed_at"
+    t.datetime "claimed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "refreshed_at"], name: "index_ai_memory_summaries_on_account_id_and_refreshed_at"
+    t.index ["contact_id"], name: "index_ai_memory_summaries_on_contact_id", unique: true
   end
 
   create_table "applied_slas", force: :cascade do |t|

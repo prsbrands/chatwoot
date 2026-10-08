@@ -15,7 +15,7 @@ import BaseSettingsHeader from '../../components/BaseSettingsHeader.vue';
 const { t } = useI18n();
 
 const PERIODS = ['THIS_MONTH', 'LAST_30_DAYS', 'LAST_MONTH'];
-const KINDS = ['reply', 'briefing', 'followup'];
+const KINDS = ['reply', 'briefing', 'followup', 'memory'];
 const NEAR_CAP = 0.8;
 
 const period = ref('THIS_MONTH');
