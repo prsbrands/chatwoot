@@ -107,7 +107,7 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b43`.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b47`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 22 scripts em Postgres e Redis **descartáveis**, 489 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `commerce_auto_invoice` 15, `ai_memory` 38.
@@ -148,7 +148,7 @@ O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n
 ### Fila, na ordem que eu seguiria
 
 0. **Memória da IA, ajustes possíveis em uso:** os fatos da 1ª rodada repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"); apertar o prompt do `memoria_monta.js` se incomodar. Roda em toda conta com bot (a conta 2 também paga).
-1. **App OAuth do Google** (`cortexgencrm`), **do Paulo e com prazo**: páginas `/privacy` e `/terms` no ar, domínio verificado no Search Console em 05/10. Falta **publicar** no Google Auth Platform. Se a conexão do Calendar da conta 1 vencer (~09/10), reconectar.
+1. **App OAuth do Google** (`cortexgencrm`): **publicado em produção pelo Paulo em 09/10.** Calendar da conta 1 **reconectado** em 09/10 (token novo, sem prazo de 7 dias). Escopo do Calendar é sensível: se o Google pedir verificação, a tela de consentimento mostra o aviso de app não verificado até sair.
 2. **Escolher a próxima frente com o Paulo:**
    - **Fechar a Fase 2 em uso real** (começou em 08/10): cotização, envio, fatura e a página de pagamento conferidos (documentos 16 e 17); o Paulo aceitou o COT-2026-0006 pelo link com a fatura automática ligada e a FAT-2026-0007 saiu sozinha (1.21.0); o "Rechazar" pelo link foi provado (COT-2026-0004, 08:34) e o texto depois do PDF saiu na conversa 89 (1.21.1); falta o pagamento manual com recibo;
    - **Módulos do DeskComm ainda sem equivalente:** Casos, Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR). A Memória da IA saiu na 1.20.0; a "memória da organização" do DeskComm já é a nossa base de conhecimento.
