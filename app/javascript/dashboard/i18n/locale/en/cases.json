@@ -94,7 +94,9 @@
     "FIELDS": {
       "HEADER": "Details",
       "EMPTY": "—",
-      "REQUIRED_HINT": "Fields marked with * are required to resolve the case."
+      "REQUIRED_HINT": "Fields marked with * are required to resolve the case.",
+      "MISSING": "Fill in {fields} before resolving the case.",
+      "SAVE_FIRST": "Save the details before resolving the case."
     },
     "FIELD_TYPES": {
       "text": "Text",

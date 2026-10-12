@@ -61,6 +61,11 @@ watch(
   }
 );
 
+const fetchTypes = async () => {
+  const { data } = await CasesAPI.types();
+  types.value = data.payload;
+};
+
 const open = async ({
   contact: preset = null,
   conversationId: conv = null,
@@ -70,10 +75,7 @@ const open = async ({
   contactQuery.value = '';
   contactResults.value = [];
   form.value = { title: '', description: '', field_values: {} };
-  if (!types.value.length) {
-    const { data } = await CasesAPI.types();
-    types.value = data.payload;
-  }
+  if (!types.value.length) await fetchTypes();
   form.value.type_id = activeTypes.value[0]?.id;
   dialogRef.value.open();
 };
@@ -97,7 +99,9 @@ const pickContact = picked => {
   contactResults.value = [];
 };
 
+// Enter num campo também envia o formulário do diálogo.
 const save = async () => {
+  if (!canSave.value) return;
   const payload = {
     ...form.value,
     title: form.value.title.trim(),
@@ -121,8 +125,10 @@ const save = async () => {
   }
 };
 
+// Os tipos já vêm na montagem: o diálogo abre na hora.
 onMounted(() => {
   if (!agents.value.length) store.dispatch('agents/get');
+  fetchTypes();
 });
 
 defineExpose({ open });

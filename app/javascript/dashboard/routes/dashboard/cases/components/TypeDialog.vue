@@ -111,7 +111,9 @@ const payloadFields = () => {
   }));
 };
 
+// Enter num campo também envia o formulário do diálogo.
 const save = async () => {
+  if (!canSave.value) return;
   const payload = {
     ...form.value,
     name: form.value.name.trim(),
@@ -238,6 +240,7 @@ defineExpose({ open });
               ruby
               icon="i-lucide-trash-2"
               :title="$t('CASES.SETTINGS.REMOVE_FIELD')"
+              type="button"
               @click="removeField(index)"
             />
           </div>
@@ -259,6 +262,7 @@ defineExpose({ open });
           icon="i-lucide-plus"
           class="self-start"
           :label="$t('CASES.SETTINGS.ADD_FIELD')"
+          type="button"
           @click="addField"
         />
       </div>

@@ -27,11 +27,11 @@ Aproveitamos a ideia do laço (fase 2) e o histórico só de acréscimo (*append
 
 ## Fases
 
-| Fase | O quê |
-|---|---|
-| 1 | Tipos (com campos próprios e prazo), casos, histórico, telas, abrir pela conversa e pelo contato, atrasados no menu e no Radar |
-| 2 | A IA abre o caso (Jev decide antes do LLM, como agenda e catálogo) e repassa a resposta da equipe |
-| 3 | Avisos ao cliente pela conversa e métricas (tempo até resolver, atrasos por tipo e por responsável) |
+| Fase | O quê | Versão |
+|---|---|---|
+| 1 | Tipos (com campos próprios e prazo), casos, histórico, telas, abrir pela conversa e pelo contato, atrasados no menu e no Radar | 1.22.0 |
+| 2 | A IA abre o caso (Jev decide antes do LLM, como agenda e catálogo) e repassa a resposta da equipe | — |
+| 3 | Avisos ao cliente pela conversa e métricas (tempo até resolver, atrasos por tipo e por responsável) | — |
 
 ## Dados
 
@@ -43,9 +43,8 @@ Os models ficam em `app/models/cases/`, e o prefixo das tabelas é `cases_`.
 | `cases_cases` | O caso: `number`/`year`/`sequence` (`CAS-2026-0001`, como os documentos), `title`, `description`, `type_id`, `status`, `priority`, `assignee_id`, `team_id`, `due_at`, `contact_id` (obrigatório), `deal_id`, `source` (`manual`, `conversation`, `ai`), `field_values` (jsonb), `outcome` e `resolution` (ao resolver), `resolved_at`/`resolved_by`, `canceled_at`, `created_by` |
 | `cases_conversations` | Ligação do caso com as conversas (uma ou mais; a conversa de onde o caso nasceu fica marcada como `origin`) |
 | `cases_events` | Histórico só de acréscimo: `kind` (`created`, `status_changed`, `assigned`, `priority_changed`, `due_changed`, `field_changed`, `note`, `conversation_linked`, `ai_note`, `customer_notified`), `actor_kind` (`user`, `ai`, `system`), `actor_id`, `body`, `metadata` |
-| `cases_settings` | Uma linha por conta, criada na primeira leitura: `prefix` (padrão `CAS`) |
 
-O prefixo também pode ir para uma coluna nova em `accounts`, se não aparecer outra configuração. É de decidir na implementação: a linha própria só se justifica se surgir mais coisa.
+O prefixo do número fica em `accounts.settings` (`cases_prefix`, `store_accessor` no `CortexgenAccount`; vazio = `CAS`), sem tabela própria. A API é `GET/PATCH cases/settings`.
 
 **Situação (`status`):** `open` → `in_progress` → `waiting_customer` → `resolved` / `canceled`. `waiting_customer` **pausa o prazo**: ao voltar, `due_at` anda o tempo que ficou parado.
 
@@ -123,8 +122,13 @@ Segue a lição da agenda e do catálogo: **a ação é decidida pelo Jev antes 
   Os textos ficam em es/pt/en no idioma do contato, fora do i18n da interface, como o `DocumentLabels`. Pelo WhatsApp oficial, fora da janela de 24 h, só com template, o que ainda não temos: nesse caso o aviso não sai, e o histórico registra.
 - **Métricas:** casos abertos e resolvidos no período, tempo médio até resolver, atrasados por tipo e por responsável, e casos abertos pela IA.
 
-## Pontos a decidir na implementação
+## Como ficou a fase 1 (1.22.0)
 
-- O prefixo fica em `cases_settings` ou numa coluna da conta.
-- A notificação de atribuição: um tipo de notificação próprio ou a menção numa nota.
-- O caso de contato sem conversa (aberto pela aba do contato) não tem por onde avisar o cliente: o aviso fica para quando houver conversa ligada.
+- **Código:** models em `app/models/cases/`; `Cases::CaseFlow` (`app/services/cases/case_flow.rb`) abre, edita, muda a situação, anota e liga conversas, sempre gravando o evento; controllers em `app/controllers/api/v1/accounts/cases/`; telas em `app/javascript/dashboard/routes/dashboard/cases/`.
+- **Rotas:** `GET/POST cases`, `GET/PATCH/DELETE cases/:id`, `POST cases/:id/{start,wait_customer,resolve,cancel,reopen,note,link_conversation}`, `GET cases/overdue_count`, `cases/types` e `cases/settings`. O `namespace :cases` vem antes do `resources :cases` nas rotas, para `/cases/types` não cair no `show`.
+- **Notificação:** atribuir a outra pessoa posta uma nota privada com menção na conversa de origem (ou a mais recente ligada), como o `Commerce::TeamNote`. Caso sem conversa não notifica: aparece em "Mine" e no número vermelho.
+- **Ao abrir pela conversa,** o histórico tem só "created" (com o número da conversa); "conversation_linked" fica para as conversas ligadas depois.
+- **Transição proibida** ou obrigatório faltando ao resolver levantam `RecordInvalid` (422), como o `DocumentFlow`.
+- **Tela:** o bloco Cases do painel da conversa entrou no `DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER` (`useUISettings.js`) e só aparece com a flag; a aba Cases do contato também. O Radar ganhou a seção de casos vencidos (`Sales::Radar#overdue_cases`, vazia sem a flag).
+- **Fora da fase 1, de propósito:** `ai_mode`, `ai_instructions` e `notify_customer` já existem no tipo, mas o editor não os mostra até as fases 2 e 3 funcionarem.
+- **Teste:** `ops/smoke/cases.rb` (61 cenários) no `ops/smoke/run.sh`.

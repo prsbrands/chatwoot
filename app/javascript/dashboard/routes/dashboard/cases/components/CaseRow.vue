@@ -2,7 +2,11 @@
 import { computed } from 'vue';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useLocale } from 'shared/composables/useLocale';
-import { PRIORITY_CLASSES, STATUS_CLASSES } from '../constants';
+import {
+  ACTIVE_STATUSES,
+  PRIORITY_CLASSES,
+  STATUS_CLASSES,
+} from '../constants';
 
 // Um caso na lista: número, tipo, título, contato, responsável, prioridade,
 // situação e prazo (vermelho quando venceu). `compact` é o painel da conversa.
@@ -17,8 +21,11 @@ const { resolvedLocale } = useLocale();
 const link = computed(() =>
   accountScopedRoute('case_show', { caseId: props.kase.id })
 );
+// Prazo só importa enquanto o caso está ativo.
 const dueLabel = computed(() => {
-  if (!props.kase.due_at) return '';
+  if (!props.kase.due_at || !ACTIVE_STATUSES.includes(props.kase.status)) {
+    return '';
+  }
   return new Intl.DateTimeFormat(resolvedLocale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -33,7 +40,7 @@ const dueLabel = computed(() => {
         class="rounded-full size-2 shrink-0"
         :style="{ backgroundColor: kase.type.color }"
       />
-      <span class="font-medium">{{ kase.number }}</span>
+      <span class="font-medium whitespace-nowrap">{{ kase.number }}</span>
       <span class="truncate">{{ kase.type.name }}</span>
       <span
         class="px-1.5 rounded-md shrink-0"

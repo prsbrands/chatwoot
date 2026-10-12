@@ -126,10 +126,21 @@ const run = async (action, payload = {}) => {
   }
 };
 
+// Resolver pede os obrigatórios do tipo preenchidos e salvos.
 const onAction = action => {
-  if (action === 'resolve' || action === 'cancel')
+  const missing = kase.value.missing_required_fields;
+  if (action === 'resolve' && (missing.length || fieldsChanged.value)) {
+    const labels = kase.value.type_fields
+      .filter(field => missing.includes(field.key))
+      .map(field => field.label);
+    useAlert(
+      fieldsChanged.value
+        ? t('CASES.FIELDS.SAVE_FIRST')
+        : t('CASES.FIELDS.MISSING', { fields: labels.join(', ') })
+    );
+  } else if (action === 'resolve' || action === 'cancel') {
     closeDialogRef.value.open(action);
-  else run(action);
+  } else run(action);
 };
 
 const startEditing = () => {
@@ -370,13 +381,15 @@ onMounted(async () => {
               @update:model-value="value => update({ type_id: value })"
             />
           </label>
-          <Input
-            :model-value="toLocalInput(kase.due_at)"
-            type="datetime-local"
-            :label="$t('CASES.DUE')"
-            :message="kase.paused_at ? $t('CASES.PAUSED_HINT') : ''"
-            @blur="event => changeDue(event.target.value)"
-          />
+          <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
+            {{ $t('CASES.DUE') }}
+            <Input
+              :model-value="toLocalInput(kase.due_at)"
+              type="datetime-local"
+              :message="kase.paused_at ? $t('CASES.PAUSED_HINT') : ''"
+              @blur="event => changeDue(event.target.value)"
+            />
+          </label>
 
           <div class="flex flex-col gap-1">
             <span class="text-label-small text-n-slate-11">
