@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.22.0** (Casos) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.22.0** (Casos) · Pronta para deploy: **1.23.0** (Casos, fases 2 e 3: imagem `test-b48n` + n8n) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -24,7 +24,11 @@
 
 **12/10: Casos, fase 1 (1.22.0), no ar desde 12/10, flag `cases` ligada na conta 1.** Módulo genérico de casos (o pedido do cliente que não se resolve na hora): tipos por conta com campos próprios, prazo que pausa esperando o cliente, situações com desfecho, histórico, notas, menção a quem recebe, número vermelho de atrasados no menu, seção no Radar, bloco no painel da conversa e aba no contato. Desenho e decisões do Paulo em `docs/cortexgen/casos.md` (fases 2 e 3: a IA abre e repassa; avisos ao cliente e métricas). Imagem `test-b47n` (commit `2ff3ded1a`, clone `src-b30`), smoke completo 550/550, telas conferidas no navegador numa instância descartável. Rollback: `v1-pre-b47` (1.21.2). Próximo rollback: `v1-pre-b48`.
 
-**Comece pelo item 0 da fila:** ver como o Paulo usou os Casos e decidir a fase 2. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
+**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), prontas e não deployadas.** A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `7d8f55aec`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
+
+**O sistema ainda não está em produção real** (Paulo, 12/10): ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso" (memória `sistema-uso-exclusivo-do-paulo`).
+
+**Comece pelo deploy da 1.23.0.** Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -113,10 +117,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
   - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b47`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 22 scripts em Postgres e Redis **descartáveis**, 489 cenários no total:
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
-  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `commerce_auto_invoice` 15, `ai_memory` 38, `cases` 61 (550 no total em 12/10).
+  - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `commerce_auto_invoice` 15, `ai_memory` 38, `cases` 61, `cases_ai` 32.
   - O Google e o botlayer entram falsos (`class_eval`).
   - Os jobs do `AsyncDispatcher`, como as notificações de menção, não rodam no teste: chame o serviço direto.
-  - **Nós do n8n:** `node ops/n8n/test/catalogo.test.js` (21 OK) e `node ops/n8n/test/memoria.test.js` (17 OK) rodam os nós fora do n8n, com `$`, `$input`, `$env` e HTTP falsos (`ops/n8n/test/harness.js`; nó de vários itens: passe uma lista, e `itemMatching(k)` pega o k-ésimo).
+  - **Nós do n8n:** `node ops/n8n/test/catalogo.test.js` (21 OK), `node ops/n8n/test/memoria.test.js` (17 OK) e `node ops/n8n/test/casos.test.js` (28 OK) rodam os nós fora do n8n, com `$`, `$input`, `$env` e HTTP falsos (`ops/n8n/test/harness.js`; nó de vários itens: passe uma lista, e `itemMatching(k)` pega o k-ésimo).
   - **Critério novo do Jev se mede no Jev real** antes de publicar: script em `rails runner` dentro do container, lendo `jev_api_key` do `account_settings` sem imprimir (memória `bot-acao-pelo-jev-antes-do-llm`).
 - **Build longo:** rode build e smoke **soltos na VPS** (`nohup sh -c "docker build ... > build.log; echo BUILD_EXIT $? >> build.log; ... run.sh > smoke.log; echo SMOKE_EXIT >> smoke.log" &`) e espere a linha final com um `until grep`. Pelo ssh em primeiro plano, o build de 15+ min estoura o limite e é derrubado junto com a conexão.
 - **Armadilhas desta sessão:**
@@ -148,6 +152,25 @@ Ordem (o Paulo roda):
 
 O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
 
+### Deploy da 1.23.0 (o Paulo roda, um comando por vez)
+
+Na VPS, em `/opt/cortexgen-chat`. Sem migration (só valores novos em enum).
+1. `cd /opt/cortexgen-chat && docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b48`
+2. `docker tag cortexgen-chat:test-b48n cortexgen-chat:v1`
+3. `docker compose up -d --force-recreate rails sidekiq`
+4. Bot: `docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-casos-bot.json` → **recarregar a página** do workflow → Publish.
+5. Repasse: `docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-caso.json` → abrir "CortexGen Caso" → Publish → `docker restart n8n-y4jd-n8n-1` (workflow agendado).
+6. Configurar em **Cases → Case settings**: em cada tipo que a IA deve abrir, "When the AI notices this kind of request" + "When is it this type?"; e o aviso ao cliente onde fizer sentido.
+7. No Mac: tag `cg-v1.23.0` no `7d8f55aec` e `git push` com as tags.
+
+Conferir: exports com `versionId == activeVersionId`; no cartão do Jev, a atividade "Open cases for the team" decidindo.
+
+**Teste sugerido na conversa 89:**
+- escreva como cliente "me llegó la cortina rota": deve abrir o caso e a IA dá o número;
+- na tela do caso, use "Ask the customer";
+- em até 1 min, a pergunta chega pelo WhatsApp;
+- responda: a resposta deve ir para o histórico do caso.
+
 ### Deploy da 1.22.0 (feito em 12/10; serve de receita)
 
 Na VPS, em `/opt/cortexgen-chat`:
@@ -162,7 +185,7 @@ Conferir: `docker compose ps`, a tela `/cases` abrindo, o bloco Cases no painel 
 
 ### Fila, na ordem que eu seguiria
 
-0. **Casos, fase 2 (a IA abre o caso e repassa a resposta da equipe)** depois do Paulo usar a fase 1 em produção. Desenho em `docs/cortexgen/casos.md`; os campos `ai_mode`/`ai_instructions` já existem no tipo, escondidos no editor.
+0. **Deploy da 1.23.0 (Casos, fases 2 e 3)** e o teste na conversa 89. Depois, próxima frente: **Evolução da IA** (DeskComm), com conversas de teste montadas, porque não há dados reais.
 0. **Memória da IA, ajustes possíveis em uso:** os fatos da 1ª rodada repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"); apertar o prompt do `memoria_monta.js` se incomodar. Roda em toda conta com bot (a conta 2 também paga).
 1. ~~**App OAuth do Google**~~ (`cortexgencrm`): **publicado em produção pelo Paulo em 09/10.** Calendar da conta 1 **reconectado** em 09/10 (token novo, sem prazo de 7 dias). Escopo do Calendar é sensível: se o Google pedir verificação, a tela de consentimento mostra o aviso de app não verificado até sair.
 2. **Escolher a próxima frente com o Paulo:**

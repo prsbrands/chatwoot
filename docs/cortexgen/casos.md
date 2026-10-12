@@ -30,8 +30,8 @@ Aproveitamos a ideia do laço (fase 2) e o histórico só de acréscimo (*append
 | Fase | O quê | Versão |
 |---|---|---|
 | 1 | Tipos (com campos próprios e prazo), casos, histórico, telas, abrir pela conversa e pelo contato, atrasados no menu e no Radar | 1.22.0 |
-| 2 | A IA abre o caso (Jev decide antes do LLM, como agenda e catálogo) e repassa a resposta da equipe | — |
-| 3 | Avisos ao cliente pela conversa e métricas (tempo até resolver, atrasos por tipo e por responsável) | — |
+| 2 | A IA abre o caso (Jev decide antes do LLM, como agenda e catálogo) e repassa a resposta da equipe | 1.23.0 |
+| 3 | Avisos ao cliente pela conversa e métricas (tempo até resolver, atrasos por tipo e por responsável) | 1.23.0 |
 
 ## Dados
 
@@ -132,3 +132,34 @@ Segue a lição da agenda e do catálogo: **a ação é decidida pelo Jev antes 
 - **Tela:** o bloco Cases do painel da conversa entrou no `DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER` (`useUISettings.js`) e só aparece com a flag; a aba Cases do contato também. O Radar ganhou a seção de casos vencidos (`Sales::Radar#overdue_cases`, vazia sem a flag).
 - **Fora da fase 1, de propósito:** `ai_mode`, `ai_instructions` e `notify_customer` já existem no tipo, mas o editor não os mostra até as fases 2 e 3 funcionarem.
 - **Teste:** `ops/smoke/cases.rb` (61 cenários) no `ops/smoke/run.sh`.
+
+## Como ficaram as fases 2 e 3 (1.23.0)
+
+**Fluxo no bot** (`pd5V9pdaldRLUu4C`, patch `ops/n8n/patch_casos.py`):
+- `Guard`: atividade `case` do Jev, decidindo por padrão (o `JevController` tem a mesma tabela; cartão "Open cases for the team").
+- `JevEntrada`: pergunta `case` (noul ≥ 0,6), na mesma chamada das outras.
+- `MontaPrompt` lê `GET cases/bot/context` em toda mensagem (401 = conta sem a flag, segue sem casos):
+  - caso esperando resposta do cliente: a mensagem vai para `POST cases/bot/customer_replies`;
+  - com o Jev vendo um caso, um `choice` entre os tipos com IA (critério = nome + "Quando é este tipo?", confiança ≥ 0,8) e `POST cases/bot/cases` antes do LLM. O título é a primeira frase do cliente; a descrição, a fala inteira;
+  - a seção `# CASES` (antes da memória e do idioma) dá o número, pede para seguir atendendo ou avisa que a equipe assume, lista os casos ativos com a situação em palavras e proíbe número inventado.
+  - Saídas `caseTypes`, `caseOpened`, `caseHandoff`, `caseReplied`.
+- `JevRevisao`: rede `false_case` (≥ 0,7) quando há tipos com IA e nenhum caso neste turno: resposta que promete retorno da equipe vai para a `Passagem`.
+- `PrecisaHandoff` (agora no repo, `precisa_handoff.js`): tipo `handoff` passa a conversa depois da resposta, motivo `case` na nota.
+- **Medido no Jev real em 12/10:** `case` 0,87–0,95 nos positivos (es/pt/en) e 0,03–0,33 nos negativos (preço, horário, agendar, cotação, saudação); tipo com confiança 1,00 em 5 de 5; `false_case` 0,98–0,99 nas promessas e 0,01–0,04 nas respostas próprias.
+
+**Repasse da equipe:** `Cases::CaseFlow#relay!` grava o evento `team_reply` (`mode` answer/ask, `relay` pending). O workflow **CortexGen Caso** (`ops/n8n/build_caso.py`, id `v8JhnhlKRAoBmFxt`, a cada minuto) faz Candidatos → MontaRepasse → LLM da persona → EnviaRepasse:
+- reserva com `POST cases/bot/relays/claims`, só das conversas nas caixas com bot; a reserva vence em 10 min;
+- a persona reescreve no idioma e no tom, sem acrescentar fato;
+- posta como o bot, com bolhas e "digitando" no OpenWA, e devolve o resultado com `POST cases/bot/relays/:id`;
+- se o LLM falhar, vai o texto da equipe; no teto de IA, também vai o texto da equipe, sem LLM;
+- falha ao postar avisa quem escreveu;
+- pergunta enviada põe o caso em `waiting_customer`; a resposta do cliente (`customer_replied`) volta o caso para `in_progress` e menciona o responsável;
+- conversa numa caixa sem bot: o repasse fica pendente (a tela mostra "waiting to be sent").
+
+**Avisos ao cliente:** `Cases::CustomerNotice` (textos em `Cases::CustomerLabels`, es/pt/en). O idioma vem do que a IA viu ao abrir, da conversa ou da conta. Caso aberto pela IA não recebe o aviso de abertura.
+
+**Métricas:** `Cases::Metrics`, `GET cases/metrics?days=` (7 a 365), tela `/cases/metrics`.
+
+**Testes:** smoke `cases_ai` (32), `node ops/n8n/test/casos.test.js` (28).
+
+**Pendente, se fizer falta:** a IA preencher campos próprios do tipo (os de lista e sim/não dariam `choice`/`noul` do Jev); contar o prazo só no horário comercial.

@@ -110,16 +110,16 @@ const author = event => {
       <template v-else>
         <span class="text-sm text-n-slate-12">{{ describe(event) }}</span>
         <p
-          v-if="event.kind === 'team_reply' && event.metadata.message"
-          class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-blue-2 text-n-slate-12"
-        >
-          {{ event.metadata.message }}
-        </p>
-        <p
           v-if="event.body"
           class="m-0 text-sm whitespace-pre-wrap text-n-slate-11"
         >
           {{ event.body }}
+        </p>
+        <p
+          v-if="event.kind === 'team_reply' && event.metadata.message"
+          class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-blue-2 text-n-slate-12"
+        >
+          {{ event.metadata.message }}
         </p>
       </template>
     </li>
