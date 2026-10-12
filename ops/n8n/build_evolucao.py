@@ -4,7 +4,7 @@
     python3 build_evolucao.py wf.json wf-evolucao.json [id]   # na pasta ops/n8n; com id, atualiza o existente
     docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/tmp/wf-evolucao.json   # entra desativado: publicar
 
-    Todo dia 08:00 UTC (3h no Panamá) -> Candidatos -> MontaEvolucao -> EscolheProvider
+    Todo dia 3h (fuso do workflow: America/Panama; o n8n roda em New York) -> Candidatos -> MontaEvolucao -> EscolheProvider
       -> LLMEvolucao (OpenRouter, credencial do n8n) | LLMEvolucaoCustom -> GravaEvolucao
 
 Antes de publicar: db/botlayer/bot_ai_evolution.sql no supabase-db (kind
@@ -50,7 +50,7 @@ def clone(name, modelo, x, y):
 
 
 add('Todo dia', 0, type='n8n-nodes-base.scheduleTrigger', typeVersion=1.2,
-    parameters={'rule': {'interval': [{'field': 'cronExpression', 'expression': '0 8 * * *'}]}})
+    parameters={'rule': {'interval': [{'field': 'cronExpression', 'expression': '0 3 * * *'}]}})
 code('Candidatos', 'evolucao_candidatos.js', 220)
 code('MontaEvolucao', 'evolucao_monta.js', 440)
 clone('EscolheProvider', 'EscolheProvider', 660, 300)
@@ -77,7 +77,7 @@ wf = {
         link('LLMEvolucao', 'GravaEvolucao'),
         link('LLMEvolucaoCustom', 'GravaEvolucao'),
     ]),
-    'settings': bot.get('settings') or {'executionOrder': 'v1'},
+    'settings': dict(bot.get('settings') or {'executionOrder': 'v1'}, timezone='America/Panama'),
     'active': False,
 }
 json.dump([wf], open(dst, 'w'), ensure_ascii=False, indent=2)
