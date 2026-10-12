@@ -334,8 +334,9 @@ if (jev.catalog) {
 
 // Casos (Cases::AiCases, no Rails; flag cases): os casos ativos do cliente
 // entram no prompt para a IA dizer em que pe estao, sem inventar. Se a equipe
-// perguntou algo pela IA e o cliente respondeu, a resposta vai para o caso
-// antes do LLM. Quando o Jev ve algo que so a equipe resolve (JevEntrada), ele
+// perguntou algo pela IA, a resposta do cliente vai para o caso pelo Rails
+// (Cases::CustomerReplyJob, com texto ou so a foto) e aqui a IA so agradece.
+// Quando o Jev ve algo que so a equipe resolve (JevEntrada), ele
 // escolhe aqui o tipo, entre os da conta com a IA ligada, e o caso nasce antes
 // do LLM, como a agenda e o catalogo: o LLM so confirma o numero. Tipo que
 // passa a conversa (ai_mode handoff) sai pelo PrecisaHandoff depois da
@@ -382,12 +383,7 @@ try {
   const casos = await getJson(casosUrl + 'context?conversation_id=' + g.conversationId, { api_access_token: g.chatUserToken });
   tiposDeCaso = casos.types.length;
   const fala = String(messages[messages.length - 1].content);
-  if (casos.open_cases.some(c => c.awaiting_customer_info)) {
-    const res = await postJson(casosUrl + 'customer_replies', { api_access_token: g.chatUserToken },
-      { conversation_id: g.conversationId, body: fala }, 20000);
-    if (res.statusCode >= 200 && res.statusCode < 300) casosRespondidos = JSON.parse(res.body).payload;
-    else console.error('MontaPrompt: cases/bot/customer_replies HTTP ' + res.statusCode + ' ' + String(res.body).slice(0, 200));
-  }
+  casosRespondidos = casos.open_cases.filter(c => c.awaiting_customer_info || c.customer_replied_recently);
   const tipo = jev.case && casos.types.length && !casosRespondidos.length ? await escolherTipoDeCaso(casos.types) : null;
   if (tipo) {
     const titulo = fala.split(/(?<=[.!?])\s|\n/)[0].trim().slice(0, 120);

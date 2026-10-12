@@ -304,7 +304,6 @@ Rails.application.routes.draw do
             resource :settings, only: [:show, :update]
             get 'bot/context', to: 'bot#context'
             post 'bot/cases', to: 'bot#open'
-            post 'bot/customer_replies', to: 'bot#customer_replied'
             post 'bot/relays/claims', to: 'bot#claim_relays'
             post 'bot/relays/:id', to: 'bot#relay_result'
           end

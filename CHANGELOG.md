@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.23.1] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
+
+- **A foto que a equipe pediu chega ao caso.** No teste de 12/10, a equipe pediu uma foto pelo assistente, o cliente mandou só a foto, sem texto, e ela não foi para o caso: o bot ignora mensagem sem texto. Agora quem leva a resposta ao caso é o Rails, assim que a mensagem chega: com texto ou só anexo, ela vai para o histórico do caso (a foto aparece em miniatura, com link), o caso volta a andar e quem cuida dele é avisado. Vale também em caixa sem bot e com a conversa atribuída a alguém. O bot só agradece quando a resposta vem com texto.
+
 ## [1.23.0] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
 
 - **A IA abre casos** (Casos, fase 2). Quando o cliente traz algo que só a equipe resolve (defeito, troca, reembolso, fatura, reclamação, um pedido que não andou), o Jev percebe e escolhe o tipo de caso entre os que têm a IA ligada. O caso nasce antes da resposta, e a IA dá o número ao cliente. Em cada tipo, em **Case settings**, você escolhe o que acontece:

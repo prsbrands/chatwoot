@@ -91,14 +91,31 @@ ok 'pergunta enviada: caso espera o cliente', st == 200 && kase.waiting_customer
 _, ctx = api.(admin, :get, "cases/bot/context?conversation_id=#{conv.display_id}")
 ok 'contexto marca a espera da resposta', ctx['open_cases'].find { |c| c['id'] == kase.id }['awaiting_customer_info'] == true
 
-# O cliente responde
-st, resp = api.(admin, :post, 'cases/bot/customer_replies', { conversation_id: conv.display_id, body: 'Ahí va la foto' })
+# O cliente responde (pelo Rails, a cada mensagem dele): a foto pedida chega
+# sem texto, e o bot não olha mensagem sem texto.
+ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::TestAdapter.new
+fila = -> { ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j| j['job_class'] == 'Cases::CustomerReplyJob' } }
+png = Base64.decode64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')
+foto = conv.messages.new(account: account, inbox: inbox, message_type: :incoming, sender: maria, content: nil)
+foto.attachments.new(account: account, file_type: :image, file: { io: StringIO.new(png), filename: 'cortina.png', content_type: 'image/png' })
+foto.save!
+conv.messages.create!(account: account, inbox: inbox, message_type: :outgoing, private: true, content: 'nota da equipe')
+ok 'toda mensagem do cliente vai para o job; nota da equipe não', fila.().map { |j| j['arguments'].first } == [foto.id]
+Cases::CustomerReplyJob.perform_now(foto.id)
 kase.reload
-ok 'resposta do cliente: histórico, caso volta a andar, equipe avisada', st == 200 && resp['payload'].map { |c| c['id'] } == [kase.id] &&
-                                                                       kase.in_progress? && kase.events.customer_replied.last.body == 'Ahí va la foto' &&
-                                                                       conv.messages.where(private: true).last.content.include?('answered the question')
-_, resp = api.(admin, :post, 'cases/bot/customer_replies', { conversation_id: conv.display_id, body: 'Otra cosa' })
-ok 'sem pergunta pendente: nada acontece', resp['payload'] == [] && kase.events.customer_replied.count == 1
+resp = kase.events.customer_replied.last
+ok 'só a foto: vai para o histórico com o anexo, caso volta a andar, equipe avisada',
+   kase.in_progress? && resp&.body == '📎 image' && resp.metadata['message_id'] == foto.id &&
+   resp.metadata['attachments'].first['type'] == 'image' && resp.metadata['attachments'].first['url'].present? &&
+   conv.messages.where(private: true).last(2).any? { |m| m.content.include?('answered the question') }
+_, ctx = api.(admin, :get, "cases/bot/context?conversation_id=#{conv.display_id}")
+ok 'contexto avisa que o cliente acabou de responder', ctx['open_cases'].find { |c| c['id'] == kase.id }['customer_replied_recently'] == true
+texto = conv.messages.create!(account: account, inbox: inbox, message_type: :incoming, sender: maria, content: 'Otra cosa')
+Cases::CustomerReplyJob.perform_now(texto.id)
+ok 'sem pergunta pendente: nada acontece', kase.events.customer_replied.count == 1
+s.post("/api/v1/accounts/#{account.id}/cases/bot/customer_replies", params: { conversation_id: conv.display_id, body: 'x' }.to_json,
+                                                                    headers: { 'api_access_token' => admin.access_token.token, 'Content-Type' => 'application/json' })
+ok 'rota antiga do bot saiu', s.response.status == 404
 
 api.(agente, :post, "cases/#{kase.id}/relay", { body: 'Ya salió el reemplazo', mode: 'answer' })
 _, claims = api.(admin, :post, 'cases/bot/relays/claims', { inbox_ids: [inbox.id] })

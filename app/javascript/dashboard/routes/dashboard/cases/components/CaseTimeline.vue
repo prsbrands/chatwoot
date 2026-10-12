@@ -101,12 +101,39 @@ const author = event => {
         <span class="font-medium text-n-slate-12">{{ author(event) }}</span>
         · {{ formatDate(event.created_at) }}
       </span>
-      <p
+      <template
         v-if="['note', 'ai_note', 'customer_replied'].includes(event.kind)"
-        class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-amber-2 text-n-slate-12"
       >
-        {{ event.body }}
-      </p>
+        <p
+          class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-amber-2 text-n-slate-12"
+        >
+          {{ event.body }}
+        </p>
+        <div
+          v-if="event.metadata.attachments?.length"
+          class="flex flex-wrap gap-2"
+        >
+          <a
+            v-for="(file, k) in event.metadata.attachments"
+            :key="k"
+            :href="file.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-1 text-xs text-n-slate-11 hover:underline"
+          >
+            <img
+              v-if="file.thumb"
+              :src="file.thumb"
+              :alt="file.type"
+              class="object-cover rounded-lg size-20 outline outline-1 outline-n-weak"
+            />
+            <template v-else>
+              <span class="i-lucide-paperclip size-3" />
+              {{ file.type }}
+            </template>
+          </a>
+        </div>
+      </template>
       <template v-else>
         <span class="text-sm text-n-slate-12">{{ describe(event) }}</span>
         <p

@@ -1,12 +1,13 @@
 # O que o n8n usa dos casos, com o token de usuário da conta (o mesmo do nó
-# Historico): o MontaPrompt lê o contexto, abre o caso e repassa a resposta do
-# cliente; o workflow "CortexGen Caso" reserva e conclui os repasses da equipe.
+# Historico): o MontaPrompt lê o contexto e abre o caso; o workflow "CortexGen
+# Caso" reserva e conclui os repasses da equipe. A resposta do cliente vai ao
+# caso pelo Rails (Cases::CustomerReplyJob), não pelo bot.
 # Conta sem a flag `cases`: 401, e o bot segue sem casos.
 class Api::V1::Accounts::Cases::BotController < Api::V1::Accounts::Cases::BaseController
   MAX_CLAIMS = 10
 
   before_action -> { authorize ::Cases::Case, :bot? }
-  before_action :fetch_conversation, only: [:context, :open, :customer_replied]
+  before_action :fetch_conversation, only: [:context, :open]
 
   def context
     render json: service.context(@conversation)
@@ -15,10 +16,6 @@ class Api::V1::Accounts::Cases::BotController < Api::V1::Accounts::Cases::BaseCo
   def open
     render json: service.open!(@conversation, type_id: params.require(:type_id), title: params.require(:title),
                                               description: params.require(:description), language: params[:language])
-  end
-
-  def customer_replied
-    render json: { payload: service.customer_replied!(@conversation, params.require(:body)) }
   end
 
   def claim_relays

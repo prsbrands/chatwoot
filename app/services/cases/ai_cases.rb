@@ -4,13 +4,16 @@
 #   - open!: a IA abre o caso do tipo que o Jev escolheu. Se o cliente já tem
 #     um ativo do mesmo tipo, a mensagem vira nota nele em vez de outro caso;
 #   - customer_replied!: o cliente respondeu à pergunta que a equipe mandou
-#     pela IA; vai para o histórico, o caso volta a andar e a equipe é avisada;
+#     pela IA (Cases::CustomerReplyJob, a cada mensagem dele); vai para o
+#     histórico, com os anexos, o caso volta a andar e a equipe é avisada;
 #   - claim_relays / relay_result!: o workflow "CortexGen Caso" reserva as
 #     respostas da equipe (Cases::CaseFlow#relay!), a persona escreve e envia,
 #     e o resultado volta para cá.
 class Cases::AiCases
   RELAY_CLAIM_TTL = 10.minutes
   RECENT_MESSAGES = 8
+  # O MontaPrompt agradece a resposta mesmo se o job já a gravou.
+  JUST_REPLIED = 3.minutes
 
   def initialize(account)
     @account = account
@@ -30,10 +33,12 @@ class Cases::AiCases
     case_payload(kase).merge(reused: false)
   end
 
-  def customer_replied!(conversation, body)
+  def customer_replied!(message)
+    conversation = message.conversation
     active_cases(conversation.contact).select(&:awaiting_customer_info?).map do |kase|
       flow = Cases::CaseFlow.new(kase, actor_kind: :ai)
-      flow.log!(:customer_replied, body: body, metadata: { conversation_id: conversation.display_id })
+      metadata = { conversation_id: conversation.display_id, message_id: message.id, attachments: attachments_of(message) }
+      flow.log!(:customer_replied, body: reply_body(message), metadata: metadata)
       flow.transition!('start')
       flow.notify_team!('cases.customer_replied', kase.assignee || fallback_recipient(kase))
       case_payload(kase)
@@ -86,7 +91,16 @@ class Cases::AiCases
 
   def case_payload(kase)
     { id: kase.id, number: kase.number, title: kase.title, type: kase.type.name, ai_mode: kase.type.ai_mode, status: kase.status,
-      awaiting_customer_info: kase.awaiting_customer_info? }
+      awaiting_customer_info: kase.awaiting_customer_info?,
+      customer_replied_recently: kase.events.customer_replied.exists?(['created_at > ?', JUST_REPLIED.ago]) }
+  end
+
+  def reply_body(message)
+    message.content.presence || "📎 #{message.attachments.map(&:file_type).join(', ')}"
+  end
+
+  def attachments_of(message)
+    message.attachments.map { |attachment| { type: attachment.file_type, url: attachment.file_url, thumb: attachment.thumb_url.presence }.compact }
   end
 
   def claimable_relays

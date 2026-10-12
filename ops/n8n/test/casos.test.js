@@ -64,11 +64,14 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   ok('MontaPrompt: casos ativos com a situacao em palavras', r.out[0].json.body.messages[0].content.includes('- CAS-2026-0002 "Cambio de talla" (Problema): the team is working on it'));
   const esperando = [Object.assign({}, abertos[0], { status: 'waiting_customer', awaiting_customer_info: true })];
   r = await run(R + 'monta_prompt.js', Object.assign({}, base, { JevEntrada: { jev: { case: true } } }), {},
-    Object.assign({ 'cases/bot/context': [200, ctx({ open_cases: esperando })], 'cases/bot/customer_replies': [200, { payload: [esperando[0]] }] }, semMemoria));
-  const repassada = r.calls.find(c => c.url.includes('customer_replies'));
-  ok('MontaPrompt: resposta a pergunta da equipe vai para o caso, sem abrir outro',
-     repassada && repassada.body.body.includes('cortina rota') && !r.calls.some(c => c.url.includes('typesafe')) && r.out[0].json.caseReplied === true &&
+    Object.assign({ 'cases/bot/context': [200, ctx({ open_cases: esperando })] }, semMemoria));
+  ok('MontaPrompt: cliente respondendo a pergunta da equipe: agradece, sem abrir outro nem gravar (o Rails grava)',
+     !r.calls.some(c => c.url.includes('typesafe')) && !r.calls.some(c => c.method === 'POST' && c.url.includes('cases/bot')) && r.out[0].json.caseReplied === true &&
      r.out[0].json.body.messages[0].content.includes('just answered the team\'s question about case CAS-2026-0002'));
+  const jaGravada = [Object.assign({}, abertos[0], { customer_replied_recently: true })];
+  r = await run(R + 'monta_prompt.js', Object.assign({}, base, { JevEntrada: { jev: { case: true } } }), {},
+    Object.assign({ 'cases/bot/context': [200, ctx({ open_cases: jaGravada })] }, semMemoria));
+  ok('MontaPrompt: resposta ja gravada pelo Rails tambem agradece', r.out[0].json.caseReplied === true && !r.calls.some(c => c.url.includes('typesafe')));
   r = await run(R + 'monta_prompt.js', Object.assign({}, base, { JevEntrada: { jev: {} } }), {},
     Object.assign({ 'cases/bot/context': [500, {}] }, semMemoria));
   ok('MontaPrompt: Rails fora loga e segue', r.out[0].json.body && r.logs.some(l => l.includes('cases/bot/context')));
