@@ -8,8 +8,8 @@ PERSONA = 'aaaaaaaa-0000-4000-8000-000000000001'.freeze
 OUTRA = 'aaaaaaaa-0000-4000-8000-000000000002'.freeze
 DOC = 'bbbbbbbb-0000-4000-8000-000000000001'.freeze
 SB = {
-  personas: [{ 'id' => PERSONA, 'name' => 'Nathan', 'system_prompt' => "Eres Nathan, asistente de la tienda.\nResponde corto." },
-             { 'id' => OUTRA, 'name' => 'Otra', 'system_prompt' => 'x' }],
+  personas: [{ 'id' => PERSONA, 'slug' => 'nathan', 'display_name' => 'Nathan', 'system_prompt' => "Eres Nathan, asistente de la tienda.\nResponde corto." },
+             { 'id' => OUTRA, 'slug' => 'otra', 'display_name' => 'Otra', 'system_prompt' => 'x' }],
   docs: [{ 'id' => DOC, 'slug' => 'horarios', 'title' => 'Horarios y entregas', 'is_active' => true, 'is_global' => false,
            'content' => "### Horario\nLunes a viernes de 9 a 18.\n\n### Entregas\nEntregamos en 5 días hábiles.",
            'bot_persona_knowledge' => [{ 'persona_id' => PERSONA }] }]

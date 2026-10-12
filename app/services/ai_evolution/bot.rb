@@ -78,7 +78,8 @@ class AiEvolution::Bot
   end
 
   def persona_context(persona, docs)
-    { persona: { id: persona['id'], name: persona['name'], prompt: persona['system_prompt'].to_s.first(PROMPT_CHARS) },
+    name = persona['display_name'].presence || persona['slug']
+    { persona: { id: persona['id'], name: name, prompt: persona['system_prompt'].to_s.first(PROMPT_CHARS) },
       knowledge: knowledge_for(persona['id'], docs), suggestions: open_suggestions(persona['id']) }
   end
 

@@ -14,6 +14,18 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.24.0] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
+
+- **Evolução da IA** (menu AI → **AI evolution**, flag `ai_evolution` no Super Admin). A IA aprende com o que a equipe faz quando ela não dá conta.
+  - **A rodada diária** (às 3h do Panamá) lê as conversas com sinal novo: passadas para a equipe com resposta de uma pessoa, respostas retidas pelo Jev e casos abertos pela IA que a equipe respondeu. Lê só o que é novo, sem pagar duas vezes pelo mesmo trecho.
+  - **O que ela propõe:** um trecho novo para a base de conhecimento, a correção de um trecho existente (copiando o texto exato que troca) ou uma regra nova para o prompt da persona. Só propõe o que a equipe disse ou fez, nunca inventa preço, prazo ou política.
+  - **Duplicadas:** cinco clientes perguntando a mesma coisa viram uma proposta com cinco evidências. O que você recusar não volta.
+  - **Na tela:** cada proposta mostra o porquê e as evidências (a frase do cliente, o que a equipe respondeu e o link da conversa). Você edita o texto, aplica, recusa com motivo ou desfaz o que já aplicou.
+  - **Aplicar:** o trecho entra como seção no documento indicado ou no documento "Aprendizados da IA", criado na primeira vez e ligado à persona. A regra entra numa seção "## Aprendizados" no fim do prompt. Se a base ou o prompt foram editados depois, o desfazer recusa em vez de apagar a edição alheia.
+  - **Aba Progress:** semana a semana, conversas atendidas pela IA, % passadas para a equipe, respostas retidas, casos abertos pela IA e propostas aplicadas.
+  - O uso do LLM entra no Uso de IA (Evolution) e no teto mensal.
+  - **Conta de demonstração** com conversas sintéticas para testar (`ops/demo/evolucao_seed.rb`), porque não há dados reais até a liberação final.
+
 ## [1.23.1] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
 
 - **A foto que a equipe pediu chega ao caso.** No teste de 12/10, a equipe pediu uma foto pelo assistente, o cliente mandou só a foto, sem texto, e ela não foi para o caso: o bot ignora mensagem sem texto. Agora quem leva a resposta ao caso é o Rails, assim que a mensagem chega: com texto ou só anexo, ela vai para o histórico do caso (a foto aparece em miniatura, com link), o caso volta a andar e quem cuida dele é avisado. Vale também em caixa sem bot e com a conversa atribuída a alguém. O bot só agradece quando a resposta vem com texto.
