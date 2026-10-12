@@ -2,8 +2,10 @@
 # - claim: as conversas das caixas do bot com sinal novo desde a última
 #   leitura, paradas há 2 h (a equipe teve tempo de responder), com o trecho
 #   da conversa, a persona, a base dela e as propostas pendentes e recusadas;
-# - record!: grava o que o LLM propôs, juntando à proposta pendente igual
-#   (`same_as`) e descartando a correção cujo trecho não está mais na base.
+# - record!: grava o que o LLM propôs para uma rodada de conversas da mesma
+#   persona (o n8n manda todas numa chamada só, para o LLM juntar o que se
+#   repete), juntando à proposta pendente igual (`same_as`) e descartando a
+#   correção cujo trecho não está mais na base.
 #
 # Os sinais, todos já existentes: a nota da Passagem (o bot passou a conversa)
 # seguida de resposta de uma pessoa da equipe; a mesma nota com o rascunho
@@ -13,7 +15,7 @@ class AiEvolution::Bot
   MAX_AGE = 14.days
   RETRY_AFTER = 1.hour
   MAX_MESSAGES = 40
-  MAX_SUGGESTIONS = 3
+  MAX_SUGGESTIONS = 10
   KNOWLEDGE_CHARS = 30_000
   PROMPT_CHARS = 3000
   REJECTED_WINDOW = 90.days
@@ -37,17 +39,19 @@ class AiEvolution::Bot
     end.first(limit)
   end
 
-  # result: conversation_id (display_id), last_message_id, persona_id,
-  # persona_name, suggestions [{ kind, title, content, target_doc_id,
-  # replace_text, same_as, rationale, customer_quote, team_quote }].
+  # result: persona_id, persona_name, conversations [{ conversation_id
+  # (display_id), last_message_id }] e suggestions [{ kind, title, content,
+  # target_doc_id, replace_text, same_as, rationale, evidence [{
+  # conversation_id, customer_quote, team_quote }] }]. Evidência de conversa
+  # fora da rodada não entra; proposta sem evidência nenhuma não entra.
   def record!(result)
-    conversation = @account.conversations.find_by!(display_id: result[:conversation_id])
-    scan = scan_for(conversation)
+    conversations = round_conversations(result[:conversations])
     docs = botlayer.knowledge_docs(@account.id).index_by { |doc| doc['id'] }
     saved = Array(result[:suggestions]).first(MAX_SUGGESTIONS).filter_map do |item|
-      save_suggestion(item, result, conversation, docs)
+      evidence = evidence_items(item, conversations.keys)
+      save_suggestion(item, result, evidence, docs) if evidence.any?
     end
-    scan.update!(last_message_id: [scan.last_message_id, result[:last_message_id].to_i].max, scanned_at: Time.current, claimed_at: nil)
+    conversations.each_value { |conversation, last_id| mark_read!(conversation, last_id) }
     saved
   end
 
@@ -166,15 +170,23 @@ class AiEvolution::Bot
     }
   end
 
-  def save_suggestion(item, result, conversation, docs)
-    evidence = evidence_item(item, conversation)
+  # display_id => [conversa, última mensagem lida nesta rodada]
+  def round_conversations(entries)
+    Array(entries).to_h do |entry|
+      [entry[:conversation_id].to_i, [@account.conversations.find_by!(display_id: entry[:conversation_id]), entry[:last_message_id].to_i]]
+    end
+  end
+
+  def save_suggestion(item, result, evidence, docs)
     same = pending_match(item, result)
     return same.tap { |suggestion| suggestion.add_evidence!(evidence) } if same
 
     doc = docs[item[:target_doc_id].to_s]
     return if item[:kind].to_s == 'knowledge_update' && !replaceable?(item, doc)
 
-    @account.ai_evolution_suggestions.create!(suggestion_attributes(item, result, doc).merge(evidence: [evidence], evidence_count: 1))
+    attributes = suggestion_attributes(item, result, doc)
+    kept = evidence.last(AiEvolution::Suggestion::MAX_EVIDENCE)
+    @account.ai_evolution_suggestions.create!(attributes.merge(evidence: kept, evidence_count: evidence.size))
   rescue ActiveRecord::RecordInvalid, ArgumentError
     nil
   end
@@ -199,9 +211,17 @@ class AiEvolution::Bot
       replace_text: item[:kind].to_s == 'knowledge_update' ? item[:replace_text] : nil }
   end
 
-  def evidence_item(item, conversation)
-    { conversation_id: conversation.display_id, customer_quote: item[:customer_quote].to_s.truncate(500),
-      team_quote: item[:team_quote].to_s.truncate(500), at: Time.current.iso8601 }
+  def evidence_items(item, conversation_ids)
+    entries = Array(item[:evidence]).select { |entry| conversation_ids.include?(entry[:conversation_id].to_i) }
+    entries.uniq { |entry| entry[:conversation_id].to_i }.map do |entry|
+      { conversation_id: entry[:conversation_id].to_i, customer_quote: entry[:customer_quote].to_s.truncate(500),
+        team_quote: entry[:team_quote].to_s.truncate(500), at: Time.current.iso8601 }
+    end
+  end
+
+  def mark_read!(conversation, last_message_id)
+    scan = scan_for(conversation)
+    scan.update!(last_message_id: [scan.last_message_id, last_message_id].max, scanned_at: Time.current, claimed_at: nil)
   end
 
   def scan_for(conversation)

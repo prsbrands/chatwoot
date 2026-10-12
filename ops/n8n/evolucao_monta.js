@@ -1,35 +1,51 @@
 // No MontaEvolucao do workflow "CortexGen Evolução" (depois do Candidatos).
 //
-// Monta, por conversa, a chamada ao modelo da persona (o normal, nao o leve:
-// aqui errar custa mais que o token) que le o que a equipe fez quando a IA nao
-// deu conta e propoe mudancas na base ou no prompt. Resposta em JSON:
-// { suggestions: [{ kind, title, content, target_doc_id, replace_text, same_as,
-// rationale, customer_quote, team_quote }] }; lista vazia e o comum. E-mail e
+// Uma chamada por rodada (ate 10 conversas da mesma persona) ao modelo da
+// persona (o normal, nao o leve: aqui errar custa mais que o token). O LLM le
+// o que a equipe fez quando a IA nao deu conta e propoe mudancas na base ou no
+// prompt, juntando numa proposta so o que varias conversas ensinam. Resposta
+// em JSON, pedida ao provedor (response_format) e com o formato exato no
+// prompt: em 12/10 o DeepSeek, sem isso, escreveu {"knowledge_update": {...}}
+// no lugar de {"kind": ...} e metade das respostas nem era JSON. E-mail e
 // telefone saem do texto antes do LLM, como no Jev. buildSpec repete o do
 // MontaPrompt do bot: Code nodes sao isolados.
 
-const MAX_TOKENS = 1500;
+const MAX_TOKENS = 3000;
+
+const EXEMPLO = JSON.stringify({
+  suggestions: [
+    {
+      kind: 'knowledge_add', title: 'Short title', content: 'The fact the team gave, short.', target_doc_id: 'id of a document or null',
+      rationale: 'One sentence.', evidence: [{ conversation_id: 123, customer_quote: 'customer words', team_quote: 'team words' }],
+    },
+    {
+      kind: 'knowledge_update', title: 'Short title', replace_text: 'text copied exactly from the document', content: 'the corrected text',
+      target_doc_id: 'id of that document', rationale: 'One sentence.', evidence: [{ conversation_id: 124, customer_quote: '...', team_quote: '...' }],
+    },
+    { same_as: 7, evidence: [{ conversation_id: 125, customer_quote: '...', team_quote: '...' }] },
+  ],
+});
 
 const SYSTEM = [
   'You improve the customer service assistant of a business by learning from its team.',
-  'You get one conversation where the assistant could not handle something (it handed the customer to the team, had a reply held back, or opened a case), what the team answered, the assistant\'s knowledge base and the start of its instructions.',
+  'You get several conversations where the assistant could not handle something (it handed the customer to the team, had a reply held back, or opened a case), what the team answered, the assistant\'s knowledge base and the start of its instructions.',
   '',
-  'Propose at most 3 concrete changes, and only when the team\'s own words or actions teach something durable that the assistant should know or do next time:',
+  'Propose concrete changes, only when the team\'s own words or actions teach something durable that the assistant should know or do next time. When several conversations teach the same thing, write ONE proposal with all of them in "evidence".',
   '- "knowledge_add": a new short section for the knowledge base (title and text) with facts the team gave: prices, deadlines, policies, steps, areas served, contacts of the business. "target_doc_id": the id of the document where it fits best, or null.',
   '- "knowledge_update": the team contradicts or completes what the base says. "replace_text" must be copied EXACTLY, character by character, from the content of one document (a sentence or a paragraph); "content" is the corrected text that replaces it; "target_doc_id" is that document.',
   '- "prompt_rule": one sentence on how the assistant should behave (for example, not promising something only the team can confirm). Never a fact or a price.',
   '',
   'Rules:',
   '- Use only what the team said or did. Never invent prices, dates, policies, contacts or steps.',
-  '- Skip what the knowledge base already says, and one-off details that only apply to this customer (their order, their delivery, their case).',
-  '- Never copy the customer\'s personal data.',
+  '- Skip what the knowledge base already says, and one-off details that only apply to one customer (their order, their delivery, their case).',
+  '- Never copy the customers\' personal data.',
   '- Write titles and texts in the language of the knowledge base, short and factual.',
-  '- If an open suggestion already covers it, return only {"same_as": <its id>, "customer_quote": ..., "team_quote": ...}.',
+  '- If an open suggestion already covers it, return only {"same_as": <its id>, "evidence": [...]}.',
   '- Never propose again what is in the rejected list.',
-  '- "customer_quote": the customer\'s words that show the need; "team_quote": the team\'s words that teach it. Both short and exact.',
-  '- "rationale": one sentence on why.',
+  '- Each "evidence" item has the "conversation_id" (the number after "Conversation") and short exact quotes: "customer_quote", the customer\'s words that show the need, and "team_quote", the team\'s words that teach it.',
   '',
-  'Answer ONLY with a JSON object, no markdown: {"suggestions": [...]}. An empty list is the usual answer.',
+  'Answer ONLY with a JSON object in exactly this format, with "kind" as a field of each suggestion: ' + EXEMPLO,
+  'Return {"suggestions": []} when there is nothing to learn.',
 ].join('\n');
 
 const scrub = text => String(text || '')
@@ -42,20 +58,21 @@ return $input.all().map(item => {
   const rota = c.rota;
   const base = c.knowledge.map(doc => '### Document ' + doc.id + ': ' + doc.title + '\n' +
     (doc.content !== undefined ? doc.content : 'Sections: ' + (doc.sections || []).join('; '))).join('\n\n');
-  const casos = c.cases.map(k => '- Case ' + k.number + ' (' + k.type + '): ' + scrub(k.title) +
-    (k.team_replies.length ? '\n  Team replies through the assistant: ' + k.team_replies.map(scrub).join(' / ') : '') +
-    (k.resolution ? '\n  Resolution: ' + scrub(k.resolution) : '')).join('\n');
+  const conversas = c.conversations.map(conv => {
+    const casos = conv.cases.map(k => '- Case ' + k.number + ' (' + k.type + '): ' + scrub(k.title) +
+      (k.team_replies.length ? '\n  Team replies through the assistant: ' + k.team_replies.map(scrub).join(' / ') : '') +
+      (k.resolution ? '\n  Resolution: ' + scrub(k.resolution) : '')).join('\n');
+    return '## Conversation ' + conv.conversation_id + ' (' + conv.signals.join(', ') + ')\n' +
+      conv.transcript.map(l => (QUEM[l.from] || l.from) + ': ' + scrub(l.text)).join('\n') +
+      (casos ? '\nCases opened by the assistant:\n' + casos : '');
+  }).join('\n\n');
   const usuario = [
-    'Signals: ' + c.signals.join(', '),
+    conversas,
     '',
-    'Conversation:',
-    c.transcript.map(l => (QUEM[l.from] || l.from) + ': ' + scrub(l.text)).join('\n'),
-    casos ? '\nCases opened by the assistant:\n' + casos : '',
-    '',
-    'Assistant "' + c.persona.name + '" instructions (start):',
+    '## Assistant "' + c.persona.name + '" instructions (start)',
     c.persona.prompt,
     '',
-    'Knowledge base:',
+    '## Knowledge base',
     base || '(empty)',
     '',
     'Open suggestions: ' + (c.suggestions.pending.length ? c.suggestions.pending.map(s => '[' + s.id + '] ' + s.kind + ': ' + s.title).join('; ') : '(none)'),
@@ -80,6 +97,7 @@ return $input.all().map(item => {
       messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: usuario }],
       max_tokens: MAX_TOKENS,
       temperature: 0.2,
+      response_format: { type: 'json_object' },
     };
     if ((rota.provider || 'openrouter') === 'openrouter') {
       body.reasoning = { enabled: false };
@@ -92,8 +110,7 @@ return $input.all().map(item => {
   const ctx = {
     accountId: c.accountId,
     chatUserToken: c.chatUserToken,
-    conversationId: c.conversation_id,
-    lastMessageId: c.last_message_id,
+    conversations: c.conversations.map(conv => ({ conversation_id: conv.conversation_id, last_message_id: conv.last_message_id })),
     personaId: c.persona.id,
     personaName: c.persona.name,
     provider: rota.provider || 'openrouter',

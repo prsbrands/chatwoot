@@ -26,9 +26,8 @@ class AiEvolution::Suggestion < ApplicationRecord
 
   scope :queue, -> { order(evidence_count: :desc, created_at: :asc) }
 
-  # Mais uma conversa que ensina a mesma coisa; guarda as mais recentes.
-  def add_evidence!(item)
-    list = (evidence + [item]).last(MAX_EVIDENCE)
-    update!(evidence: list, evidence_count: evidence_count + 1)
+  # Mais conversas que ensinam a mesma coisa; guarda as mais recentes.
+  def add_evidence!(items)
+    update!(evidence: (evidence + items).last(MAX_EVIDENCE), evidence_count: evidence_count + items.size)
   end
 end

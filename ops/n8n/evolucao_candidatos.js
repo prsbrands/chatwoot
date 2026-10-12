@@ -4,14 +4,17 @@
 // sinal novo desde a ultima leitura (passagem com resposta da equipe, resposta
 // retida pelo Jev, caso aberto pela IA), paradas ha 2 h (POST
 // ai_evolution/bot/claims, AiEvolution::Bot). Vai o par caixa -> persona de
-// cada rota, para o Rails mandar a base e as propostas da persona certa. Sai um
-// item por conversa, com a rota (modelo e provedor). Conta sem a flag
+// cada rota, para o Rails mandar a base e as propostas da persona certa.
+// Sai um item por persona com ate 10 conversas: o LLM le todas juntas e junta
+// o que se repete (visto em 12/10: uma chamada por conversa, cinco clientes
+// perguntando o mesmo virariam cinco propostas). Conta sem a flag
 // ai_evolution (401) ou no teto mensal de IA fica de fora.
 
 const https = require('https');
 
 const CHATWOOT = 'https://prs.cortexgen.cloud/api/v1/accounts/';
 const POR_CONTA = 20;
+const POR_RODADA = 10;
 
 function pedir(method, url, headers, body) {
   return new Promise((resolve, reject) => {
@@ -66,9 +69,26 @@ for (const conta of contas) {
     if (error.statusCode === 401 || error.statusCode === 403) continue;
     throw error;
   }
+  const porPersona = {};
   for (const item of reservadas.payload || []) {
-    itens.push({ json: Object.assign({ accountId: conta, chatUserToken: ajuste.chat_user_token },
-      item, { rota: daConta.find(r => r.chatwoot_inbox_id === item.inbox_id) }) });
+    (porPersona[item.persona.id] = porPersona[item.persona.id] || []).push(item);
+  }
+  for (const lista of Object.values(porPersona)) {
+    for (let k = 0; k < lista.length; k += POR_RODADA) {
+      const parte = lista.slice(k, k + POR_RODADA);
+      const primeira = parte[0];
+      itens.push({ json: {
+        accountId: conta,
+        chatUserToken: ajuste.chat_user_token,
+        rota: daConta.find(r => r.chatwoot_inbox_id === primeira.inbox_id),
+        persona: primeira.persona,
+        knowledge: primeira.knowledge,
+        suggestions: primeira.suggestions,
+        conversations: parte.map(c => ({
+          conversation_id: c.conversation_id, last_message_id: c.last_message_id, signals: c.signals, transcript: c.transcript, cases: c.cases,
+        })),
+      } });
+    }
   }
 }
 

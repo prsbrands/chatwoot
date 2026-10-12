@@ -118,28 +118,34 @@ ok 'persona e base da persona', p1['persona']['name'] == 'Nathan' && p1['knowled
 _, r2 = api.(admin, :post, 'bot/claims', rotas)
 ok 'reservadas não voltam antes de 1 h; outra caixa com rota entra', r2['payload'].map { |c| c['conversation_id'] } == [c6.display_id]
 
-# Gravar
-st, g = api.(admin, :post, 'bot/results', { conversation_id: c1.display_id, last_message_id: p1['last_message_id'], persona_id: PERSONA, persona_name: 'Nathan',
+# Gravar: uma rodada com as conversas da mesma persona numa chamada só
+rodada = [c1, c2].map { |c| { conversation_id: c.display_id, last_message_id: por[c.display_id]['last_message_id'] } }
+st, g = api.(admin, :post, 'bot/results', { persona_id: PERSONA, persona_name: 'Nathan', conversations: rodada,
                                             suggestions: [{ kind: 'knowledge_add', title: 'Envíos a Colón', content: 'Enviamos a Colón por USD 8; llega en 3 días.',
-                                                            target_doc_id: DOC, rationale: 'El equipo respondió', customer_quote: '¿Hacen envíos a Colón?',
-                                                            team_quote: 'Sí, enviamos a Colón por USD 8' },
+                                                            target_doc_id: DOC, rationale: 'El equipo respondió',
+                                                            evidence: [{ conversation_id: c1.display_id, customer_quote: '¿Hacen envíos a Colón?',
+                                                                         team_quote: 'Sí, enviamos a Colón por USD 8' },
+                                                                       { conversation_id: 99_999, customer_quote: 'de otra rodada' }] },
+                                                          { kind: 'prompt_rule', title: 'No prometer descuentos', content: 'Nunca ofrezcas descuentos que no estén en la base.',
+                                                            evidence: [{ conversation_id: c2.display_id, customer_quote: '¿desconto à vista?', team_quote: 'Temos 5% no Pix' }] },
                                                           { kind: 'knowledge_update', title: 'Entregas', content: 'Entregamos en 3 a 5 días hábiles.',
-                                                            target_doc_id: DOC, replace_text: 'Entregamos en 7 días.' }] })
-ok 'grava a proposta; correção com trecho que não está na base é descartada', st == 200 && g['saved'].size == 1 &&
-                                                                              AiEvolution::Scan.find_by(conversation: c1).claimed_at.nil?
+                                                            target_doc_id: DOC, replace_text: 'Entregamos en 5 días hábiles.',
+                                                            evidence: [{ conversation_id: c1.display_id }, { conversation_id: c2.display_id }] },
+                                                          { kind: 'knowledge_update', title: 'Entregas', content: 'x', target_doc_id: DOC, replace_text: 'Entregamos en 7 días.',
+                                                            evidence: [{ conversation_id: c1.display_id }] },
+                                                          { kind: 'knowledge_add', title: 'Sem evidência', content: 'x', evidence: [{ conversation_id: 99_999 }] }] })
+ok 'grava a rodada; correção sem o trecho e proposta sem evidência da rodada ficam fora', st == 200 && g['saved'].size == 3 &&
+                                                                                         [c1, c2].all? { |c| AiEvolution::Scan.find_by(conversation: c).claimed_at.nil? }
 add = AiEvolution::Suggestion.find(g['saved'][0])
-ok 'proposta com evidência e o documento', add.knowledge_add? && add.target_doc_title == 'Horarios y entregas' && add.evidence_count == 1 &&
-                                           add.evidence[0]['conversation_id'] == c1.display_id && add.evidence[0]['team_quote'].include?('USD 8')
-_, g2 = api.(admin, :post, 'bot/results', { conversation_id: c2.display_id, last_message_id: por[c2.display_id]['last_message_id'], persona_id: PERSONA,
-                                            suggestions: [{ kind: 'prompt_rule', title: 'No prometer descuentos', content: 'Nunca ofrezcas descuentos que no estén en la base.',
-                                                            customer_quote: '¿desconto à vista?', team_quote: 'Temos 5% no Pix' },
-                                                          { kind: 'knowledge_update', title: 'Entregas', content: 'Entregamos en 3 a 5 días hábiles.',
-                                                            target_doc_id: DOC, replace_text: 'Entregamos en 5 días hábiles.' }] })
-regra = AiEvolution::Suggestion.find(g2['saved'][0])
-corr = AiEvolution::Suggestion.find(g2['saved'][1])
-ok 'regra de prompt e correção com trecho exato', regra.prompt_rule? && regra.target_doc_id.nil? && corr.knowledge_update? && corr.replace_text.present?
-_, g3 = api.(admin, :post, 'bot/results', { conversation_id: c5.display_id, last_message_id: por[c5.display_id]['last_message_id'], persona_id: PERSONA,
-                                            suggestions: [{ kind: 'knowledge_add', title: 'x', content: 'x', same_as: add.id, customer_quote: 'otro', team_quote: 'otra' }] })
+regra = AiEvolution::Suggestion.find(g['saved'][1])
+corr = AiEvolution::Suggestion.find(g['saved'][2])
+ok 'proposta com evidência só da rodada e o documento', add.knowledge_add? && add.target_doc_title == 'Horarios y entregas' && add.evidence_count == 1 &&
+                                                        add.evidence[0]['conversation_id'] == c1.display_id && add.evidence[0]['team_quote'].include?('USD 8')
+ok 'várias conversas na mesma proposta', corr.knowledge_update? && corr.evidence_count == 2 && corr.replace_text.present?
+ok 'regra de prompt sem documento', regra.prompt_rule? && regra.target_doc_id.nil?
+_, g3 = api.(admin, :post, 'bot/results', { persona_id: PERSONA, conversations: [{ conversation_id: c5.display_id, last_message_id: por[c5.display_id]['last_message_id'] }],
+                                            suggestions: [{ kind: 'knowledge_add', title: 'x', content: 'x', same_as: add.id,
+                                                            evidence: [{ conversation_id: c5.display_id, customer_quote: 'otro', team_quote: 'otra' }] }] })
 add.reload
 ok 'igual a uma pendente: junta a evidência, sem proposta nova', g3['saved'] == [add.id] && add.evidence_count == 2 && account.ai_evolution_suggestions.count == 3
 

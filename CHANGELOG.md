@@ -14,6 +14,14 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.24.1] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
+
+- **A rodada da Evolução da IA lê as conversas juntas.** No primeiro teste, na conta de demonstração, cada conversa foi numa chamada separada: nenhuma sabia o que a outra propôs, e o DeepSeek respondeu num formato inventado. As 13 conversas deram zero propostas. Agora:
+  - cada chamada leva até 10 conversas da mesma persona, e o que vários clientes perguntam vira uma proposta com várias evidências (e sai mais barato);
+  - o JSON é pedido ao provedor e o prompt traz o formato exato;
+  - o formato que o DeepSeek inventou também é aceito;
+  - o tempo limite da chamada subiu para 3 minutos.
+
 ## [1.24.0] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
 
 - **Evolução da IA** (menu AI → **AI evolution**, flag `ai_evolution` no Super Admin). A IA aprende com o que a equipe faz quando ela não dá conta.

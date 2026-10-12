@@ -1,11 +1,13 @@
 // No GravaEvolucao do workflow "CortexGen Evolução" (depois do LLMEvolucao /
 // LLMEvolucaoCustom). Roda uma vez para todos os itens.
 //
-// Por conversa: registra o LLM no Uso de IA (kind 'evolution', conta no teto;
-// db/botlayer/bot_ai_evolution.sql), le o JSON e grava pelo Rails (POST
-// ai_evolution/bot/results), que junta as iguais e descarta correcao sem o
-// trecho exato. Resposta ilegivel nao grava: a reserva vence em 1 h e a
-// conversa volta na rodada seguinte.
+// Por rodada (ate 10 conversas da mesma persona): registra o LLM no Uso de IA
+// (kind 'evolution', conta no teto; db/botlayer/bot_ai_evolution.sql), le o
+// JSON e grava pelo Rails (POST ai_evolution/bot/results), que junta as iguais
+// e descarta correcao sem o trecho exato. Aceita tambem o formato que o
+// DeepSeek inventou em 12/10 ({"knowledge_update": {...}} em vez de "kind") e
+// as citacoes soltas no lugar de "evidence". Resposta ilegivel nao grava: a
+// reserva vence em 1 h e as conversas voltam na rodada seguinte.
 
 const https = require('https');
 
@@ -51,8 +53,23 @@ function lerResposta(res) {
   }
 }
 
-// Proposta nova com tipo, titulo e texto; ou so a evidencia de uma pendente (same_as).
-const valida = s => s && typeof s === 'object' && (Number.isInteger(s.same_as) ||
+// {"knowledge_update": {...}} vira {"kind": "knowledge_update", ...}; citacao
+// solta (conversation_id/customer_quote/team_quote) vira "evidence".
+function normaliza(s) {
+  if (!s || typeof s !== 'object') return null;
+  let p = s;
+  if (!p.kind) {
+    const tipo = KINDS.find(k => p[k] && typeof p[k] === 'object');
+    if (tipo) p = Object.assign({ kind: tipo }, p[tipo]);
+  }
+  if (!Array.isArray(p.evidence) && p.conversation_id !== undefined) {
+    p = Object.assign({}, p, { evidence: [{ conversation_id: p.conversation_id, customer_quote: p.customer_quote, team_quote: p.team_quote }] });
+  }
+  return p;
+}
+
+// Proposta nova com tipo, titulo, texto e evidencia; ou so a evidencia de uma pendente (same_as).
+const valida = s => s && Array.isArray(s.evidence) && s.evidence.length > 0 && (Number.isInteger(s.same_as) ||
   (KINDS.includes(s.kind) && typeof s.title === 'string' && s.title.trim() && typeof s.content === 'string' && s.content.trim()));
 
 const relatorio = [];
@@ -60,12 +77,14 @@ const relatorio = [];
 for (const [k, item] of $input.all().entries()) {
   const res = item.json;
   const ctx = $('MontaEvolucao').itemMatching(k).json.ctx;
-  const nota = r => relatorio.push({ json: { conversa: ctx.accountId + '/' + ctx.conversationId, resultado: r } });
+  const ids = ctx.conversations.map(c => c.conversation_id).join(',');
+  const nota = r => relatorio.push({ json: { conversas: ctx.accountId + '/' + ids, resultado: r } });
 
   if (!res.error && res.type !== 'error') {
     const usage = res.usage || {};
     await pedir('POST', SB + 'bot_interactions', sbHeaders, {
-      chatwoot_account_id: ctx.accountId, chatwoot_conversation_id: ctx.conversationId, chatwoot_message_id: ctx.lastMessageId,
+      chatwoot_account_id: ctx.accountId, chatwoot_conversation_id: ctx.conversations[0].conversation_id,
+      chatwoot_message_id: ctx.conversations[0].last_message_id,
       persona_id: ctx.personaId, kind: 'evolution', provider: ctx.provider, model: res.model || null,
       tokens_in: usage.prompt_tokens || usage.input_tokens || 0, tokens_out: usage.completion_tokens || usage.output_tokens || 0,
       cost_usd: typeof usage.cost === 'number' ? usage.cost : null, status: 'ok',
@@ -76,13 +95,12 @@ for (const [k, item] of $input.all().entries()) {
   if (!lidas) { nota('LLM sem JSON legivel; volta depois de 1 h'); continue; }
 
   const gravado = await pedir('POST', CHATWOOT + ctx.accountId + '/ai_evolution/bot/results', { api_access_token: ctx.chatUserToken }, {
-    conversation_id: ctx.conversationId,
-    last_message_id: ctx.lastMessageId,
     persona_id: ctx.personaId,
     persona_name: ctx.personaName,
-    suggestions: lidas.filter(valida).slice(0, 3),
+    conversations: ctx.conversations,
+    suggestions: lidas.map(normaliza).filter(valida).slice(0, 10),
   });
-  nota(gravado.saved.length + ' proposta(s) gravada(s)');
+  nota(gravado.saved.length + ' proposta(s) gravada(s) de ' + ctx.conversations.length + ' conversa(s)');
 }
 
 return relatorio;

@@ -20,10 +20,13 @@ class Api::V1::Accounts::AiEvolution::BotController < Api::V1::Accounts::AiEvolu
   private
 
   def result_params
-    permitted = params.permit(:conversation_id, :last_message_id, :persona_id, :persona_name,
-                              suggestions: [:kind, :title, :content, :target_doc_id, :replace_text, :same_as, :rationale,
-                                            :customer_quote, :team_quote])
-    raise ActionController::ParameterMissing, :conversation_id if permitted[:conversation_id].blank?
+    permitted = params.permit(
+      :persona_id, :persona_name,
+      conversations: [:conversation_id, :last_message_id],
+      suggestions: [:kind, :title, :content, :target_doc_id, :replace_text, :same_as, :rationale,
+                    { evidence: [:conversation_id, :customer_quote, :team_quote] }]
+    )
+    raise ActionController::ParameterMissing, :conversations if permitted[:conversations].blank?
     raise ActionController::ParameterMissing, :persona_id if permitted[:persona_id].blank?
 
     permitted.to_h.deep_symbolize_keys
