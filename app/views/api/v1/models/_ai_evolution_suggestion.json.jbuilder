@@ -1,0 +1,21 @@
+json.id resource.id
+json.kind resource.kind
+json.status resource.status
+json.persona_id resource.persona_id
+json.persona_name resource.persona_name
+json.title resource.title
+json.content resource.content
+json.target_doc_id resource.target_doc_id
+json.target_doc_title resource.target_doc_title
+json.replace_text resource.replace_text
+json.rationale resource.rationale
+json.evidence resource.evidence
+json.evidence_count resource.evidence_count
+json.edited resource.edited
+json.applied_target resource.applied_change&.dig('title') || resource.applied_change&.dig('target')
+json.applied_at resource.applied_at&.to_i
+json.applied_by resource.applied_by&.available_name
+json.rejected_at resource.rejected_at&.to_i
+json.rejected_by resource.rejected_by&.available_name
+json.reject_reason resource.reject_reason
+json.created_at resource.created_at.to_i

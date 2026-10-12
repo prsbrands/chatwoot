@@ -321,6 +321,22 @@ Rails.application.routes.draw do
               post :relay
             end
           end
+          # CortexGen: evolução da IA (flag ai_evolution)
+          namespace :ai_evolution do
+            resources :suggestions, only: [:index, :show, :update] do
+              collection do
+                get :pending_count
+                get :progress
+              end
+              member do
+                post :apply
+                post :reject
+                post :undo
+              end
+            end
+            post 'bot/claims', to: 'bot#claims'
+            post 'bot/results', to: 'bot#results'
+          end
           # CortexGen: memória da IA por contato
           namespace :ai_memory do
             resources :contacts, only: [:show, :update]

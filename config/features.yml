@@ -339,3 +339,9 @@
   display_name: Cases
   enabled: false
   column: feature_flags_ext_1
+# CortexGen: evolução da IA (propostas para a base e o prompt a partir do que
+# a equipe respondeu). Sempre no fim, pelo mesmo motivo.
+- name: ai_evolution
+  display_name: AI Evolution
+  enabled: false
+  column: feature_flags_ext_1

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_12_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_13_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -252,6 +252,44 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_12_000001) do
     t.index ["document_ids"], name: "index_agent_sessions_on_document_ids", using: :gin
     t.index ["used_faq_ids"], name: "index_agent_sessions_on_used_faq_ids", using: :gin
     t.index ["user_id"], name: "index_agent_sessions_on_user_id"
+  end
+
+  create_table "ai_evolution_scans", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "last_message_id", default: 0, null: false
+    t.datetime "claimed_at"
+    t.datetime "scanned_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "scanned_at"], name: "index_ai_evolution_scans_on_account_id_and_scanned_at"
+    t.index ["conversation_id"], name: "index_ai_evolution_scans_on_conversation_id", unique: true
+  end
+
+  create_table "ai_evolution_suggestions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "kind", null: false
+    t.integer "status", default: 0, null: false
+    t.string "persona_id", null: false
+    t.string "persona_name"
+    t.string "title", null: false
+    t.text "content", null: false
+    t.string "target_doc_id"
+    t.string "target_doc_title"
+    t.text "replace_text"
+    t.jsonb "applied_change"
+    t.text "rationale"
+    t.jsonb "evidence", default: [], null: false
+    t.integer "evidence_count", default: 0, null: false
+    t.boolean "edited", default: false, null: false
+    t.datetime "applied_at"
+    t.bigint "applied_by_id"
+    t.datetime "rejected_at"
+    t.bigint "rejected_by_id"
+    t.text "reject_reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status", "evidence_count"], name: "index_ai_evolution_suggestions_on_queue"
   end
 
   create_table "ai_memory_facts", force: :cascade do |t|
