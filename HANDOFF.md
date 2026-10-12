@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.0** (Casos, fases 2 e 3) · Pronta para deploy: **1.23.1** (imagem `test-b49n` + MontaPrompt) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.1** (Casos, fases 2 e 3) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -28,9 +28,9 @@
 
 **O sistema ainda não está em produção real** (Paulo, 12/10): ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso" (memória `sistema-uso-exclusivo-do-paulo`).
 
-**1.23.1 (pronta):** no teste do repasse, a equipe pediu uma foto, o cliente mandou só a foto e ela não foi ao caso (o `Guard` ignora mensagem sem texto). Agora o Rails leva a resposta: `CortexgenMessage#execute_after_create_commit_callbacks` enfileira o `Cases::CustomerReplyJob` para toda mensagem do cliente (conta com `cases`), que grava `customer_replied` com os anexos (miniatura no histórico). O `MontaPrompt` não grava mais (rota `cases/bot/customer_replies` removida), só lê `customer_replied_recently` para agradecer. Imagem `test-b49n` (commit `29d8f6236`), bot em `/home/node/wf-casos2-bot.json` (só o MontaPrompt; cópia do publicado em `/home/node/wf-pre-casos2.json`). Deploy: `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b49` → `docker tag cortexgen-chat:test-b49n cortexgen-chat:v1` → recreate rails sidekiq → import do bot → recarregar → Publish → tag `cg-v1.23.1`. A foto do teste de 12/10 ficou de fora (chegou antes): o CAS-2026-0001 segue esperando o cliente.
+**1.23.1 (no ar desde 12/10, rollback `v1-pre-b49`; provada às 19:11 UTC: a foto sem texto foi ao CAS-2026-0001 e o Paulo foi mencionado):** no teste do repasse, a equipe pediu uma foto, o cliente mandou só a foto e ela não foi ao caso (o `Guard` ignora mensagem sem texto). Agora o Rails leva a resposta: `CortexgenMessage#execute_after_create_commit_callbacks` enfileira o `Cases::CustomerReplyJob` para toda mensagem do cliente (conta com `cases`), que grava `customer_replied` com os anexos (miniatura no histórico). O `MontaPrompt` não grava mais (rota `cases/bot/customer_replies` removida), só lê `customer_replied_recently` para agradecer. Imagem `test-b49n` (commit `29d8f6236`), bot em `/home/node/wf-casos2-bot.json` (só o MontaPrompt; cópia do publicado em `/home/node/wf-pre-casos2.json`). Deploy: `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b49` → `docker tag cortexgen-chat:test-b49n cortexgen-chat:v1` → recreate rails sidekiq → import do bot → recarregar → Publish → tag `cg-v1.23.1`. A foto do teste de 12/10 ficou de fora (chegou antes): o CAS-2026-0001 segue esperando o cliente.
 
-**Comece pelo deploy da 1.23.1** e repita o teste da foto; depois a próxima frente: Evolução da IA. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
+**Comece pela próxima frente: Evolução da IA** (DeskComm), com conversas de teste montadas. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
