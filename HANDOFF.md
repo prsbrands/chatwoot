@@ -24,7 +24,7 @@
 
 **12/10: Casos, fase 1 (1.22.0), no ar desde 12/10, flag `cases` ligada na conta 1.** Módulo genérico de casos (o pedido do cliente que não se resolve na hora): tipos por conta com campos próprios, prazo que pausa esperando o cliente, situações com desfecho, histórico, notas, menção a quem recebe, número vermelho de atrasados no menu, seção no Radar, bloco no painel da conversa e aba no contato. Desenho e decisões do Paulo em `docs/cortexgen/casos.md` (fases 2 e 3: a IA abre e repassa; avisos ao cliente e métricas). Imagem `test-b47n` (commit `2ff3ded1a`, clone `src-b30`), smoke completo 550/550, telas conferidas no navegador numa instância descartável. Rollback: `v1-pre-b47` (1.21.2). Próximo rollback: `v1-pre-b48`.
 
-**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), prontas e não deployadas.** A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `7d8f55aec`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
+**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), prontas e não deployadas.** A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `d44a81d9d`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
 
 **O sistema ainda não está em produção real** (Paulo, 12/10): ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso" (memória `sistema-uso-exclusivo-do-paulo`).
 
@@ -161,7 +161,7 @@ Na VPS, em `/opt/cortexgen-chat`. Sem migration (só valores novos em enum).
 4. Bot: `docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-casos-bot.json` → **recarregar a página** do workflow → Publish.
 5. Repasse: `docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-caso.json` → abrir "CortexGen Caso" → Publish → `docker restart n8n-y4jd-n8n-1` (workflow agendado).
 6. Configurar em **Cases → Case settings**: em cada tipo que a IA deve abrir, "When the AI notices this kind of request" + "When is it this type?"; e o aviso ao cliente onde fizer sentido.
-7. No Mac: tag `cg-v1.23.0` no `7d8f55aec` e `git push` com as tags.
+7. No Mac: tag `cg-v1.23.0` no `d44a81d9d` e `git push` com as tags.
 
 Conferir: exports com `versionId == activeVersionId`; no cartão do Jev, a atividade "Open cases for the team" decidindo.
 
