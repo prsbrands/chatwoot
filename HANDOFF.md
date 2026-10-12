@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.22.0** (Casos) · Pronta para deploy: **1.23.0** (Casos, fases 2 e 3: imagem `test-b48n` + n8n) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.0** (Casos, fases 2 e 3) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -24,11 +24,11 @@
 
 **12/10: Casos, fase 1 (1.22.0), no ar desde 12/10, flag `cases` ligada na conta 1.** Módulo genérico de casos (o pedido do cliente que não se resolve na hora): tipos por conta com campos próprios, prazo que pausa esperando o cliente, situações com desfecho, histórico, notas, menção a quem recebe, número vermelho de atrasados no menu, seção no Radar, bloco no painel da conversa e aba no contato. Desenho e decisões do Paulo em `docs/cortexgen/casos.md` (fases 2 e 3: a IA abre e repassa; avisos ao cliente e métricas). Imagem `test-b47n` (commit `2ff3ded1a`, clone `src-b30`), smoke completo 550/550, telas conferidas no navegador numa instância descartável. Rollback: `v1-pre-b47` (1.21.2). Próximo rollback: `v1-pre-b48`.
 
-**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), prontas e não deployadas.** A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `d44a81d9d`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
+**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), no ar desde 12/10.** Bot publicado (`versionId` 621e20bb…), CortexGen Caso publicado e rodando a cada minuto, rollback `v1-pre-b48`. **Provado na conversa 89:** "me llego el producto roto" abriu o CAS-2026-0001 (Problema); a 2ª mensagem do mesmo assunto virou nota no mesmo caso e a IA deu o número ao cliente. **Armadilha vista:** a regra de Automação da conta com condição do Jev ("reclamacao", recurso do upstream 4.18, `Captain::AutomationConditionService`) atribuía a conversa ao Paulo no mesmo instante, e o `Responde` não fala com conversa atribuída: o caso abria e o cliente ficava sem o número. O Paulo tirou a ação "Assign agent" da regra. Tipos da conta 1: Problema segue atendendo; Solicitud, Reclamo e Financiero passam a conversa; Duda sem IA. A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `d44a81d9d`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
 
 **O sistema ainda não está em produção real** (Paulo, 12/10): ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso" (memória `sistema-uso-exclusivo-do-paulo`).
 
-**Comece pelo deploy da 1.23.0.** Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
+**Comece pelo teste do repasse** ("Ask the customer" no CAS-2026-0001) e depois a próxima frente: Evolução da IA. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -152,7 +152,7 @@ Ordem (o Paulo roda):
 
 O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
 
-### Deploy da 1.23.0 (o Paulo roda, um comando por vez)
+### Deploy da 1.23.0 (feito em 12/10; serve de receita)
 
 Na VPS, em `/opt/cortexgen-chat`. Sem migration (só valores novos em enum).
 1. `cd /opt/cortexgen-chat && docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b48`
@@ -185,7 +185,7 @@ Conferir: `docker compose ps`, a tela `/cases` abrindo, o bloco Cases no painel 
 
 ### Fila, na ordem que eu seguiria
 
-0. **Deploy da 1.23.0 (Casos, fases 2 e 3)** e o teste na conversa 89. Depois, próxima frente: **Evolução da IA** (DeskComm), com conversas de teste montadas, porque não há dados reais.
+0. **Testar o repasse na conversa 89** (pergunta pela IA, resposta do cliente no histórico). Depois, próxima frente: **Evolução da IA** (DeskComm), com conversas de teste montadas, porque não há dados reais.
 0. **Memória da IA, ajustes possíveis em uso:** os fatos da 1ª rodada repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"); apertar o prompt do `memoria_monta.js` se incomodar. Roda em toda conta com bot (a conta 2 também paga).
 1. ~~**App OAuth do Google**~~ (`cortexgencrm`): **publicado em produção pelo Paulo em 09/10.** Calendar da conta 1 **reconectado** em 09/10 (token novo, sem prazo de 7 dias). Escopo do Calendar é sensível: se o Google pedir verificação, a tela de consentimento mostra o aviso de app não verificado até sair.
 2. **Escolher a próxima frente com o Paulo:**
