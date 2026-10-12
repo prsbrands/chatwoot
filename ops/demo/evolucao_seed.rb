@@ -71,7 +71,7 @@ docs = [
   doc
 end
 client.upsert_route({ chatwoot_account_id: account.id, chatwoot_inbox_id: inbox.id, persona_id: persona['id'], is_active: true,
-                      channel_kind: 'api', channel_label: inbox.name, chatwoot_agent_bot_id: bot.id,
+                      channel_label: inbox.name, chatwoot_agent_bot_id: bot.id,
                       chatwoot_agent_bot_secret: bot.secret, chatwoot_agent_bot_access_token: bot.access_token.token })
 client.upsert_account_settings(account.id, chat_user_token: admin.access_token.token)
 
