@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.1** (Casos, fases 2 e 3) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.1** (Casos, fases 2 e 3) · Pronta para deploy: **1.24.0** (Evolução da IA, imagem `test-b50n`) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -30,7 +30,9 @@
 
 **1.23.1 (no ar desde 12/10, rollback `v1-pre-b49`; provada às 19:11 UTC: a foto sem texto foi ao CAS-2026-0001 e o Paulo foi mencionado):** no teste do repasse, a equipe pediu uma foto, o cliente mandou só a foto e ela não foi ao caso (o `Guard` ignora mensagem sem texto). Agora o Rails leva a resposta: `CortexgenMessage#execute_after_create_commit_callbacks` enfileira o `Cases::CustomerReplyJob` para toda mensagem do cliente (conta com `cases`), que grava `customer_replied` com os anexos (miniatura no histórico). O `MontaPrompt` não grava mais (rota `cases/bot/customer_replies` removida), só lê `customer_replied_recently` para agradecer. Imagem `test-b49n` (commit `29d8f6236`), bot em `/home/node/wf-casos2-bot.json` (só o MontaPrompt; cópia do publicado em `/home/node/wf-pre-casos2.json`). Deploy: `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b49` → `docker tag cortexgen-chat:test-b49n cortexgen-chat:v1` → recreate rails sidekiq → import do bot → recarregar → Publish → tag `cg-v1.23.1`. A foto do teste de 12/10 ficou de fora (chegou antes): o CAS-2026-0001 segue esperando o cliente.
 
-**Comece pela próxima frente: Evolução da IA** (DeskComm), com conversas de teste montadas. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
+**12/10 (noite): Evolução da IA (1.24.0), pronta e não deployada.** Desenho e decisões do Paulo em `docs/cortexgen/evolucao.md`. Rodada diária às 3h do Panamá (workflow novo **CortexGen Evolução**, id `1PBKdso3sEHgI06s`, `ops/n8n/build_evolucao.py`, fuso do workflow `America/Panama` porque o n8n roda em New York) lê as conversas com sinal (passagem com resposta da equipe, retida pelo Jev, caso da IA respondido) e propõe trecho de base, correção ou regra de prompt; tela **AI evolution** (menu AI) com Proposals (editar, aplicar, recusar, desfazer) e Progress. Imagem `test-b50n` (commit `53c063b61`, clone `src-b30`), workflow em `/home/node/wf-evolucao.json`. Testes: smoke `ai_evolution` 27, `node ops/n8n/test/evolucao.test.js` 14; o seed da demo foi provado num banco descartável (13 conversas com sinal). **Ainda não visto:** o LLM real propondo sobre as conversas da demo (precisa do deploy).
+
+**Comece pelo deploy da 1.24.0** (seção abaixo) e o teste na conta de demonstração. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
@@ -153,6 +155,25 @@ Ordem (o Paulo roda):
 5. Conferir: exports com `versionId == activeVersionId`; depois de ~40 min, uma conversa parada da conta 1 com memória no bloco AI memory e "Customer memory" no AI usage.
 
 O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
+
+### Deploy da 1.24.0 (o Paulo roda, um comando por vez)
+
+Na VPS, em `/opt/cortexgen-chat`:
+1. Supabase: `docker exec -i supabase-db psql -U postgres -d postgres < /opt/cortexgen-chat/src-b30/db/botlayer/bot_ai_evolution.sql` (põe `evolution` na constraint de `bot_interactions.kind`).
+2. Migration: `cd /opt/cortexgen-chat && docker run --rm --network cortexgen-chat_default --env-file /opt/cortexgen-chat/.env -e RAILS_ENV=production cortexgen-chat:test-b50n bundle exec rails db:migrate`
+3. `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b50` → `docker tag cortexgen-chat:test-b50n cortexgen-chat:v1` → `docker compose up -d --force-recreate rails sidekiq`
+4. n8n: `docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/home/node/wf-evolucao.json` → abrir "CortexGen Evolução" → Publish → `docker restart n8n-y4jd-n8n-1`.
+5. Demo: `docker cp /opt/cortexgen-chat/src-b30/ops/demo/evolucao_seed.rb $(docker compose ps -q rails):/tmp/` e `docker compose exec -T -e ADMIN_EMAIL=<e-mail do Paulo> rails bundle exec rails runner /tmp/evolucao_seed.rb`.
+6. No n8n, "CortexGen Evolução" → **Execute workflow** (roda fora do horário). Depois, trocar para a conta "Demo Evolução" e abrir **AI evolution**.
+7. No Mac: tag `cg-v1.24.0` no `53c063b61` e push com as tags.
+
+O esperado na demo:
+- uma proposta de base sobre envio ao interior/Colón, com várias evidências;
+- uma de instalação;
+- uma correção da garantia de 6 meses para 1 ano;
+- uma regra para não prometer desconto;
+- uma da política de troca, vinda do caso;
+- nada do pedido 4512 nem da passagem sem resposta.
 
 ### Deploy da 1.23.0 (feito em 12/10; serve de receita)
 
