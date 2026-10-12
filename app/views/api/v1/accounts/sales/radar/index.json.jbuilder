@@ -24,3 +24,6 @@ end
 json.awaiting_outcome @radar.awaiting_outcome do |appointment|
   json.partial! 'api/v1/models/agenda_appointment', formats: [:json], resource: appointment
 end
+json.overdue_cases @radar.overdue_cases do |kase|
+  json.partial! 'api/v1/models/cases_case', formats: [:json], resource: kase
+end

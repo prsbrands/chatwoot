@@ -1,0 +1,13 @@
+json.id resource.id
+json.name resource.name
+json.color resource.color
+json.position resource.position
+json.active resource.active
+json.sla_hours resource.sla_hours
+json.default_priority resource.default_priority
+json.default_assignee_id resource.default_assignee_id
+json.default_team_id resource.default_team_id
+json.fields resource.fields
+json.ai_mode resource.ai_mode
+json.ai_instructions resource.ai_instructions
+json.notify_customer resource.notify_customer

@@ -333,3 +333,9 @@
   display_name: Commerce
   enabled: false
   column: feature_flags_ext_1
+# CortexGen: casos (tipos com campos próprios, prazo, responsável e histórico).
+# Sempre no fim, pelo mesmo motivo.
+- name: cases
+  display_name: Cases
+  enabled: false
+  column: feature_flags_ext_1

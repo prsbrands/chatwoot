@@ -10,5 +10,6 @@ module CortexgenContact
     has_many :agenda_appointments, class_name: 'Agenda::Appointment', dependent: :nullify
     has_one :ai_memory_summary, class_name: 'AiMemory::Summary', dependent: :delete
     has_many :ai_memory_facts, class_name: 'AiMemory::Fact', dependent: :delete_all
+    has_many :cases, class_name: 'Cases::Case', dependent: :destroy
   end
 end

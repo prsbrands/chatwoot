@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_08_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_12_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -659,6 +659,83 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_08_000002) do
     t.index ["assistant_id", "enabled"], name: "index_captain_scenarios_on_assistant_id_and_enabled"
     t.index ["assistant_id"], name: "index_captain_scenarios_on_assistant_id"
     t.index ["enabled"], name: "index_captain_scenarios_on_enabled"
+  end
+
+  create_table "cases_cases", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "type_id", null: false
+    t.string "number", null: false
+    t.integer "year", null: false
+    t.integer "sequence", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.integer "status", default: 0, null: false
+    t.integer "priority", default: 1, null: false
+    t.bigint "assignee_id"
+    t.bigint "team_id"
+    t.datetime "due_at"
+    t.datetime "paused_at"
+    t.bigint "contact_id", null: false
+    t.bigint "deal_id"
+    t.integer "source", default: 0, null: false
+    t.jsonb "field_values", default: {}, null: false
+    t.integer "outcome"
+    t.text "resolution"
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_id"
+    t.datetime "canceled_at"
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status", "due_at"], name: "index_cases_cases_on_account_id_and_status_and_due_at"
+    t.index ["account_id", "year", "sequence"], name: "index_cases_cases_on_number", unique: true
+    t.index ["assignee_id"], name: "index_cases_cases_on_assignee_id"
+    t.index ["contact_id"], name: "index_cases_cases_on_contact_id"
+    t.index ["deal_id"], name: "index_cases_cases_on_deal_id"
+    t.index ["type_id"], name: "index_cases_cases_on_type_id"
+  end
+
+  create_table "cases_conversations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "case_id", null: false
+    t.bigint "conversation_id", null: false
+    t.boolean "origin", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["case_id", "conversation_id"], name: "index_cases_conversations_on_case_id_and_conversation_id", unique: true
+    t.index ["conversation_id"], name: "index_cases_conversations_on_conversation_id"
+  end
+
+  create_table "cases_events", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "case_id", null: false
+    t.integer "kind", null: false
+    t.integer "actor_kind", default: 0, null: false
+    t.bigint "actor_id"
+    t.text "body"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["case_id", "created_at"], name: "index_cases_events_on_case_id_and_created_at"
+  end
+
+  create_table "cases_types", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.string "color", default: "#6B7280", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.integer "sla_hours"
+    t.integer "default_priority", default: 1, null: false
+    t.bigint "default_assignee_id"
+    t.bigint "default_team_id"
+    t.jsonb "fields", default: [], null: false
+    t.integer "ai_mode", default: 0, null: false
+    t.text "ai_instructions"
+    t.boolean "notify_customer", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "position"], name: "index_cases_types_on_account_id_and_position"
   end
 
   create_table "categories", force: :cascade do |t|

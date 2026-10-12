@@ -297,6 +297,24 @@ Rails.application.routes.draw do
             resources :payment_providers, only: [:index, :create, :update]
             resource :profile, only: [:show, :update]
           end
+          # CortexGen: casos (flag cases). O namespace vem antes do resources:
+          # /cases/types não pode cair no cases#show.
+          namespace :cases do
+            resources :types, only: [:index, :create, :update, :destroy]
+            resource :settings, only: [:show, :update]
+          end
+          resources :cases, only: [:index, :show, :create, :update, :destroy], controller: 'cases/cases' do
+            get :overdue_count, on: :collection
+            member do
+              post :start
+              post :wait_customer
+              post :resolve
+              post :cancel
+              post :reopen
+              post :note
+              post :link_conversation
+            end
+          end
           # CortexGen: memória da IA por contato
           namespace :ai_memory do
             resources :contacts, only: [:show, :update]

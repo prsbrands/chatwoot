@@ -96,6 +96,8 @@ en:
     online_payment: 'Online payment received: %{amount} for %{invoice} (%{method}). Receipt %{receipt} issued and sent through the invoice channels.'
     subscription_overdue: 'The renewal invoice %{invoice} of the subscription %{subscription} is unpaid 5 days after its due date. The subscription is past due.'
     subscription_payment_failed: 'The renewal of the subscription %{subscription} was declined. The provider will retry; the subscription is past due.'
+  cases:
+    assigned: '%{mention} the case %{number} "%{title}" is with you: %{url}'
   errors:
     account:
       not_authorized: You are not authorized to access this account

@@ -42,6 +42,13 @@ class Sales::Radar
     @account.agenda_appointments.awaiting_outcome.preload(:contact, :owner, :conversation).order(:ends_at)
   end
 
+  # Casos com o prazo vencido (flag `cases`), os mais atrasados primeiro.
+  def overdue_cases
+    return Cases::Case.none unless @account.feature_enabled?('cases')
+
+    @account.cases.overdue.preload(:type, :assignee, :contact).order(:due_at).limit(NO_NEXT_STEP_CAP)
+  end
+
   private
 
   def deals

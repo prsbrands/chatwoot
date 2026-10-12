@@ -1,11 +1,11 @@
 # Ao juntar dois contatos, o que o CortexGen guarda por contato passa para o que
 # fica. Sem isso, o negócio e as tarefas do contato absorvido eram apagados com
 # ele, e compromissos, orçamentos, faturas e assinaturas ficavam apontando para
-# um contato que não existe mais. A memória da IA também se junta: fatos dos
+# um contato que não existe mais. Os casos também passam. A memória da IA também se junta: fatos dos
 # dois e os resumos lado a lado, com a leitura voltando ao ponto mais antigo
 # para a IA reler o que faltou de um deles.
 module CortexgenContactMerge
-  MOVED = %w[Sales::Deal Sales::Task Agenda::Appointment Commerce::Document Commerce::Subscription AiMemory::Fact].freeze
+  MOVED = %w[Sales::Deal Sales::Task Agenda::Appointment Commerce::Document Commerce::Subscription AiMemory::Fact Cases::Case].freeze
 
   private
 
