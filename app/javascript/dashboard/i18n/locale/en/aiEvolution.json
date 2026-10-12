@@ -1,0 +1,71 @@
+{
+  "AI_EVOLUTION": {
+    "HEADER": "AI evolution",
+    "DESCRIPTION": "Once a day, the AI reads the conversations it could not handle and what your team answered, and proposes changes to its knowledge base and instructions. Nothing changes until you apply it.",
+    "TABS": {
+      "proposals": "Proposals",
+      "progress": "Progress"
+    },
+    "STATUS": {
+      "pending": "To review",
+      "applied": "Applied",
+      "rejected": "Rejected"
+    },
+    "ALL_KINDS": "All",
+    "KIND": {
+      "knowledge_add": "New knowledge",
+      "knowledge_update": "Knowledge fix",
+      "prompt_rule": "Instruction"
+    },
+    "WHERE": {
+      "DOC": "in \"{doc}\"",
+      "LEARNED_DOC": "in \"Aprendizados da IA\"",
+      "PROMPT": "in the instructions of {persona}"
+    },
+    "EVIDENCE_COUNT": "{count} conversation | {count} conversations",
+    "EDITED": "edited",
+    "APPLIED_BY": "Applied by {name} on {date}",
+    "REJECTED_BY": "Rejected by {name} on {date}",
+    "TITLE": "Title",
+    "TEXT": "Text for the knowledge base",
+    "RULE": "Instruction for the AI",
+    "REPLACES": "Replaces this text of the knowledge base",
+    "WHY": "Why:",
+    "REASON": "Reason: {reason}",
+    "CUSTOMER": "Customer:",
+    "TEAM": "Team:",
+    "QUOTE": "“{text}”",
+    "OPEN_CONVERSATION": "Open conversation #{id}",
+    "REJECT_REASON": "Why not? The AI will not propose it again.",
+    "CANCEL": "Cancel",
+    "ACTIONS": {
+      "apply": "Apply",
+      "reject": "Reject",
+      "undo": "Undo"
+    },
+    "DONE": {
+      "apply": "Applied",
+      "reject": "Rejected",
+      "undo": "Undone: back to review"
+    },
+    "EMPTY": {
+      "pending": "Nothing to review. Proposals appear after the daily round, when the AI handed a conversation to the team and the team answered.",
+      "applied": "No proposal applied yet.",
+      "rejected": "No proposal rejected."
+    },
+    "PROGRESS": {
+      "HINT": "Conversations on channels with the AI, week by week. Weeks with applied proposals are marked.",
+      "WEEK": "Week of",
+      "COLUMN": {
+        "conversations": "Conversations",
+        "handoff_rate": "Handed to the team",
+        "held": "Replies held by Jev",
+        "ai_cases": "Cases opened by the AI",
+        "applied": "Proposals applied"
+      }
+    },
+    "API": {
+      "ERROR": "Could not save. Try again."
+    }
+  }
+}

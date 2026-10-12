@@ -103,6 +103,10 @@
           "TITLE": "Knowledge",
           "DESCRIPTION": "The materials the agent reads before answering about your business."
         },
+        "EVOLUTION": {
+          "TITLE": "AI evolution",
+          "DESCRIPTION": "What the AI learns from your team: proposals for the knowledge base and the instructions, and how it is doing week by week."
+        },
         "JEV": {
           "TITLE": "Jev",
           "DESCRIPTION": "Quick decisions the AI makes on every message — language, handoff, follow-up — with how often it was right and what it cost."

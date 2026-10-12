@@ -162,6 +162,26 @@ watch(
 );
 onBeforeUnmount(() => clearInterval(overdueCasesTimer));
 
+// Número em AI evolution: propostas esperando revisão. A rodada roda uma vez
+// por dia, mas quem aplica pode ser outra pessoa: relido com os outros.
+const hasAiEvolution = computed(() =>
+  isFeatureEnabledonAccount.value(accountId.value, FEATURE_FLAGS.AI_EVOLUTION)
+);
+let evolutionTimer = null;
+watch(
+  [accountId, hasAiEvolution],
+  ([currentAccountId, evolution]) => {
+    clearInterval(evolutionTimer);
+    if (!currentAccountId || !evolution) return;
+    const fetchPendingCount = () =>
+      store.dispatch('aiEvolution/fetchPendingCount').catch(() => {});
+    fetchPendingCount();
+    evolutionTimer = setInterval(fetchPendingCount, REVIEW_COUNT_INTERVAL);
+  },
+  { immediate: true }
+);
+onBeforeUnmount(() => clearInterval(evolutionTimer));
+
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
@@ -958,6 +978,17 @@ const baseMenuItems = computed(() => {
       activeOn: ['settings_integrations_ai_providers'],
     },
     {
+      name: 'AiEvolution',
+      label: t('SIDEBAR.AI_EVOLUTION'),
+      icon: 'i-lucide-sprout',
+      to: accountScopedRoute('ai_evolution_index'),
+      activeOn: ['ai_evolution_index'],
+      getterKeys: {
+        count: 'aiEvolution/getPendingCount',
+        countClass: 'bg-n-teal-9 text-white',
+      },
+    },
+    {
       name: 'AiUsage',
       label: t('SIDEBAR.AI_USAGE'),
       icon: 'i-lucide-gauge',
@@ -1166,6 +1197,7 @@ const MENU_LAYOUT = [
   ['Personas', 'AI'],
   ['Jev', 'AI'],
   ['Captain', 'AI'],
+  ['AiEvolution', 'AI'],
   ['AiUsage', 'AI'],
   ['AiHub', 'AI'],
   ['Connections', 'CHANNELS'],

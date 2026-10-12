@@ -123,6 +123,11 @@ export const HUBS = {
             to: 'settings_integrations_botlayer',
             query: { tab: 'knowledge' },
           },
+          {
+            id: 'EVOLUTION',
+            icon: 'i-lucide-sprout',
+            to: 'ai_evolution_index',
+          },
         ],
       },
       {

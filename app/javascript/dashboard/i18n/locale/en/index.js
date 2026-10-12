@@ -17,6 +17,7 @@ import agenda from './agenda.json';
 import commerce from './commerce.json';
 import aiMemory from './aiMemory.json';
 import cases from './cases.json';
+import aiEvolution from './aiEvolution.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -72,6 +73,7 @@ export default {
   ...commerce,
   ...aiMemory,
   ...cases,
+  ...aiEvolution,
   ...components,
   ...contact,
   ...contactFilters,

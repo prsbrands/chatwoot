@@ -17,6 +17,7 @@ import categories from './modules/helpCenterCategories';
 import connections from './modules/connections';
 import commerce from './modules/commerce';
 import cases from './modules/cases';
+import aiEvolution from './modules/aiEvolution';
 import contactConversations from './modules/contactConversations';
 import contactLabels from './modules/contactLabels';
 import contactNotes from './modules/contactNotes';
@@ -86,6 +87,7 @@ export default createStore({
     connections,
     commerce,
     cases,
+    aiEvolution,
     categories,
     contactConversations,
     contactLabels,
