@@ -24,6 +24,10 @@
           "TITLE": "Tasks",
           "DESCRIPTION": "What was agreed, with a due date — and what is already overdue with nobody on it."
         },
+        "CASES": {
+          "TITLE": "Cases",
+          "DESCRIPTION": "What the customer asked that is not solved on the spot: an owner, a due date and an outcome for each one."
+        },
         "COMPANIES": {
           "TITLE": "Companies",
           "DESCRIPTION": "The businesses your contacts work for."

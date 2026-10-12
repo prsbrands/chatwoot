@@ -15,6 +15,9 @@ import ContactMedia from 'dashboard/components-next/Contacts/ContactsSidebar/Con
 import ContactMerge from 'dashboard/components-next/Contacts/ContactsSidebar/ContactMerge.vue';
 import ContactCustomAttributes from 'dashboard/components-next/Contacts/ContactsSidebar/ContactCustomAttributes.vue';
 import AiMemoryPanel from 'dashboard/routes/dashboard/aiMemory/AiMemoryPanel.vue';
+import ContactCases from 'dashboard/routes/dashboard/cases/components/ContactCases.vue';
+import { useAccount } from 'dashboard/composables/useAccount';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 
 const store = useStore();
 const route = useRoute();
@@ -45,17 +48,25 @@ const CONTACT_TABS_OPTIONS = [
   { key: 'MEDIA', value: 'media' },
   { key: 'MERGE', value: 'merge' },
   { key: 'AI_MEMORY', value: 'ai_memory' },
+  { key: 'CASES', value: 'cases' },
 ];
 
+const { isCloudFeatureEnabled } = useAccount();
+const tabOptions = computed(() =>
+  CONTACT_TABS_OPTIONS.filter(
+    tab => tab.value !== 'cases' || isCloudFeatureEnabled(FEATURE_FLAGS.CASES)
+  )
+);
+
 const tabs = computed(() => {
-  return CONTACT_TABS_OPTIONS.map(tab => ({
+  return tabOptions.value.map(tab => ({
     label: t(`CONTACTS_LAYOUT.SIDEBAR.TABS.${tab.key}`),
     value: tab.value,
   }));
 });
 
 const activeTabIndex = computed(() => {
-  return CONTACT_TABS_OPTIONS.findIndex(v => v.value === activeTab.value);
+  return tabOptions.value.findIndex(v => v.value === activeTab.value);
 });
 
 const goToContactsList = () => {
@@ -181,6 +192,11 @@ onMounted(() => {
           <AiMemoryPanel
             v-if="activeTab === 'ai_memory'"
             :contact-id="selectedContact.id"
+          />
+          <ContactCases
+            v-if="activeTab === 'cases'"
+            :contact="selectedContact"
+            show-closed
           />
           <ContactMerge
             v-if="activeTab === 'merge'"

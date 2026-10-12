@@ -14,6 +14,16 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.22.0] — 2026-10-12 · base Chatwoot 4.18.0
+
+- **Casos** (menu CRM, flag `cases` no Super Admin). O que o cliente pediu e não se resolve na hora agora tem número (`CAS-2026-0001`), tipo, responsável, prioridade, prazo e desfecho, e pode juntar várias conversas do mesmo cliente.
+  - **Tipos do seu negócio:** a conta nasce com Dúvida, Problema, Solicitação, Reclamação e Financeiro no idioma dela. Em **Case settings**, o admin renomeia, muda cor, prazo, prioridade e responsável padrão, e acrescenta os **detalhes** de cada tipo (texto, número, data, lista ou sim/não), como "nº do pedido" ou "endereço". Os marcados como obrigatórios são pedidos só ao resolver. O prefixo do número também se troca ali.
+  - **Abrir:** pelo bloco **Cases** no painel da conversa (o caso nasce ligado a ela, com o negócio aberto do cliente), pela aba **Cases** do contato ou pela tela Cases.
+  - **Trabalhar:** começar, esperar o cliente (o prazo para de contar), resolver com desfecho e texto, cancelar e reabrir. Notas internas e todo o histórico de quem mudou o quê. Quem recebe o caso é mencionado numa nota da conversa (a menção cai no sino).
+  - **Atrasados:** número vermelho no item Cases do menu, filtro "Overdue" e seção no Radar.
+  - Lista ou quadro por situação, filtros por tipo, prioridade, responsável ("Mine", "Unassigned") e busca por número, título ou cliente. Juntar contatos leva os casos; excluir o contato apaga os dele.
+  - Próximas fases (desenho em `docs/cortexgen/casos.md`): a IA abre o caso e repassa a resposta da equipe; avisos ao cliente e métricas.
+
 ## [1.21.2] — 2026-10-08 · base Chatwoot 4.18.0
 
 - **A equipe fica sabendo do aceite e da recusa.** Quando o cliente clica em "Aceptar" ou "Rechazar" no link da cotização, sai uma nota interna na conversa mencionando o responsável do negócio (ou o primeiro admin), com o valor e o link do documento; a menção cai no sino. Antes a recusa passava em silêncio, e o aceite só avisava com a fatura automática ligada. A nota da fatura automática também passou a mencionar o responsável, com o link da fatura.

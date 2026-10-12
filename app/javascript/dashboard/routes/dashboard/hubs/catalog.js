@@ -26,6 +26,7 @@ export const HUBS = {
             icon: 'i-lucide-list-checks',
             to: 'sales_tasks_index',
           },
+          { id: 'CASES', icon: 'i-lucide-life-buoy', to: 'cases_index' },
           {
             id: 'COMPANIES',
             icon: 'i-lucide-building-2',

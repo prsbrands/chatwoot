@@ -518,7 +518,8 @@
         "NOTES": "Notes",
         "MEDIA": "Media",
         "MERGE": "Merge",
-        "AI_MEMORY": "AI memory"
+        "AI_MEMORY": "AI memory",
+        "CASES": "Cases"
       },
       "HISTORY": {
         "EMPTY_STATE": "There are no previous conversations associated to this contact"

@@ -6,6 +6,7 @@ export const DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER = Object.freeze([
   { name: 'conversation_actions' },
   { name: 'sales_deal' },
   { name: 'ai_memory' },
+  { name: 'cases' },
   { name: 'macros' },
   { name: 'conversation_info' },
   { name: 'contact_attributes' },

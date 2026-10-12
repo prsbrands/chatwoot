@@ -26,6 +26,7 @@ import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/I
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
 import ConversationDeal from 'dashboard/routes/dashboard/salesPipeline/components/ConversationDeal.vue';
 import AiMemoryPanel from 'dashboard/routes/dashboard/aiMemory/AiMemoryPanel.vue';
+import ContactCases from 'dashboard/routes/dashboard/cases/components/ContactCases.vue';
 
 const props = defineProps({
   conversationId: {
@@ -66,6 +67,10 @@ const isLinearFeatureEnabled = computed(() =>
 
 const isSalesPipelineEnabled = computed(() =>
   isCloudFeatureEnabled(FEATURE_FLAGS.SALES_PIPELINE)
+);
+
+const isCasesEnabled = computed(() =>
+  isCloudFeatureEnabled(FEATURE_FLAGS.CASES)
 );
 
 const linearIntegration = useFunctionGetter(
@@ -332,6 +337,19 @@ onMounted(() => {
               "
             >
               <AiMemoryPanel :contact-id="contactId" />
+            </AccordionItem>
+          </div>
+          <div v-else-if="element.name === 'cases' && isCasesEnabled">
+            <AccordionItem
+              :title="$t('CASES.HEADER')"
+              :is-open="isContactSidebarItemOpen('is_cases_open')"
+              compact
+              @toggle="value => toggleSidebarUIState('is_cases_open', value)"
+            >
+              <ContactCases
+                :contact="contact"
+                :conversation-id="conversationId"
+              />
             </AccordionItem>
           </div>
           <div v-else-if="element.name === 'contact_notes'">

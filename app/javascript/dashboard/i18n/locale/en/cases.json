@@ -1,0 +1,158 @@
+{
+  "CASES": {
+    "HEADER": "Cases",
+    "DESCRIPTION_TEXT": "What the customer asked that is not solved on the spot: who takes care of it, by when, and how it ended.",
+    "NEW": "New case",
+    "CREATE": "Open case",
+    "EDIT": "Edit",
+    "SAVE": "Save",
+    "CANCEL_EDIT": "Cancel",
+    "DELETE": "Delete case",
+    "DELETE_CONFIRM": "Delete the case {number}? Its history goes with it. To close a case opened by mistake, cancel it instead.",
+    "BACK": "Cases",
+    "CONTACT": "Customer",
+    "CHANGE_CONTACT": "Change",
+    "SEARCH_CONTACT": "Search a contact by name, phone or email",
+    "TYPE": "Type",
+    "TITLE": "Title",
+    "TITLE_PLACEHOLDER": "What does the customer need?",
+    "DESCRIPTION": "Description",
+    "PRIORITY_LABEL": "Priority",
+    "ASSIGNEE": "Assignee",
+    "UNASSIGNED": "Nobody",
+    "DUE": "Due date",
+    "DUE_ON": "Due {date}",
+    "OVERDUE": "Overdue",
+    "OVERDUE_SINCE": "Overdue since {date}",
+    "PAUSED": "Waiting for the customer",
+    "PAUSED_HINT": "The due date is paused while the case waits for the customer.",
+    "DEAL": "Deal",
+    "CONVERSATIONS": "Conversations",
+    "NO_CONVERSATIONS": "No conversation linked.",
+    "LINK_CONVERSATION": "Link conversation #{id}",
+    "OPENED_BY_AI": "Opened by the AI",
+    "TIMELINE": "History",
+    "NOTE_PLACEHOLDER": "Internal note: what was done, what is missing…",
+    "ADD_NOTE": "Add note",
+    "RESOLUTION": "What was done",
+    "CANCEL_REASON": "Why it was canceled",
+    "OUTCOME_LABEL": "Outcome",
+    "LOAD_MORE": "Show more ({count})",
+    "STATUS": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "waiting_customer": "Waiting for customer",
+      "resolved": "Resolved",
+      "canceled": "Canceled"
+    },
+    "PRIORITY": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "OUTCOME": {
+      "solved": "Solved",
+      "not_applicable": "Not applicable",
+      "duplicate": "Duplicate",
+      "no_response": "No response from the customer"
+    },
+    "ACTIONS": {
+      "start": "Start",
+      "wait_customer": "Wait for customer",
+      "resolve": "Resolve",
+      "cancel": "Cancel case",
+      "reopen": "Reopen"
+    },
+    "VIEW": {
+      "list": "List",
+      "board": "Board"
+    },
+    "FILTERS": {
+      "STATUS": {
+        "active": "Active",
+        "resolved": "Resolved",
+        "canceled": "Canceled"
+      },
+      "OWNER": {
+        "all": "Everyone",
+        "me": "Mine",
+        "none": "Unassigned"
+      },
+      "OVERDUE": "Overdue",
+      "ALL_TYPES": "All types",
+      "ALL_PRIORITIES": "All priorities",
+      "SEARCH": "Number, title or customer"
+    },
+    "EMPTY": {
+      "active": "No active case. Open one from a conversation or with New case.",
+      "resolved": "No resolved case yet.",
+      "canceled": "No canceled case.",
+      "contact": "This customer has no cases.",
+      "contact_active": "No active case for this customer."
+    },
+    "FIELDS": {
+      "HEADER": "Details",
+      "EMPTY": "—",
+      "REQUIRED_HINT": "Fields marked with * are required to resolve the case."
+    },
+    "FIELD_TYPES": {
+      "text": "Text",
+      "number": "Number",
+      "date": "Date",
+      "select": "List",
+      "boolean": "Yes / no"
+    },
+    "EVENTS": {
+      "BY_AI": "AI",
+      "BY_SYSTEM": "System",
+      "NONE": "none",
+      "created_manual": "opened the case",
+      "created_conversation": "opened the case from conversation #{id}",
+      "status_changed": "changed the status to {to}{outcome}",
+      "assigned": "assigned the case to {to}",
+      "priority_changed": "changed the priority to {to}",
+      "due_changed": "changed the due date to {to}",
+      "type_changed": "changed the type to {to}",
+      "field_changed": "updated {fields}",
+      "conversation_linked": "linked conversation #{id}",
+      "customer_notified": "notified the customer",
+      "note": "added a note",
+      "ai_note": "added a note"
+    },
+    "SETTINGS": {
+      "HEADER": "Case settings",
+      "DESCRIPTION": "The case types of your business, their due dates and the details each one asks for.",
+      "PREFIX": "Number prefix",
+      "PREFIX_HINT": "Letters and digits, up to 8. New cases are numbered like {example}.",
+      "PREFIX_SAVED": "Prefix saved",
+      "TYPES": "Case types",
+      "NEW_TYPE": "New type",
+      "EDIT_TYPE": "Edit type",
+      "DELETE_TYPE": "Delete type",
+      "TYPE_IN_USE": "This type has cases and cannot be deleted. Turn it off instead.",
+      "TYPE_NAME": "Name",
+      "COLOR": "Color",
+      "SLA_HOURS": "Due in (hours)",
+      "NO_SLA": "No due date",
+      "SLA_SUMMARY": "Due in {hours} h",
+      "DEFAULT_PRIORITY": "Default priority",
+      "DEFAULT_ASSIGNEE": "Default assignee",
+      "ACTIVE": "Available for new cases",
+      "INACTIVE": "off",
+      "FIELDS": "Details of this type",
+      "FIELDS_HINT": "The information your business needs for this kind of case, such as an order number or an address. Required ones are asked when resolving.",
+      "FIELD_LABEL": "Label",
+      "FIELD_TYPE": "Kind",
+      "FIELD_OPTIONS": "Options",
+      "FIELD_OPTIONS_PLACEHOLDER": "Separated by commas",
+      "FIELD_REQUIRED": "Required to resolve",
+      "ADD_FIELD": "Add detail",
+      "REMOVE_FIELD": "Remove detail",
+      "FIELD_COUNT": "no details | {count} detail | {count} details"
+    },
+    "API": {
+      "ERROR": "Could not save. Try again."
+    }
+  }
+}

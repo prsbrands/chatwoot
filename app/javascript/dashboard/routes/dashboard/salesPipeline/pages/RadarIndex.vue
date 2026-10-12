@@ -29,6 +29,7 @@ const BUCKET_CLASSES = {
 const rows = ref([]);
 const noNextStep = ref([]);
 const awaitingOutcome = ref([]);
+const overdueCases = ref([]);
 const counts = ref({});
 const isLoading = ref(true);
 const takingOver = ref(null);
@@ -39,6 +40,7 @@ const fetchRadar = async () => {
     rows.value = data.payload;
     noNextStep.value = data.no_next_step;
     awaitingOutcome.value = data.awaiting_outcome;
+    overdueCases.value = data.overdue_cases || [];
     counts.value = data.counts;
   } finally {
     isLoading.value = false;
@@ -148,6 +150,33 @@ onMounted(fetchRadar);
       <Spinner />
       {{ $t('SALES_PIPELINE.RADAR.LOADING') }}
     </div>
+
+    <section
+      v-if="!isLoading && overdueCases.length"
+      class="flex flex-col gap-2 px-4 py-3 mx-6 mt-5 rounded-xl bg-n-ruby-2 outline outline-1 outline-n-ruby-5"
+    >
+      <h2 class="text-sm font-medium text-n-ruby-11">
+        {{
+          $t(
+            'SALES_PIPELINE.RADAR.OVERDUE_CASES',
+            { count: overdueCases.length },
+            overdueCases.length
+          )
+        }}
+      </h2>
+      <ul class="flex flex-col gap-2 m-0 list-none">
+        <li v-for="kase in overdueCases" :key="kase.id">
+          <router-link
+            :to="accountScopedRoute('case_show', { caseId: kase.id })"
+            class="text-sm text-n-slate-12 hover:underline"
+          >
+            {{ kase.number }} · {{ kase.title }} · {{ kase.contact.name }} ·
+            {{ kase.assignee ? kase.assignee.name : $t('CASES.UNASSIGNED') }} ·
+            {{ dynamicTime(kase.due_at) }}
+          </router-link>
+        </li>
+      </ul>
+    </section>
 
     <section
       v-if="!isLoading && awaitingOutcome.length"

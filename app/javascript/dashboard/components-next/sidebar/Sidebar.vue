@@ -142,6 +142,26 @@ watch(
 );
 onBeforeUnmount(() => clearInterval(reviewCountTimer));
 
+// Número vermelho em Cases: casos com o prazo vencido. O prazo vence sozinho,
+// sem ninguém mexer, então também é relido a cada minuto.
+const hasCases = computed(() =>
+  isFeatureEnabledonAccount.value(accountId.value, FEATURE_FLAGS.CASES)
+);
+let overdueCasesTimer = null;
+watch(
+  [accountId, hasCases],
+  ([currentAccountId, cases]) => {
+    clearInterval(overdueCasesTimer);
+    if (!currentAccountId || !cases) return;
+    const fetchOverdueCount = () =>
+      store.dispatch('cases/fetchOverdueCount').catch(() => {});
+    fetchOverdueCount();
+    overdueCasesTimer = setInterval(fetchOverdueCount, REVIEW_COUNT_INTERVAL);
+  },
+  { immediate: true }
+);
+onBeforeUnmount(() => clearInterval(overdueCasesTimer));
+
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
@@ -877,6 +897,17 @@ const baseMenuItems = computed(() => {
       activeOn: ['sales_tasks_index'],
     },
     {
+      name: 'Cases',
+      label: t('SIDEBAR.CASES'),
+      icon: 'i-lucide-life-buoy',
+      to: accountScopedRoute('cases_index'),
+      activeOn: ['cases_index', 'case_show', 'cases_settings'],
+      getterKeys: {
+        count: 'cases/getOverdueCount',
+        countClass: 'bg-n-ruby-9 text-white',
+      },
+    },
+    {
       name: 'Documents',
       label: t('SIDEBAR.DOCUMENTS'),
       icon: 'i-lucide-receipt-text',
@@ -1125,6 +1156,7 @@ const MENU_LAYOUT = [
   ['Pipeline', 'CRM'],
   ['Contacts', 'CRM'],
   ['Tasks', 'CRM'],
+  ['Cases', 'CRM'],
   ['Companies', 'CRM'],
   ['Campaigns', 'CRM'],
   ['Documents', 'CRM'],

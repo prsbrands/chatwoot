@@ -16,6 +16,7 @@ import hubs from './hubs.json';
 import agenda from './agenda.json';
 import commerce from './commerce.json';
 import aiMemory from './aiMemory.json';
+import cases from './cases.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -70,6 +71,7 @@ export default {
   ...agenda,
   ...commerce,
   ...aiMemory,
+  ...cases,
   ...components,
   ...contact,
   ...contactFilters,
