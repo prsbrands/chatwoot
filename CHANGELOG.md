@@ -14,6 +14,21 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.23.0] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
+
+- **A IA abre casos** (Casos, fase 2). Quando o cliente traz algo que só a equipe resolve (defeito, troca, reembolso, fatura, reclamação, um pedido que não andou), o Jev percebe e escolhe o tipo de caso entre os que têm a IA ligada. O caso nasce antes da resposta, e a IA dá o número ao cliente. Em cada tipo, em **Case settings**, você escolhe o que acontece:
+  - a IA **segue atendendo** enquanto a equipe trabalha no caso;
+  - a IA **passa a conversa** para a equipe, com a nota de passagem dizendo o número do caso.
+  - Num campo "Quando é este tipo?", você diz com suas palavras o que entra nele.
+  - Se o cliente já tem um caso ativo do mesmo tipo, a mensagem nova vira nota nesse caso, em vez de abrir outro.
+  - Caso aberto pela IA sem responsável menciona o responsável do negócio ou o primeiro admin.
+  - A IA também diz ao cliente em que pé estão os casos dele, sem inventar prazo nem dar como resolvido.
+  - Se a IA disser "vou ver com a equipe" sem ter aberto um caso, o Jev segura a resposta e passa a conversa para a equipe.
+- **Responder pelo assistente.** Na tela do caso, a equipe escreve o que o cliente precisa saber e escolhe **Send answer** ou **Ask the customer**. Em até um minuto, a IA manda isso na conversa do caso, no idioma e no tom do cliente, sem acrescentar nada. Quando é uma pergunta, o caso passa a esperar o cliente; a resposta dele vai para o histórico do caso, o caso volta a andar e quem cuida dele é avisado. Se o envio falhar, quem escreveu é avisado.
+- **Aviso ao cliente** (fase 3, ligado por tipo): o número do caso ao abrir e um aviso ao resolver, no idioma do cliente. O histórico registra quando o aviso não pôde sair (sem conversa, caixa que não entrega ou fora da janela do canal).
+- **Métricas dos casos** (Cases → Case metrics): abertos (e quantos pela IA), resolvidos, tempo até resolver, % no prazo, ativos e atrasados, nos últimos 7, 30 ou 90 dias, no total, por tipo e por responsável.
+- No cartão do Jev (AI Providers), a atividade nova **Open cases for the team**, decidindo por padrão.
+
 ## [1.22.0] — 2026-10-12 · base Chatwoot 4.18.0
 
 - **Casos** (menu CRM, flag `cases` no Super Admin). O que o cliente pediu e não se resolve na hora agora tem número (`CAS-2026-0001`), tipo, responsável, prioridade, prazo e desfecho, e pode juntar várias conversas do mesmo cliente.

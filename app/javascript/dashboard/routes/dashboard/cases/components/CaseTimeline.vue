@@ -60,6 +60,16 @@ const describe = event => {
       return t('CASES.EVENTS.conversation_linked', {
         id: meta.conversation_id,
       });
+    case 'team_reply':
+      return t(`CASES.EVENTS.team_reply_${meta.mode}`, {
+        status: t(`CASES.RELAY.STATUS.${meta.relay}`),
+      });
+    case 'customer_notified':
+      return meta.skipped
+        ? t('CASES.EVENTS.customer_not_notified', {
+            reason: t(`CASES.NOTICE_SKIPPED.${meta.skipped}`),
+          })
+        : t(`CASES.EVENTS.customer_notified_${meta.notice}`);
     case 'created':
       return t(
         `CASES.EVENTS.created_${meta.conversation_id ? 'conversation' : 'manual'}`,
@@ -73,6 +83,7 @@ const describe = event => {
 };
 
 const author = event => {
+  if (event.kind === 'customer_replied') return t('CASES.EVENTS.BY_CUSTOMER');
   if (event.actor_kind === 'ai') return t('CASES.EVENTS.BY_AI');
   if (event.actor_kind === 'system') return t('CASES.EVENTS.BY_SYSTEM');
   return event.actor_name || t('CASES.EVENTS.BY_SYSTEM');
@@ -91,13 +102,19 @@ const author = event => {
         · {{ formatDate(event.created_at) }}
       </span>
       <p
-        v-if="event.kind === 'note' || event.kind === 'ai_note'"
+        v-if="['note', 'ai_note', 'customer_replied'].includes(event.kind)"
         class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-amber-2 text-n-slate-12"
       >
         {{ event.body }}
       </p>
       <template v-else>
         <span class="text-sm text-n-slate-12">{{ describe(event) }}</span>
+        <p
+          v-if="event.kind === 'team_reply' && event.metadata.message"
+          class="px-3 py-2 m-0 text-sm whitespace-pre-wrap rounded-lg bg-n-blue-2 text-n-slate-12"
+        >
+          {{ event.metadata.message }}
+        </p>
         <p
           v-if="event.body"
           class="m-0 text-sm whitespace-pre-wrap text-n-slate-11"

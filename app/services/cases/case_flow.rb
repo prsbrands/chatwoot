@@ -1,8 +1,11 @@
 # Tudo o que muda um caso passa por aqui, para o histórico (Cases::Event) ficar
 # completo: abrir, editar (tipo, responsável, prioridade, prazo, campos),
-# mudar a situação, anotar e ligar conversas. Quem recebe o caso de outra
-# pessoa é mencionado numa nota da conversa do caso (vira notificação no sino);
-# caso sem conversa fica só no "meus casos".
+# mudar a situação, anotar, ligar conversas e pedir à IA que repasse uma
+# resposta ao cliente. Quem recebe o caso de outra pessoa é mencionado numa
+# nota da conversa do caso (vira notificação no sino); caso sem conversa fica
+# só no "meus casos". Caso aberto pela IA sem responsável menciona o
+# responsável do negócio ou o primeiro admin. O aviso ao cliente (fase 3) é do
+# Cases::CustomerNotice.
 class Cases::CaseFlow
   EDITABLE = %w[title description type_id priority assignee_id team_id due_at deal_id field_values].freeze
   TRACKED = { 'type_id' => :type_changed, 'assignee_id' => :assigned, 'priority' => :priority_changed, 'due_at' => :due_changed }.freeze
@@ -24,17 +27,19 @@ class Cases::CaseFlow
 
   # O caso nasce com os padrões do tipo (prioridade e responsável) e, vindo de
   # uma conversa, ligado a ela, com o contato e o negócio aberto dele.
-  # Aberto pela IA (`source: :ai`), o histórico registra a IA como autora.
+  # Aberto pela IA (`source: :ai`), o histórico registra a IA como autora e o
+  # idioma do cliente (`language`), que os avisos ao cliente usam.
   def self.open!(account, attributes, actor: nil, source: :manual, conversation: nil)
     actor_kind = source.to_s == 'ai' ? :ai : :user
     attributes = attributes.to_h.symbolize_keys
+    language = attributes.delete(:language)
     type = account.cases_types.find_by(id: attributes[:type_id])
     contact = account.contacts.find_by(id: attributes[:contact_id] || conversation&.contact_id)
     defaults = { priority: type&.default_priority, assignee_id: type&.default_assignee_id, team_id: type&.default_team_id,
                  deal_id: contact && open_deal_id(account, contact) }.compact
     kase = account.cases.new(attributes.with_defaults(defaults).merge(type: type, contact: contact, source: source,
                                                                       created_by: (actor if actor_kind.to_s == 'user')))
-    new(kase, actor: actor, actor_kind: actor_kind).send(:create!, conversation)
+    new(kase, actor: actor, actor_kind: actor_kind).send(:create!, conversation, language)
   end
 
   def self.open_deal_id(account, contact)
@@ -50,7 +55,7 @@ class Cases::CaseFlow
       kase.save!
       record_changes!(changes)
     end
-    notify_assignee if kase.saved_change_to_assignee_id?
+    notify_team!('cases.assigned', kase.assignee) if kase.saved_change_to_assignee_id?
     kase
   end
 
@@ -62,13 +67,26 @@ class Cases::CaseFlow
       resume_due_at
       kase.paused_at = Time.current if to == 'waiting_customer'
       kase.save!
-      event!(:status_changed, body: kase.resolution.presence, metadata: { from: previous, to: to, outcome: kase.outcome }.compact)
+      log!(:status_changed, body: kase.resolution.presence, metadata: { from: previous, to: to, outcome: kase.outcome }.compact)
     end
+    Cases::CustomerNotice.new(kase).resolved! if to == 'resolved'
     kase
   end
 
   def note!(body)
-    event!(:note, body: body)
+    log!(:note, body: body)
+  end
+
+  # A equipe escreve o que a IA vai dizer ao cliente na conversa do caso: uma
+  # resposta (`answer`) ou uma pergunta (`ask`, e o caso espera o cliente
+  # quando ela sai). O workflow "CortexGen Caso" reserva e envia
+  # (Cases::AiCases).
+  def relay!(body, mode)
+    refuse!("#{kase.number} has no conversation with the customer") unless kase.main_conversation
+    refuse!("#{kase.number} is #{kase.status}") unless kase.active?
+    refuse!('invalid relay mode') unless Cases::Event::RELAY_MODES.include?(mode)
+
+    log!(:team_reply, body: body, metadata: { mode: mode, relay: 'pending' })
   end
 
   def link_conversation!(conversation, origin: false)
@@ -78,19 +96,36 @@ class Cases::CaseFlow
       new_link.account = kase.account
       new_link.origin = origin
     end
-    event!(:conversation_linked, metadata: { conversation_id: conversation.display_id }) if link.previously_new_record? && !origin
+    log!(:conversation_linked, metadata: { conversation_id: conversation.display_id }) if link.previously_new_record? && !origin
     link
+  end
+
+  def log!(kind, body: nil, metadata: {})
+    kase.events.create!(account: kase.account, kind: kind, actor_kind: @actor_kind, actor: (@actor if @actor_kind.to_s == 'user'),
+                        body: body, metadata: metadata)
+  end
+
+  # Nota privada na conversa do caso mencionando alguém da equipe (a menção
+  # vira notificação no sino). Sem conversa ou sem ninguém, não há nota.
+  def notify_team!(key, user, **vars)
+    conversation = kase.main_conversation
+    return if user.nil? || user == @actor || conversation.nil?
+
+    content = I18n.t(key, mention: mention(user), number: kase.number, title: kase.title,
+                          url: "#{ENV.fetch('FRONTEND_URL')}/app/accounts/#{kase.account_id}/cases/#{kase.id}", **vars)
+    conversation.messages.create!(account: kase.account, inbox: conversation.inbox, message_type: :outgoing, private: true, content: content)
   end
 
   private
 
-  def create!(conversation)
+  def create!(conversation, language)
     Cases::Case.transaction do
       kase.save!
-      event!(:created, metadata: { source: kase.source, conversation_id: conversation&.display_id }.compact)
+      log!(:created, metadata: { source: kase.source, conversation_id: conversation&.display_id, language: language.presence }.compact)
       link_conversation!(conversation, origin: true) if conversation
     end
-    notify_assignee
+    notify_opened
+    Cases::CustomerNotice.new(kase).opened!
     kase
   end
 
@@ -125,18 +160,13 @@ class Cases::CaseFlow
       next unless changes.key?(attribute)
 
       from, to = changes[attribute]
-      event!(kind, metadata: { from: from, to: to })
+      log!(kind, metadata: { from: from, to: to })
     end
     return unless changes.key?('field_values')
 
     from, to = changes['field_values']
     keys = (from.to_h.keys | to.to_h.keys).reject { |key| from.to_h[key] == to.to_h[key] }
-    event!(:field_changed, metadata: { fields: keys.index_with { |key| { from: from.to_h[key], to: to.to_h[key] } } }) if keys.any?
-  end
-
-  def event!(kind, body: nil, metadata: {})
-    kase.events.create!(account: kase.account, kind: kind, actor_kind: @actor_kind, actor: (@actor if @actor_kind.to_s == 'user'),
-                        body: body, metadata: metadata)
+    log!(:field_changed, metadata: { fields: keys.index_with { |key| { from: from.to_h[key], to: to.to_h[key] } } }) if keys.any?
   end
 
   def refuse!(message)
@@ -144,14 +174,10 @@ class Cases::CaseFlow
     raise ActiveRecord::RecordInvalid, kase
   end
 
-  def notify_assignee
-    user = kase.assignee
-    conversation = kase.conversations.order('cases_conversations.origin DESC, cases_conversations.created_at DESC').first
-    return if user.nil? || user == @actor || conversation.nil?
+  def notify_opened
+    return notify_team!('cases.assigned', kase.assignee) unless kase.source_ai?
 
-    content = I18n.t('cases.assigned', mention: mention(user), number: kase.number, title: kase.title,
-                                       url: "#{ENV.fetch('FRONTEND_URL')}/app/accounts/#{kase.account_id}/cases/#{kase.id}")
-    conversation.messages.create!(account: kase.account, inbox: conversation.inbox, message_type: :outgoing, private: true, content: content)
+    notify_team!('cases.ai_opened', kase.assignee || kase.deal&.assignee || kase.account.administrators.order(:id).first)
   end
 
   def mention(user)

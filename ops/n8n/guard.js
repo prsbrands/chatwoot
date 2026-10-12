@@ -120,11 +120,11 @@ if (!chatUserToken) throw new Error('sem chat_user_token gravado para conta ' + 
 // Providers. Sem chave, sem consentimento ou desligado, os nos JevEntrada e
 // JevRevisao nao perguntam nada e o fluxo segue como antes. Atividade sem
 // estado gravado comeca observando, como mostra a tela — menos o idioma, o
-// agendamento e o catalogo, que entram decidindo (o JevController tem a mesma
-// tabela).
+// agendamento, o catalogo e os casos, que entram decidindo (o JevController
+// tem a mesma tabela).
 const JEV_ACTIVITIES = ['knowledge', 'model_routing', 'no_reply', 'human_request', 'mood', 'opt_out', 'manipulation', 'reply_review', 'language', 'booking',
-  'catalog'];
-const JEV_DEFAULT_STATES = { language: 'deciding', booking: 'deciding', catalog: 'deciding' };
+  'catalog', 'case'];
+const JEV_DEFAULT_STATES = { language: 'deciding', booking: 'deciding', catalog: 'deciding', case: 'deciding' };
 const jevConfig = tokenRows[0].jev || {};
 let jev = null;
 if (tokenRows[0].jev_api_key && jevConfig.enabled === true && jevConfig.consent) {

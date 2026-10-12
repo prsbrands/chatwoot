@@ -37,6 +37,9 @@ const KNOWLEDGE_KEEP_NOUL = 0.3;
 const BOOKING_NOUL = 0.6;
 // Catalogo: errar para mais so poe os itens e precos no prompt.
 const CATALOG_NOUL = 0.6;
+// Casos: errar para mais so faz o MontaPrompt perguntar o tipo ao Jev, que
+// tem a sua propria confianca (0,8) antes de abrir alguma coisa.
+const CASE_NOUL = 0.6;
 const MAX_SECTIONS = 80;
 
 const g = $('Guard').first().json;
@@ -246,6 +249,19 @@ if (act.catalog) {
     },
   };
 }
+// Casos: o que so uma pessoa da empresa resolve. O MontaPrompt escolhe o
+// tipo (os da conta com a IA ligada) e abre o caso; vale tambem a volta do
+// cliente sobre um pedido ja feito, que vira nota no caso aberto.
+if (act.case) {
+  perguntas.case = {
+    type: 'noul',
+    instructions: 'Looking at `customer_last_message` and `recent_conversation`, does the customer need a person of the business to act on or decide something, beyond what an assistant can answer from general information?',
+    criteria: {
+      true: 'The customer reports a problem or defect with a product, order, delivery, payment or service; asks for an exchange, refund, cancellation, repair, warranty, a document or a change to an order or account; complains about the service; or follows up on a request already made.',
+      false: 'General questions about products, prices, opening hours or how things work; booking an appointment; buying, subscribing or asking for a quote; greetings, thanks or small talk.',
+    },
+  };
+}
 const temModelos = rota.light_model || rota.strong_model;
 if (act.model_routing && temModelos) {
   perguntas.model_routing = {
@@ -343,6 +359,9 @@ if (noul('booking') !== null) {
 if (noul('catalog') !== null) {
   decisions.catalog = { state: act.catalog, value: noul('catalog'), signal: noul('catalog') >= CATALOG_NOUL, acted: false };
 }
+if (noul('case') !== null) {
+  decisions.case = { state: act.case, value: noul('case'), signal: noul('case') >= CASE_NOUL, acted: false };
+}
 let modelo = null;
 if (a.model_routing && a.model_routing.choice) {
   const escolha = a.model_routing.choice;
@@ -379,6 +398,7 @@ if (decide('model_routing') && modelo && modelo !== rota.model) decisions.model_
 if (decide('language') && decisions.language && decisions.language.signal) decisions.language.acted = true;
 if (decide('booking') && decisions.booking && decisions.booking.signal) decisions.booking.acted = true;
 if (decide('catalog') && decisions.catalog && decisions.catalog.signal) decisions.catalog.acted = true;
+if (decide('case') && decisions.case && decisions.case.signal) decisions.case.acted = true;
 
 // ---- agir --------------------------------------------------------------------
 
@@ -403,6 +423,7 @@ if (handoff) {
   if (decisions.language) decisions.language.acted = false;
   if (decisions.booking) decisions.booking.acted = false;
   if (decisions.catalog) decisions.catalog.acted = false;
+  if (decisions.case) decisions.case.acted = false;
   await gravar(row);
   // Nota com briefing, etiqueta, bloqueio (opt_out) e abrir a conversa ficam
   // no no Passagem, o mesmo dos outros caminhos de handoff.
@@ -416,6 +437,7 @@ if (decisions.no_reply && decisions.no_reply.signal && decide('no_reply')) {
   if (decisions.language) decisions.language.acted = false;
   if (decisions.booking) decisions.booking.acted = false;
   if (decisions.catalog) decisions.catalog.acted = false;
+  if (decisions.case) decisions.case.acted = false;
   await gravar(row);
   return [];
 }
@@ -427,4 +449,5 @@ return segue({
   language: decisions.language && decisions.language.acted ? decisions.language.value : null,
   booking: Boolean(decisions.booking && decisions.booking.acted),
   catalog: Boolean(decisions.catalog && decisions.catalog.acted),
+  case: Boolean(decisions.case && decisions.case.acted),
 });

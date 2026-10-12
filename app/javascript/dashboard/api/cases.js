@@ -12,6 +12,10 @@ class CasesAPI extends ApiClient {
     return axios.get(this.url, { params });
   }
 
+  metrics(days) {
+    return axios.get(`${this.url}/metrics`, { params: { days } });
+  }
+
   overdueCount() {
     return axios.get(`${this.url}/overdue_count`);
   }

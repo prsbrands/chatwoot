@@ -302,9 +302,15 @@ Rails.application.routes.draw do
           namespace :cases do
             resources :types, only: [:index, :create, :update, :destroy]
             resource :settings, only: [:show, :update]
+            get 'bot/context', to: 'bot#context'
+            post 'bot/cases', to: 'bot#open'
+            post 'bot/customer_replies', to: 'bot#customer_replied'
+            post 'bot/relays/claims', to: 'bot#claim_relays'
+            post 'bot/relays/:id', to: 'bot#relay_result'
           end
           resources :cases, only: [:index, :show, :create, :update, :destroy], controller: 'cases/cases' do
             get :overdue_count, on: :collection
+            get :metrics, on: :collection
             member do
               post :start
               post :wait_customer
@@ -313,6 +319,7 @@ Rails.application.routes.draw do
               post :reopen
               post :note
               post :link_conversation
+              post :relay
             end
           end
           # CortexGen: memória da IA por contato

@@ -5,7 +5,7 @@ class Api::V1::Accounts::Cases::CasesController < Api::V1::Accounts::Cases::Base
   # Ids que têm que ser da conta: o find levanta 404 em vez de gravar o de outra.
   OWNED = { type_id: :cases_types, contact_id: :contacts, deal_id: :sales_deals, assignee_id: :users, team_id: :teams }.freeze
 
-  before_action :fetch_case, except: [:index, :create, :overdue_count]
+  before_action :fetch_case, except: [:index, :create, :overdue_count, :metrics]
   before_action -> { check_authorization(@case || ::Cases::Case) }
 
   # Os ativos por prazo (sem prazo no fim); resolvidos e cancelados, os mais
@@ -61,6 +61,17 @@ class Api::V1::Accounts::Cases::CasesController < Api::V1::Accounts::Cases::Base
   def link_conversation
     flow.link_conversation!(Current.account.conversations.find_by!(display_id: params.require(:conversation_id)))
     render :show
+  end
+
+  # A equipe pede à IA que diga algo ao cliente (Cases::CaseFlow#relay!).
+  def relay
+    flow.relay!(params.require(:body), params.require(:mode))
+    render :show
+  end
+
+  # Fase 3: os números do período (Cases::Metrics), 7 a 365 dias.
+  def metrics
+    render json: ::Cases::Metrics.new(Current.account, days: params.fetch(:days, 30).to_i.clamp(7, 365)).to_h
   end
 
   # O número vermelho do menu: atrasados da conta e os meus.

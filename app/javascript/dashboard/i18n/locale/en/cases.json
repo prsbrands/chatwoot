@@ -120,7 +120,14 @@
       "conversation_linked": "linked conversation #{id}",
       "customer_notified": "notified the customer",
       "note": "added a note",
-      "ai_note": "added a note"
+      "ai_note": "added a note",
+      "BY_CUSTOMER": "Customer",
+      "team_reply_answer": "asked the assistant to answer the customer ({status})",
+      "team_reply_ask": "asked the assistant to ask the customer ({status})",
+      "customer_replied": "the customer answered",
+      "customer_notified_opened": "the customer got the case number",
+      "customer_notified_resolved": "the customer was told the case is resolved",
+      "customer_not_notified": "the customer was not notified: {reason}"
     },
     "SETTINGS": {
       "HEADER": "Case settings",
@@ -151,10 +158,61 @@
       "FIELD_REQUIRED": "Required to resolve",
       "ADD_FIELD": "Add detail",
       "REMOVE_FIELD": "Remove detail",
-      "FIELD_COUNT": "no details | {count} detail | {count} details"
+      "FIELD_COUNT": "no details | {count} detail | {count} details",
+      "AI": "AI and customer",
+      "AI_MODE": "When the AI notices this kind of request",
+      "AI_INSTRUCTIONS": "When is it this type?",
+      "AI_INSTRUCTIONS_PLACEHOLDER": "A product arrived damaged or wrong, or stopped working under warranty",
+      "NOTIFY_CUSTOMER": "Tell the customer the case number and when it is resolved",
+      "NOTIFY_CUSTOMER_HINT": "Sent in the case conversation. A case the AI opens already gives the number in its reply.",
+      "NOTIFIES": "notifies the customer"
     },
     "API": {
       "ERROR": "Could not save. Try again."
+    },
+    "RELAY": {
+      "HEADER": "Reply through the assistant",
+      "HINT": "Write what the customer should know. The assistant sends it in the case conversation, in the customer's language and tone, within a minute.",
+      "PLACEHOLDER": "The replacement ships on Monday and arrives in 3 business days.",
+      "ANSWER": "Send answer",
+      "ASK": "Ask the customer",
+      "STATUS": {
+        "pending": "waiting to be sent",
+        "claimed": "being sent",
+        "sent": "sent",
+        "failed": "could not be sent"
+      }
+    },
+    "NOTICE_SKIPPED": {
+      "no_conversation": "the case has no conversation",
+      "inbox_does_not_deliver": "this inbox does not deliver messages",
+      "outside_reply_window": "outside the reply window of the channel"
+    },
+    "AI_MODE": {
+      "off": "The AI does not open this type",
+      "continue": "The AI opens it and keeps helping the customer",
+      "handoff": "The AI opens it and hands the conversation to the team"
+    },
+    "AI_MODE_SHORT": {
+      "continue": "AI opens and keeps helping",
+      "handoff": "AI opens and hands over"
+    },
+    "METRICS": {
+      "HEADER": "Case metrics",
+      "DESCRIPTION": "How cases are going: what came in, what was solved and how fast, and what is late now.",
+      "DAYS": "Last {days} days",
+      "COLUMN": {
+        "opened": "Opened",
+        "opened_by_ai": "By the AI",
+        "resolved": "Resolved",
+        "avg_resolution_hours": "Time to resolve",
+        "on_time_rate": "On time",
+        "active": "Active now",
+        "overdue": "Overdue now"
+      },
+      "BY_TYPE": "By type",
+      "BY_ASSIGNEE": "By assignee",
+      "EMPTY": "No cases in this period."
     }
   }
 }

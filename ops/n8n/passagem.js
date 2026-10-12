@@ -67,6 +67,7 @@ const TEXTOS = {
       content_filter: 'the model refused to answer', human_request: 'the customer asked for a person',
       mood: 'the customer seems upset', manipulation: 'the message tried to manipulate the bot',
       opt_out: 'the customer asked to stop receiving messages', reply_review: 'Jev held the bot reply',
+      case: 'the AI opened a case that the team handles',
     },
   },
   pt: {
@@ -79,6 +80,7 @@ const TEXTOS = {
       content_filter: 'o modelo se recusou a responder', human_request: 'o cliente pediu uma pessoa',
       mood: 'o cliente parece irritado', manipulation: 'a mensagem tentou manipular o bot',
       opt_out: 'o cliente pediu para não receber mais mensagens', reply_review: 'o Jev reteve a resposta do bot',
+      case: 'a IA abriu um caso que a equipe atende',
     },
   },
   es: {
@@ -91,6 +93,7 @@ const TEXTOS = {
       content_filter: 'el modelo se negó a responder', human_request: 'el cliente pidió una persona',
       mood: 'el cliente parece molesto', manipulation: 'el mensaje intentó manipular al bot',
       opt_out: 'el cliente pidió no recibir más mensajes', reply_review: 'Jev retuvo la respuesta del bot',
+      case: 'la IA abrió un caso que atiende el equipo',
     },
   },
 };

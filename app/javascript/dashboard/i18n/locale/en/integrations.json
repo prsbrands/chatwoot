@@ -300,7 +300,8 @@
           "FOLLOWUP": "Follow up when the customer goes quiet",
           "SALES": "Sales pipeline",
           "BOOKING": "Book appointments",
-          "CATALOG": "Sell from the catalog"
+          "CATALOG": "Sell from the catalog",
+          "CASES": "Open cases for the team"
         },
         "WEEK": "Last 7 days",
         "METRIC": {
@@ -329,7 +330,8 @@
           "deal_stage": "Last 30 days: Jev would move the deal on {signals} of {runs} customer messages.",
           "language": "Last 30 days: Jev told the language in {signals} of {runs} messages.",
           "booking": "Last 30 days: Jev saw a wish to book in {signals} of {runs} messages.",
-          "catalog": "Last 30 days: Jev saw interest in products, prices or plans in {signals} of {runs} messages."
+          "catalog": "Last 30 days: Jev saw interest in products, prices or plans in {signals} of {runs} messages.",
+          "case": "Last 30 days: Jev saw something only the team can solve in {signals} of {runs} messages."
         },
         "ACTIVITY": {
           "knowledge": {
@@ -396,6 +398,11 @@
             "TITLE": "Notice interest in products and plans",
             "WHAT": "Jev notices when the customer asks about the products, services, plans or prices you sell, asks for a quote, or wants to subscribe.",
             "DECIDES": "The bot gets the available catalog items with their prices and quotes only those. When the customer asks for a formal quote, it prepares a draft quote with the items and quantities and mentions the team to review and send it. When the customer decides to subscribe to a plan that can be paid online, it sends the subscription link."
+          },
+          "case": {
+            "TITLE": "Notice what only the team can solve",
+            "WHAT": "Jev notices when the customer reports a problem, makes a request or complaint, or asks something that needs a person of the business to act or decide.",
+            "DECIDES": "The bot picks the case type that fits (only types with the AI turned on in Case settings), opens the case and gives the customer its number. Depending on the type, it keeps helping while the team works on the case, or hands the conversation to the team. It also tells the customer the status of their open cases."
           }
         },
         "TEAM": {

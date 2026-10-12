@@ -19,9 +19,9 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
      sys.includes('# CUSTOMER MEMORY') && sys.includes('\nDuena de 3 tiendas en Colon; quiere el plan anual.\n') &&
      sys.includes('- Quiere el plan anual\n- Prefiere hablar despues de las 18h') && sys.indexOf('# CUSTOMER MEMORY') < sys.indexOf('# LANGUAGE') &&
      sys.includes('Never mention that you keep notes'));
-  r = await run(R + 'monta_prompt.js', nodes, {}, { 'ai_memory/bot/contact': [200, { summary: '', facts: [] }] });
+  r = await run(R + 'monta_prompt.js', nodes, {}, { 'ai_memory/bot/contact': [200, { summary: '', facts: [] }], 'cases/bot/context': [401, {}] });
   ok('MontaPrompt: sem memoria, sem secao', !r.out[0].json.body.messages[0].content.includes('CUSTOMER MEMORY') && !r.logs.length);
-  r = await run(R + 'monta_prompt.js', nodes, {}, { 'ai_memory/bot/contact': [500, {}] });
+  r = await run(R + 'monta_prompt.js', nodes, {}, { 'ai_memory/bot/contact': [500, {}], 'cases/bot/context': [401, {}] });
   ok('MontaPrompt: Rails fora do ar nao cala o bot', r.out[0].json.body && !r.out[0].json.body.messages[0].content.includes('CUSTOMER MEMORY') && r.logs.length === 1);
   const muitos = { summary: 'r'.repeat(1000), facts: Array.from({ length: 30 }, (_, i) => 'fato numero ' + i + ' ' + 'x'.repeat(40)) };
   r = await run(R + 'monta_prompt.js', nodes, {}, { 'ai_memory/bot/contact': [200, muitos] });

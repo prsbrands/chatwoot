@@ -176,6 +176,12 @@ onMounted(async () => {
                     type.fields.length
                   )
                 }}
+                <template v-if="type.ai_mode !== 'off'">
+                  · {{ $t(`CASES.AI_MODE_SHORT.${type.ai_mode}`) }}
+                </template>
+                <template v-if="type.notify_customer">
+                  · {{ $t('CASES.SETTINGS.NOTIFIES') }}
+                </template>
               </span>
             </div>
             <Button

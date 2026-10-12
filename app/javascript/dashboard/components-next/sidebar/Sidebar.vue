@@ -901,7 +901,7 @@ const baseMenuItems = computed(() => {
       label: t('SIDEBAR.CASES'),
       icon: 'i-lucide-life-buoy',
       to: accountScopedRoute('cases_index'),
-      activeOn: ['cases_index', 'case_show', 'cases_settings'],
+      activeOn: ['cases_index', 'case_show', 'cases_settings', 'cases_metrics'],
       getterKeys: {
         count: 'cases/getOverdueCount',
         countClass: 'bg-n-ruby-9 text-white',

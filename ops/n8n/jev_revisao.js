@@ -43,7 +43,13 @@ const jaVendido = Boolean(agenda.subscriptionUrl || agenda.quoted);
 const conferirVenda = Boolean(agenda.catalog) && !jaVendido && !ETIQUETA_VENDA.test(String(i.reply || '')) && g.jev &&
   g.jev.activities.catalog === 'deciding';
 
-if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento && !conferirVenda)) return segue();
+// E para os casos: com tipos que a IA abre e nenhum caso aberto neste turno,
+// uma resposta que diz que a equipe vai ver e retornar deixaria o cliente
+// esperando sem ninguem saber. Retida, a Passagem leva a conversa a equipe.
+const jaCaso = Boolean(agenda.caseOpened || agenda.caseReplied);
+const conferirCaso = agenda.caseTypes > 0 && !jaCaso && g.jev && g.jev.activities.case === 'deciding';
+
+if (!g.jev || (!g.jev.activities.reply_review && !conferirAgendamento && !conferirVenda && !conferirCaso)) return segue();
 const state = g.jev.activities.reply_review;
 
 const scrub = text => String(text || '')
@@ -121,7 +127,7 @@ async function gravar(row) {
 // cria o rascunho e a assinatura). A etiqueta sai do texto revisado e a
 // pergunta de promessa fica de fora, senão toda confirmação seria retida.
 const ETIQUETA = /\s*\[\[(BOOK|QUOTE|SUBSCRIBE) [^\]]+\]\]\s*/g;
-const agendando = jaMarcado || jaVendido || ETIQUETA.test(String(i.reply || ''));
+const agendando = jaMarcado || jaVendido || jaCaso || ETIQUETA.test(String(i.reply || ''));
 const respostaRevisada = String(i.reply || '').replace(ETIQUETA, ' ').trim();
 
 const perguntas = {
@@ -171,6 +177,16 @@ if (conferirVenda) {
     },
   };
 }
+if (conferirCaso) {
+  perguntas.false_case = {
+    type: 'noul',
+    instructions: 'Does `assistant_reply` tell the customer that the team or a person will look into, check, handle or get back to them about their request, or that their request, case or ticket was registered?',
+    criteria: {
+      true: 'The reply says someone will review, check, handle, contact or reply to the customer about it, or that it was registered or forwarded ("lo reviso con el equipo y te aviso", "un asesor te va a contactar", "registrei sua solicitação", "I have passed this on").',
+      false: 'The reply answers the question itself, asks the customer for details, offers times or prices, or explains how something works, without saying a person will follow up.',
+    },
+  };
+}
 const regras = (g.jev.reviewRules || []).slice(0, 10);
 regras.forEach((regra, k) => {
   perguntas['rule_' + k] = {
@@ -209,6 +225,8 @@ const falsoAgendamento = noul('false_booking') !== null && noul('false_booking')
 if (falsoAgendamento) motivos.push('tells the customer the appointment is booked, but nothing was booked in the Agenda');
 const falsaVenda = noul('false_sale') !== null && noul('false_sale') >= FLAG_NOUL;
 if (falsaVenda) motivos.push('promises a quote or a subscription link, but none was created');
+const falsoCaso = noul('false_case') !== null && noul('false_case') >= FLAG_NOUL;
+if (falsoCaso) motivos.push('says the team will follow up, but no case was opened');
 regras.forEach((regra, k) => {
   if (noul('rule_' + k) >= FLAG_NOUL) motivos.push('breaks the rule "' + regra + '"');
 });
@@ -223,7 +241,7 @@ const row = {
   decisions: { reply_review: decision },
 };
 
-if (decision.signal && (state === 'deciding' || falsoAgendamento || falsaVenda)) {
+if (decision.signal && (state === 'deciding' || falsoAgendamento || falsaVenda || falsoCaso)) {
   decision.acted = true;
   await gravar(row);
   return [{ json: Object.assign({}, i, {

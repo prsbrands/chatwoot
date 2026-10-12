@@ -50,6 +50,27 @@ class Cases::Case < ApplicationRecord
     active? && paused_at.nil? && due_at&.past?
   end
 
+  # A conversa por onde o cliente fala com o caso: a de origem ou, sem ela, a
+  # ligada mais recente.
+  def main_conversation
+    conversations.reorder('cases_conversations.origin DESC, cases_conversations.created_at DESC').first
+  end
+
+  # Idioma das mensagens ao cliente: o que a IA viu ao abrir o caso, o da
+  # conversa ou o da conta.
+  def customer_language
+    language = events.created.first&.metadata&.dig('language') || main_conversation&.language || account.locale
+    Cases::CustomerLabels.normalize(language)
+  end
+
+  # A equipe perguntou algo ao cliente pela IA e ele ainda não respondeu.
+  def awaiting_customer_info?
+    return false unless waiting_customer?
+
+    ask = events.team_reply.where("metadata->>'mode' = 'ask' AND metadata->>'relay' = 'sent'").last
+    ask.present? && !events.customer_replied.exists?(['id > ?', ask.id])
+  end
+
   # Campos obrigatórios do tipo sem valor: exigidos só ao resolver.
   def missing_required_fields
     type.fields.select { |field| field['required'] && field_values[field['key']].blank? && field_values[field['key']] != false }

@@ -114,6 +114,14 @@ onMounted(async () => {
       </div>
       <div class="flex gap-2">
         <Button
+          sm
+          slate
+          faded
+          icon="i-lucide-chart-column"
+          :label="$t('CASES.METRICS.HEADER')"
+          @click="router.push(accountScopedRoute('cases_metrics'))"
+        />
+        <Button
           v-if="isAdmin"
           sm
           slate

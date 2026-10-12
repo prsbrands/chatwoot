@@ -2,9 +2,11 @@ import { frontendURL } from '../../../helper/URLHelper';
 import CasesIndex from './pages/CasesIndex.vue';
 import CaseShow from './pages/CaseShow.vue';
 import CasesSettings from './pages/CasesSettings.vue';
+import CasesMetrics from './pages/CasesMetrics.vue';
 import { FEATURE_FLAGS } from '../../../featureFlags';
 
-// /cases/settings antes de /cases/:caseId, para não virar um caso.
+// /cases/settings e /cases/metrics antes de /cases/:caseId, para não virarem
+// um caso.
 export const routes = [
   {
     path: frontendURL('accounts/:accountId/cases'),
@@ -22,6 +24,15 @@ export const routes = [
     meta: {
       featureFlag: FEATURE_FLAGS.CASES,
       permissions: ['administrator'],
+    },
+  },
+  {
+    path: frontendURL('accounts/:accountId/cases/metrics'),
+    name: 'cases_metrics',
+    component: CasesMetrics,
+    meta: {
+      featureFlag: FEATURE_FLAGS.CASES,
+      permissions: ['administrator', 'agent'],
     },
   },
   {

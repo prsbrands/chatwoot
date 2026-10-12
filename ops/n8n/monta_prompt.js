@@ -332,6 +332,100 @@ if (jev.catalog) {
   }
 }
 
+// Casos (Cases::AiCases, no Rails; flag cases): os casos ativos do cliente
+// entram no prompt para a IA dizer em que pe estao, sem inventar. Se a equipe
+// perguntou algo pela IA e o cliente respondeu, a resposta vai para o caso
+// antes do LLM. Quando o Jev ve algo que so a equipe resolve (JevEntrada), ele
+// escolhe aqui o tipo, entre os da conta com a IA ligada, e o caso nasce antes
+// do LLM, como a agenda e o catalogo: o LLM so confirma o numero. Tipo que
+// passa a conversa (ai_mode handoff) sai pelo PrecisaHandoff depois da
+// resposta. Conta sem a flag (401) ou o Rails fora: o bot segue sem casos.
+const CASO_CONFIDENCE = 0.8;
+const SITUACAO = {
+  open: 'registered, waiting for the team',
+  in_progress: 'the team is working on it',
+  waiting_customer: 'the team is waiting for information from the customer',
+};
+async function escolherTipoDeCaso(tipos) {
+  const scrub = text => String(text || '')
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]');
+  const criteria = {
+    none: 'Nothing for the team to act on: a question the assistant can answer, a greeting, booking, buying, or something none of the other options covers.',
+  };
+  tipos.forEach(tipo => { criteria['c' + tipo.id] = tipo.name + (tipo.instructions ? ': ' + tipo.instructions.replace(/\s+/g, ' ') : '') + '.'; });
+  const recentes = messages.slice(-6).map(m => ({ from: m.role === 'user' ? 'customer' : 'assistant', text: scrub(m.content) }));
+  const res = await postJson('https://api.typesafe.ai/v1/systemone', { authorization: 'Bearer ' + g.jev.key }, {
+    model: 'jev-1.13.0',
+    state: { customer_last_message: scrub(messages[messages.length - 1].content), recent_conversation: recentes },
+    questions: {
+      case_type: {
+        type: 'choice',
+        instructions: 'Which kind of case should the business team open for what the customer needs in `customer_last_message`? Use `recent_conversation` for context.',
+        criteria: criteria,
+      },
+    },
+  }, 2500);
+  let answers = {};
+  try { answers = res.statusCode === 200 ? JSON.parse(res.body).answers || {} : {}; } catch (e) { answers = {}; }
+  const a = answers.case_type;
+  if (!a || a.choice === 'none' || a.confidence < CASO_CONFIDENCE) return null;
+  return tipos.find(tipo => 'c' + tipo.id === a.choice) || null;
+}
+
+const casosUrl = 'https://prs.cortexgen.cloud/api/v1/accounts/' + g.accountId + '/cases/bot/';
+let regraDeCasos = '';
+let casoAberto = null;
+let casosRespondidos = [];
+let tiposDeCaso = 0;
+try {
+  const casos = await getJson(casosUrl + 'context?conversation_id=' + g.conversationId, { api_access_token: g.chatUserToken });
+  tiposDeCaso = casos.types.length;
+  const fala = String(messages[messages.length - 1].content);
+  if (casos.open_cases.some(c => c.awaiting_customer_info)) {
+    const res = await postJson(casosUrl + 'customer_replies', { api_access_token: g.chatUserToken },
+      { conversation_id: g.conversationId, body: fala }, 20000);
+    if (res.statusCode >= 200 && res.statusCode < 300) casosRespondidos = JSON.parse(res.body).payload;
+    else console.error('MontaPrompt: cases/bot/customer_replies HTTP ' + res.statusCode + ' ' + String(res.body).slice(0, 200));
+  }
+  const tipo = jev.case && casos.types.length && !casosRespondidos.length ? await escolherTipoDeCaso(casos.types) : null;
+  if (tipo) {
+    const titulo = fala.split(/(?<=[.!?])\s|\n/)[0].trim().slice(0, 120);
+    const res = await postJson(casosUrl + 'cases', { api_access_token: g.chatUserToken },
+      { conversation_id: g.conversationId, type_id: tipo.id, title: titulo || tipo.name, description: fala, language: jev.language || null }, 20000);
+    if (res.statusCode >= 200 && res.statusCode < 300) casoAberto = JSON.parse(res.body);
+    else console.error('MontaPrompt: cases/bot/cases ' + tipo.id + ' HTTP ' + res.statusCode + ' ' + String(res.body).slice(0, 200));
+  }
+
+  const regras = [];
+  if (casoAberto && casoAberto.ai_mode === 'handoff') {
+    regras.push('This request is registered as case ' + casoAberto.number + ' and a person from the team will continue this conversation. ' +
+      'Tell the customer, in a short reply, that their request is registered with the number ' + casoAberto.number +
+      ' and that someone from the team will reply here shortly. Do not try to solve it yourself and do not promise a date or an outcome.');
+  } else if (casoAberto) {
+    regras.push((casoAberto.reused
+      ? 'The customer\'s open case ' + casoAberto.number + ' ("' + casoAberto.title + '") already covers this; what they just said was added to it. '
+      : 'Case ' + casoAberto.number + ' was just opened for the team about this. ') +
+      'Tell the customer, in a short reply, that their request is registered with the number ' + casoAberto.number +
+      ', that the team is handling it and that they will be told here. Do not promise a date or an outcome. Keep helping with anything else they ask.');
+  }
+  casosRespondidos.forEach(c => {
+    regras.push('The customer just answered the team\'s question about case ' + c.number + ' ("' + c.title + '"); it was passed to the team. ' +
+      'Thank them briefly and say the team continues with it. Do not ask anything else about it.');
+  });
+  const outros = casos.open_cases.filter(c => !casoAberto || c.id !== casoAberto.id);
+  if (outros.length) {
+    regras.push('The customer\'s open cases:\n' + outros.map(c => '- ' + c.number + ' "' + c.title + '" (' + c.type + '): ' + (SITUACAO[c.status] || c.status)).join('\n') +
+      '\nIf the customer asks about one, tell them where it stands in plain words. Never say it is solved and never promise a date or invent progress.');
+  }
+  if (regras.length || tiposDeCaso) {
+    regraDeCasos = '\n\n---\n\n# CASES\n\n' + (regras.length ? regras.join('\n\n') + '\n\n' : '') +
+      'Never give a case number that is not written here, and never say a case was opened unless this section says so.';
+  }
+} catch (error) {
+  if (!/ HTTP 40[13] /.test(error.message)) console.error(error.message);
+}
+
 // Memoria do cliente (AiMemory, no Rails): o resumo e os fatos que o workflow
 // "CortexGen Memória" tirou das conversas anteriores, em qualquer canal, mais
 // os que a equipe escreveu. Fixados primeiro; corta no teto para nao inchar o
@@ -369,7 +463,7 @@ const idioma = IDIOMAS[jev.language]
   : 'the language the customer is writing in (their latest messages)';
 const regraDeIdioma = '\n\n---\n\n# LANGUAGE\n\nReply in ' + idioma +
   ', even when these instructions or the knowledge base are written in another language.';
-const systemText = (String(composto || '') + regraDeAgenda + regraDeCatalogo + regraDeMemoria + regraDeIdioma)
+const systemText = (String(composto || '') + regraDeAgenda + regraDeCatalogo + regraDeCasos + regraDeMemoria + regraDeIdioma)
   .split('{{contact.first_name}}').join(firstName || '(desconocido)')
   .split('{{contact.email}}').join(g.contactEmail || '(desconocido)')
   .split('{{contact.call_summary}}').join(g.callSummary || '(vacio)');
@@ -455,4 +549,8 @@ return [{ json: {
   catalog: catalogoNoPrompt,
   subscriptionUrl: assinatura ? assinatura.url : null,
   quoted: Boolean(cotado),
+  caseTypes: tiposDeCaso,
+  caseOpened: casoAberto ? casoAberto.number : null,
+  caseHandoff: casoAberto && casoAberto.ai_mode === 'handoff' ? casoAberto.number : null,
+  caseReplied: casosRespondidos.length > 0,
 } }];

@@ -98,6 +98,9 @@ en:
     subscription_payment_failed: 'The renewal of the subscription %{subscription} was declined. The provider will retry; the subscription is past due.'
   cases:
     assigned: '%{mention} the case %{number} "%{title}" is with you: %{url}'
+    ai_opened: '%{mention} the AI opened the case %{number} "%{title}" from this conversation: %{url}'
+    customer_replied: '%{mention} the customer answered the question of the case %{number} "%{title}": %{url}'
+    relay_failed: '%{mention} the AI could not send the reply of the case %{number} to the customer: %{url}'
   errors:
     account:
       not_authorized: You are not authorized to access this account

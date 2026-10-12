@@ -44,6 +44,8 @@ const isEditing = ref(false);
 const draft = ref({});
 const fieldValues = ref({});
 const note = ref('');
+const relayText = ref('');
+const isRelaying = ref(false);
 const contactConversations = ref([]);
 const closeDialogRef = ref(null);
 
@@ -121,8 +123,10 @@ const run = async (action, payload = {}) => {
   try {
     const { data } = await CasesAPI.action(kase.value.id, action, payload);
     apply(data);
+    return true;
   } catch (error) {
     fail(error);
+    return false;
   }
 };
 
@@ -164,6 +168,21 @@ const saveText = async () => {
 const changeDue = value => {
   if (value === toLocalInput(kase.value.due_at)) return;
   update({ due_at: value ? new Date(value).toISOString() : null });
+};
+
+// A IA diz ao cliente, na conversa do caso, o que a equipe escreveu: uma
+// resposta, ou uma pergunta (o caso passa a esperar o cliente quando sai).
+const canRelay = computed(
+  () =>
+    kase.value?.conversations.length &&
+    ['open', 'in_progress', 'waiting_customer'].includes(kase.value.status)
+);
+const relay = async mode => {
+  isRelaying.value = true;
+  if (await run('relay', { body: relayText.value.trim(), mode })) {
+    relayText.value = '';
+  }
+  isRelaying.value = false;
 };
 
 const addNote = async () => {
@@ -327,6 +346,41 @@ onMounted(async () => {
               :label="$t('CASES.SAVE')"
               @click="update({ field_values: fieldValues })"
             />
+          </section>
+
+          <section
+            v-if="canRelay"
+            class="flex flex-col gap-2 p-4 rounded-xl bg-n-card outline outline-1 outline-n-container"
+          >
+            <h2 class="text-sm font-medium text-n-slate-12">
+              {{ $t('CASES.RELAY.HEADER') }}
+            </h2>
+            <p class="m-0 text-xs text-n-slate-11">
+              {{ $t('CASES.RELAY.HINT') }}
+            </p>
+            <TextArea
+              v-model="relayText"
+              :placeholder="$t('CASES.RELAY.PLACEHOLDER')"
+              :max-length="2000"
+            />
+            <div class="flex flex-wrap gap-2">
+              <Button
+                sm
+                icon="i-lucide-send"
+                :label="$t('CASES.RELAY.ANSWER')"
+                :disabled="!relayText.trim() || isRelaying"
+                @click="relay('answer')"
+              />
+              <Button
+                sm
+                slate
+                faded
+                icon="i-lucide-message-circle-question"
+                :label="$t('CASES.RELAY.ASK')"
+                :disabled="!relayText.trim() || isRelaying"
+                @click="relay('ask')"
+              />
+            </div>
           </section>
 
           <section class="flex flex-col gap-3">

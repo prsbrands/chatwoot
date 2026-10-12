@@ -10,7 +10,14 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Switch from 'dashboard/components-next/switch/Switch.vue';
-import { FIELD_TYPES, PRIORITIES, TYPE_COLORS, fieldKey } from '../constants';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import {
+  AI_MODES,
+  FIELD_TYPES,
+  PRIORITIES,
+  TYPE_COLORS,
+  fieldKey,
+} from '../constants';
 
 // Criar ou editar um tipo de caso: nome, cor, prazo, padrões e os campos
 // próprios do negócio. A chave do campo nasce do rótulo e não muda depois
@@ -35,6 +42,9 @@ const assigneeOptions = computed(() => [
   { value: NOBODY, label: t('CASES.UNASSIGNED') },
   ...agents.value.map(agent => ({ value: agent.id, label: agent.name })),
 ]);
+const aiModeOptions = computed(() =>
+  AI_MODES.map(value => ({ value, label: t(`CASES.AI_MODE.${value}`) }))
+);
 const fieldTypeOptions = computed(() =>
   FIELD_TYPES.map(value => ({ value, label: t(`CASES.FIELD_TYPES.${value}`) }))
 );
@@ -57,6 +67,9 @@ const open = (type = null) => {
     default_priority: type?.default_priority || 'normal',
     default_assignee_id: type?.default_assignee_id || NOBODY,
     active: type ? type.active : true,
+    ai_mode: type?.ai_mode || 'off',
+    ai_instructions: type?.ai_instructions || '',
+    notify_customer: Boolean(type?.notify_customer),
   };
   fields.value = (type?.fields || []).map(field => ({
     ...field,
@@ -206,6 +219,32 @@ defineExpose({ open });
         {{ $t('CASES.SETTINGS.ACTIVE') }}
         <Switch v-model="form.active" />
       </label>
+
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('CASES.SETTINGS.AI') }}
+        </span>
+        <label class="flex flex-col gap-1 text-label-small text-n-slate-11">
+          {{ $t('CASES.SETTINGS.AI_MODE') }}
+          <Select v-model="form.ai_mode" :options="aiModeOptions" />
+        </label>
+        <TextArea
+          v-if="form.ai_mode !== 'off'"
+          v-model="form.ai_instructions"
+          :label="$t('CASES.SETTINGS.AI_INSTRUCTIONS')"
+          :placeholder="$t('CASES.SETTINGS.AI_INSTRUCTIONS_PLACEHOLDER')"
+          :max-length="500"
+        />
+        <label
+          class="flex items-center justify-between gap-3 text-label-small text-n-slate-11"
+        >
+          {{ $t('CASES.SETTINGS.NOTIFY_CUSTOMER') }}
+          <Switch v-model="form.notify_customer" />
+        </label>
+        <p class="m-0 text-xs text-n-slate-11">
+          {{ $t('CASES.SETTINGS.NOTIFY_CUSTOMER_HINT') }}
+        </p>
+      </div>
 
       <div class="flex flex-col gap-2">
         <span class="text-sm font-medium text-n-slate-12">
