@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.23.1** (Casos, fases 2 e 3) · Pronta para deploy: **1.24.0** (Evolução da IA, imagem `test-b50n`) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.24.0** (Evolução da IA) · Pronta para deploy: **1.24.1** (rodada por persona, imagem `test-b51n`) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -32,7 +32,31 @@
 
 **12/10 (noite): Evolução da IA (1.24.0), pronta e não deployada.** Desenho e decisões do Paulo em `docs/cortexgen/evolucao.md`. Rodada diária às 3h do Panamá (workflow novo **CortexGen Evolução**, id `1PBKdso3sEHgI06s`, `ops/n8n/build_evolucao.py`, fuso do workflow `America/Panama` porque o n8n roda em New York) lê as conversas com sinal (passagem com resposta da equipe, retida pelo Jev, caso da IA respondido) e propõe trecho de base, correção ou regra de prompt; tela **AI evolution** (menu AI) com Proposals (editar, aplicar, recusar, desfazer) e Progress. Imagem `test-b50n` (commit `53c063b61`, clone `src-b30`), workflow em `/home/node/wf-evolucao.json`. Testes: smoke `ai_evolution` 27, `node ops/n8n/test/evolucao.test.js` 14; o seed da demo foi provado num banco descartável (13 conversas com sinal). **Ainda não visto:** o LLM real propondo sobre as conversas da demo (precisa do deploy).
 
-**Comece pelo deploy da 1.24.0** (seção abaixo) e o teste na conta de demonstração. Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
+**1.24.0 no ar desde 12/10** (rollback `v1-pre-b50`; SQL `bot_ai_evolution.sql` aplicado; workflow "CortexGen Evolução" publicado). Conta de demonstração: **conta 6 "Demo Evolução"**, criada com `ADMIN_EMAIL=technology@prsbrands.com` (o login do Paulo). Duas tentativas falharam antes:
+- o e-mail passado não era de usuário;
+- o `channel_kind: 'api'` era recusado pela constraint de `bot_channel_routes` (a tela de rotas não manda esse campo).
+
+**1º teste da rodada (12/10): zero propostas.** O DeepSeek, com uma chamada por conversa, devolveu `{"knowledge_update": {...}}` no lugar de `"kind"` (7 respostas viraram "0 propostas") e JSON ilegível em outras 6. Além disso, as repetidas não se juntariam.
+
+**1.24.1 (pronta, imagem `test-b51n`, commit `f1a7028de`):**
+- uma chamada por persona com até 10 conversas;
+- `response_format` json_object e o formato exato no prompt;
+- aceita o formato inventado;
+- timeout de 180 s no nó;
+- `record!` recebe `conversations` + `evidence` por proposta.
+
+Workflow em `/home/node/wf-evolucao2.json` (mesmo id, `1PBKdso3sEHgI06s`).
+
+**Credencial no n8n:** os nós LLM clonados apontam para "OpenRouter account 2" (id `7cHXlIpMmL4YiyMj`, igual ao bot). Depois do import, o Paulo reescolheu a credencial na tela. Talvez seja preciso de novo a cada import, e também no LLMRepasse do CortexGen Caso.
+
+**Deploy da 1.24.1:**
+1. `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b51`
+2. `docker tag cortexgen-chat:test-b51n cortexgen-chat:v1`
+3. Recreate de rails e sidekiq.
+4. `n8n import:workflow --input=/home/node/wf-evolucao2.json`, conferir a credencial no LLMEvolucao, Publish e `docker restart`.
+5. Recriar a demo: APAGAR=1; `docker cp` do seed do `src-b30`; seed com `ADMIN_EMAIL=technology@prsbrands.com`. As conversas da conta 6 já ficaram marcadas como lidas.
+6. Execute workflow.
+7. Tag `cg-v1.24.1` (o `cg-v1.24.0` vai no `53c063b61`). Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
 
 O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
 
