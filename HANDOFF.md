@@ -1,64 +1,53 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-12 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.24.0** (Evolução da IA) · Pronta para deploy: **1.24.1** (rodada por persona, imagem `test-b51n`) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-13 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.24.1** (Evolução da IA, rodada por persona) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
 ## ▶️ PRÓXIMA SESSÃO — comece aqui
 
-**⚠️ O repositório mudou de disco (06/10).** O "1TB-STORAGE 2" começou a perder arquivos (`Input/output error` em `lib/`, arquivos de `app/models/concerns/` sumidos). O projeto agora vive em **`/Volumes/KINGSTON/prsbrands/chatwoot`**, clonado do GitHub, com as tags, a `docs/comercial/` (base de conhecimento, fora do git), `.env`, `.claude/` e `.codex/` resgatados. A memória do Claude foi copiada para `~/.claude/projects/-Volumes-KINGSTON-prsbrands-chatwoot/memory`. **Não usar mais o caminho antigo.** Sobras no disco interno, que podem ser apagadas: `~/prsbrands/chatwoot` (clone) e `~/prsbrands/resgate-chatwoot` (os arquivos resgatados).
+**Repositório:** `/Volumes/KINGSTON/prsbrands/chatwoot` desde 06/10 (o "1TB-STORAGE 2" estava perdendo arquivos; não usar o caminho antigo). Sobras no disco interno que podem ser apagadas: `~/prsbrands/chatwoot` e `~/prsbrands/resgate-chatwoot`.
 
-**Estado em uma linha:** entre 02 e 06/10 saíram 1.1.0 → 1.19.6, seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`). Os grandes blocos:
-- **Agenda com a IA** (1.6–1.10): Google Calendar por pessoa, tipos e horários livres, a IA marca, desmarca e muda horário pelo WhatsApp, lembretes, Meet;
-- **Uso de IA e teto mensal** (1.11.0): custo real por conta e teto no Super Admin;
-- **Comercial** (1.12–1.16): catálogo, empresa, orçamentos, faturas e recibos com PDF, link público, envio por WhatsApp e e-mail; **cobrança online** com Stripe (1.14), Mercado Pago Brasil (1.15) e Yappy (1.16), pagamento inteiro ou parcial, e recibo automático; **assinaturas** mensais e anuais nos três (1.17); a **IA vende pelo catálogo** (preço, cotização em rascunho, link de assinatura) e a **vitrine pública** (1.18–1.19).
+**O sistema ainda não está em produção real** (Paulo, 12/10). Ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso", terminar módulos inteiros e testar com dados sintéticos (memória `sistema-uso-exclusivo-do-paulo`). A Fase 2 do Comercial em uso real também ficou para o fim. Navegação e telas mudam sem esboço.
 
-**O que a sessão de 06/10 (tarde e noite) fez**, de 1.16.1 a 1.19.6:
-- **Comercial em produção:** Stripe, Mercado Pago e Yappy com chaves reais; o **Yappy foi provado com dinheiro real** (FAT-2026-0005, recibo REC-2026-0003). O Paulo decidiu **não** testar Stripe e MP com dinheiro real por enquanto: se aparecer problema, trata-se o caso.
-- **Formas de pagamento:** exclusão pela lista (1.16.3), com histórico protegido. Conta 1: `Credit Card` (id 2, Stripe), `Mercado Pago BR` (id 4), `Yappy Online` (id 5).
-- **Fase 3d, assinaturas** (1.17.0 Stripe Billing, 1.17.1 Mercado Pago preapproval, 1.17.2 Yappy com cobrança assistida). A assinatura 1 (CortexGen 1, pendente) foi criada pela IA no teste; ninguém assinou de verdade ainda.
-- **Fase 4, a IA vende pelo catálogo** (1.18.0 a 1.19.6, provada em uso real na conversa 89) e **vitrine pública** `/c/…` (1.19.0, ligada na conta 1). Rascunhos da IA têm o **número vermelho** em Quotes & invoices (1.19.3).
-- **Lição que custou 5 versões só de n8n (1.19.1–1.19.6):** o LLM esquece as etiquetas `[[QUOTE]]`/`[[SUBSCRIBE]]`, como esquecia o `[[BOOK]]`. A ação passou a ser decidida pelo Jev **antes** do LLM. Memória `bot-acao-pelo-jev-antes-do-llm`.
+**Estado em 13/10: 1.24.1 no ar.** De 06/10 para cá, os módulos novos, todos seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`):
 
-**08/10: Memória da IA (1.20.0), no ar e provada.** Resumo e fatos por contato, em todos os canais: o workflow novo **"CortexGen Memória"** (a cada 10 min, modelo leve da persona) atualiza a memória das conversas paradas há 30 min; o `MontaPrompt` lê `GET ai_memory/bot/contact` e põe a seção `# CUSTOMER MEMORY` antes do `# LANGUAGE`; a equipe edita no bloco **AI memory** do painel da conversa e na aba **AI memory** do contato (fato manual, corrigido ou fixado a IA não toca). Junto: **juntar contatos** agora leva negócio, tarefas, compromissos, documentos, assinaturas e memória (antes negócio/tarefas eram apagados com o absorvido). Imagem `test-b43n` (commit `f27a5ffdf`, clone `src-b29`) é a `:v1` desde 08/10; rollback `v1-pre-b43`. 1ª rodada às 07:00 (Panamá): 3 contatos (2 da conta 1, 1 da conta 2) e 9 fatos; o Paulo achou bom. Detalhe na seção **Memória da IA** abaixo.
+| Módulo | Versões | Desenho | Estado |
+|---|---|---|---|
+| Memória da IA | 1.20.0 | seção **Memória da IA** abaixo | No ar e provada (08/10) |
+| Fatura automática, texto depois do PDF, nota no aceite/recusa | 1.21.0–1.21.2 | `docs/cortexgen/comercial.md` | No ar |
+| **Casos**, fase 1 | 1.22.0 | `docs/cortexgen/casos.md` | No ar; flag `cases` na conta 1 |
+| **Casos**, fases 2 e 3: a IA abre e repassa, avisos e métricas | 1.23.0–1.23.1 | `docs/cortexgen/casos.md` | No ar; provado na conversa 89 |
+| **Evolução da IA** | 1.24.0–1.24.1 | `docs/cortexgen/evolucao.md` | No ar; provada na conta de demonstração |
 
-**12/10: Casos, fase 1 (1.22.0), no ar desde 12/10, flag `cases` ligada na conta 1.** Módulo genérico de casos (o pedido do cliente que não se resolve na hora): tipos por conta com campos próprios, prazo que pausa esperando o cliente, situações com desfecho, histórico, notas, menção a quem recebe, número vermelho de atrasados no menu, seção no Radar, bloco no painel da conversa e aba no contato. Desenho e decisões do Paulo em `docs/cortexgen/casos.md` (fases 2 e 3: a IA abre e repassa; avisos ao cliente e métricas). Imagem `test-b47n` (commit `2ff3ded1a`, clone `src-b30`), smoke completo 550/550, telas conferidas no navegador numa instância descartável. Rollback: `v1-pre-b47` (1.21.2). Próximo rollback: `v1-pre-b48`.
+**Imagem:** a `:v1` é a `test-b51n` (1.24.1, commit `f1a7028de`, clone `src-b30`). Rollbacks: `v1-pre-b51` (1.24.0), `v1-pre-b50` (1.23.1), `v1-pre-b49` (1.23.0), `v1-pre-b48` (1.22.0), `v1-pre-b47` (1.21.2). O próximo é `v1-pre-b52`.
 
-**12/10 (tarde): Casos, fases 2 e 3 (1.23.0), no ar desde 12/10.** Bot publicado (`versionId` 621e20bb…), CortexGen Caso publicado e rodando a cada minuto, rollback `v1-pre-b48`. **Provado na conversa 89:** "me llego el producto roto" abriu o CAS-2026-0001 (Problema); a 2ª mensagem do mesmo assunto virou nota no mesmo caso e a IA deu o número ao cliente. **Armadilha vista:** a regra de Automação da conta com condição do Jev ("reclamacao", recurso do upstream 4.18, `Captain::AutomationConditionService`) atribuía a conversa ao Paulo no mesmo instante, e o `Responde` não fala com conversa atribuída: o caso abria e o cliente ficava sem o número. O Paulo tirou a ação "Assign agent" da regra. Tipos da conta 1: Problema segue atendendo; Solicitud, Reclamo e Financiero passam a conversa; Duda sem IA. A IA abre casos pelo Jev, passa a conversa ou segue atendendo conforme o tipo, a equipe responde pelo assistente (workflow novo **CortexGen Caso**), avisos ao cliente e métricas. Detalhe em `docs/cortexgen/casos.md`. Imagem `test-b48n` (commit `d44a81d9d`, clone `src-b30`). Os dois workflows já estão no container do n8n: `/home/node/wf-casos-bot.json` (bot com 6 nós trocados, base = publicado em 12/10, cópia em `/home/node/wf-pre-casos.json`) e `/home/node/wf-caso.json` (CortexGen Caso). **Sem migration.**
+**Tags e GitHub:** no GitHub até `cg-v1.23.1`. **Faltam** `cg-v1.24.0` (no `53c063b61`) e `cg-v1.24.1` (no `f1a7028de`), além dos commits de docs e ops depois deles. O push é do Paulo:
+`git tag cg-v1.24.0 53c063b61 && git tag cg-v1.24.1 f1a7028de && git push origin feature/cortexgen-whitelabel --tags`
 
-**O sistema ainda não está em produção real** (Paulo, 12/10): ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso" (memória `sistema-uso-exclusivo-do-paulo`).
+**Workflows do n8n** (todos com nós no repo, `ops/n8n/`):
+- **bot** `pd5V9pdaldRLUu4C`, publicado com os nós do `29d8f6236`. O patch de casos é `ops/n8n/patch_casos.py <export> <saída> <commit publicado>`.
+- **CortexGen Caso** `v8JhnhlKRAoBmFxt`, a cada minuto (repasse da equipe, `build_caso.py`).
+- **CortexGen Evolução** `1PBKdso3sEHgI06s`, todo dia às 3h, fuso do workflow `America/Panama` porque o n8n roda em New York (`build_evolucao.py`).
+  - Publicado com o bloco de 20 conversas por persona, commit `b2b68e786`.
+  - **Faltava o `docker restart n8n-y4jd-n8n-1` depois do último import** (13/10, o container estava de pé desde as 13:28 UTC). Conferir.
+- Os nós LLM clonados usam a credencial **"OpenRouter account 2"** (`7cHXlIpMmL4YiyMj`). Depois do import, o Paulo reescolheu a credencial na tela. Conferir a cada import, e também no LLMRepasse do CortexGen Caso.
 
-**1.23.1 (no ar desde 12/10, rollback `v1-pre-b49`; provada às 19:11 UTC: a foto sem texto foi ao CAS-2026-0001 e o Paulo foi mencionado):** no teste do repasse, a equipe pediu uma foto, o cliente mandou só a foto e ela não foi ao caso (o `Guard` ignora mensagem sem texto). Agora o Rails leva a resposta: `CortexgenMessage#execute_after_create_commit_callbacks` enfileira o `Cases::CustomerReplyJob` para toda mensagem do cliente (conta com `cases`), que grava `customer_replied` com os anexos (miniatura no histórico). O `MontaPrompt` não grava mais (rota `cases/bot/customer_replies` removida), só lê `customer_replied_recently` para agradecer. Imagem `test-b49n` (commit `29d8f6236`), bot em `/home/node/wf-casos2-bot.json` (só o MontaPrompt; cópia do publicado em `/home/node/wf-pre-casos2.json`). Deploy: `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b49` → `docker tag cortexgen-chat:test-b49n cortexgen-chat:v1` → recreate rails sidekiq → import do bot → recarregar → Publish → tag `cg-v1.23.1`. A foto do teste de 12/10 ficou de fora (chegou antes): o CAS-2026-0001 segue esperando o cliente.
+**Contas de teste:**
+- Conta 1, **conversa 89**: o Paulo faz o papel do cliente pelo WhatsApp QR (inbox 33).
+- **"Demo Evolução"** (a última foi a conta **7**), com 14 conversas sintéticas de uma loja de cortinas.
+  - Recriar: `APAGAR=1` e o seed `ops/demo/evolucao_seed.rb` com `ADMIN_EMAIL=technology@prsbrands.com`, que é o login do Paulo. O e-mail do contato da conversa 89 não é usuário. Copiar o seed para o container (`docker cp`) a cada recreate.
+  - Na conta 7, a rodada de 13/10 deu **8 propostas** boas. Já testados: aplicar, desfazer e recusar.
+  - A conversa do caso (política de troca) ainda não foi lida: o repasse a deixou ativa, e a rodada só lê conversas paradas há 2 h.
 
-**12/10 (noite): Evolução da IA (1.24.0), pronta e não deployada.** Desenho e decisões do Paulo em `docs/cortexgen/evolucao.md`. Rodada diária às 3h do Panamá (workflow novo **CortexGen Evolução**, id `1PBKdso3sEHgI06s`, `ops/n8n/build_evolucao.py`, fuso do workflow `America/Panama` porque o n8n roda em New York) lê as conversas com sinal (passagem com resposta da equipe, retida pelo Jev, caso da IA respondido) e propõe trecho de base, correção ou regra de prompt; tela **AI evolution** (menu AI) com Proposals (editar, aplicar, recusar, desfazer) e Progress. Imagem `test-b50n` (commit `53c063b61`, clone `src-b30`), workflow em `/home/node/wf-evolucao.json`. Testes: smoke `ai_evolution` 27, `node ops/n8n/test/evolucao.test.js` 14; o seed da demo foi provado num banco descartável (13 conversas com sinal). **Ainda não visto:** o LLM real propondo sobre as conversas da demo (precisa do deploy).
-
-**1.24.0 no ar desde 12/10** (rollback `v1-pre-b50`; SQL `bot_ai_evolution.sql` aplicado; workflow "CortexGen Evolução" publicado). Conta de demonstração: **conta 6 "Demo Evolução"**, criada com `ADMIN_EMAIL=technology@prsbrands.com` (o login do Paulo). Duas tentativas falharam antes:
-- o e-mail passado não era de usuário;
-- o `channel_kind: 'api'` era recusado pela constraint de `bot_channel_routes` (a tela de rotas não manda esse campo).
-
-**1º teste da rodada (12/10): zero propostas.** O DeepSeek, com uma chamada por conversa, devolveu `{"knowledge_update": {...}}` no lugar de `"kind"` (7 respostas viraram "0 propostas") e JSON ilegível em outras 6. Além disso, as repetidas não se juntariam.
-
-**1.24.1 (pronta, imagem `test-b51n`, commit `f1a7028de`):**
-- uma chamada por persona com até 10 conversas;
-- `response_format` json_object e o formato exato no prompt;
-- aceita o formato inventado;
-- timeout de 180 s no nó;
-- `record!` recebe `conversations` + `evidence` por proposta.
-
-Workflow em `/home/node/wf-evolucao2.json` (mesmo id, `1PBKdso3sEHgI06s`).
-
-**Credencial no n8n:** os nós LLM clonados apontam para "OpenRouter account 2" (id `7cHXlIpMmL4YiyMj`, igual ao bot). Depois do import, o Paulo reescolheu a credencial na tela. Talvez seja preciso de novo a cada import, e também no LLMRepasse do CortexGen Caso.
-
-**Deploy da 1.24.1:**
-1. `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b51`
-2. `docker tag cortexgen-chat:test-b51n cortexgen-chat:v1`
-3. Recreate de rails e sidekiq.
-4. `n8n import:workflow --input=/home/node/wf-evolucao2.json`, conferir a credencial no LLMEvolucao, Publish e `docker restart`.
-5. Recriar a demo: APAGAR=1; `docker cp` do seed do `src-b30`; seed com `ADMIN_EMAIL=technology@prsbrands.com`. As conversas da conta 6 já ficaram marcadas como lidas.
-6. Execute workflow.
-7. Tag `cg-v1.24.1` (o `cg-v1.24.0` vai no `53c063b61`). Antes, lembre o **app OAuth do Google** (vence ~09/10). O GitHub ficou em dia em 06/10.
-
-O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem mudar sem esboço prévio (memória `sistema-uso-exclusivo-do-paulo`). A arquitetura do Comercial está em `docs/cortexgen/comercial.md`; o desenho da fase 3 está em `docs/cortexgen/comercial-fase3.md`.
+**Armadilhas de 12–13/10 (não repetir):**
+- **Regra de Automação com condição do Jev** (recurso do upstream 4.18, `Captain::AutomationConditionService`). A regra "reclamacao" atribuía a conversa ao Paulo no mesmo segundo, e o `Responde` não fala com conversa atribuída: o caso abria e o cliente ficava sem o número. O Paulo tirou a ação "Assign agent" da regra.
+- **Mensagem sem texto não passa pelo bot** (o `Guard` a ignora). A foto que a equipe pediu não chegava ao caso. Correção na 1.23.1: o Rails leva a resposta (`CortexgenMessage` → `Cases::CustomerReplyJob`).
+- **O DeepSeek inventa formato de JSON:** escreveu `{"knowledge_update": {...}}` no lugar de `"kind"`. Correção: `response_format` json_object, o formato exato no prompt e o parse tolerante (1.24.1).
+- **LLM em chamadas separadas não junta o que se repete.** A Evolução lê todas as conversas da persona numa chamada só, até 20.
+- **`bot_channel_routes.channel_kind` tem constraint**, e a tela de rotas não manda o campo. Personas no Supabase usam `display_name`, não `name`.
+- **O `--env-file .env` é relativo.** Rodado de outra pasta, a migration aborta com "Missing secret_key_base". Sempre `cd /opt/cortexgen-chat` antes.
+- **A limpeza da VPS apagou as `v1-pre-*` antigas**, e restaram poucas.
 
 ### O que está no ar (conta 1, PRS Global Business)
 
@@ -104,6 +93,10 @@ O sistema ainda é de uso **exclusivo do Paulo**: navegação e telas podem muda
 | 1.19.4 | **Teste da assinatura (21:29, conversa 89):** catálogo 0,98, mas o LLM disse "el enlace te llega" sem `[[SUBSCRIBE]]`; `false_sale` 0,97 reteve e passou para a equipe. Correção (como a Agenda em 03/10): no `MontaPrompt`, `choice` do Jev entre os planos assináveis (+ `none`, ≥ 0,8) → `POST bot/subscriptions` antes do LLM; a regra 4 só pede a confirmação; o `Responde` manda o link de `subscriptionUrl` (a etiqueta vira reserva); o `JevRevisao` trata como feito. Jev real: 1,0 / 0,99 / none 0,99 / none 0,99 / anual 1,0. `node ops/n8n/test/catalogo.test.js`: 18 OK. **Só n8n** (MontaPrompt, Responde, JevRevisao) | Publicada em 06/10 (export conferido). **Provada às 21:35:** "quiero assinar la subscripcion CortexGen 1" → assinatura 1 criada (Credit Card) e o link `/s/…` na mensagem seguinte |
 | 1.19.5 | Bolha do link (assinatura e Meet) sem rótulo quando o Jev não decide o idioma ("👉 <link>"; antes caía no inglês "Subscribe here:"; visto às 21:35 com "assinar" + espanhol, idioma pt 0,37). 19 OK no teste dos nós. **Só n8n** (Responde) | Não publicada sozinha: entra na 1.19.6 |
 | 1.22.0 | **Casos, fase 1** (flag `cases`). Migration `20261012000001` (`cases_types`, `cases_cases`, `cases_conversations`, `cases_events`; prefixo em `accounts.settings.cases_prefix`). `Cases::CaseFlow` grava todo evento; rotas `cases`, `cases/types`, `cases/settings`, `cases/overdue_count`; telas `/cases`, `/cases/:id`, `/cases/settings`; bloco no `ContactPanel`, aba no contato, `Sales::Radar#overdue_cases`. Smoke `cases` 61 | Sim, 12/10 (`test-b47n`; rollback `v1-pre-b47`). Flag ligada na conta 1 |
+| 1.24.1 | **Evolução da IA, rodada por persona:** uma chamada com até 20 conversas (`POR_RODADA`, n8n), `response_format` json_object, formato exato no prompt, parse tolerante, 180 s no nó; `record!` recebe `conversations` e `evidence` por proposta | Sim, 13/10 (`test-b51n`; rollback `v1-pre-b51`). Demo: 8 propostas boas |
+| 1.24.0 | **Evolução da IA** (flag `ai_evolution`). Migration `20261013000001` (`ai_evolution_scans`, `ai_evolution_suggestions`); `AiEvolution::Bot` (sinais, reserva, gravação), `::Applier` (aplicar na base/prompt, desfazer com guarda), `::Progress`; tela `/ai-evolution`; workflow CortexGen Evolução; SQL `bot_ai_evolution.sql` (kind `evolution`) | Sim, 12/10 (`test-b50n`; rollback `v1-pre-b50`) |
+| 1.23.1 | Resposta do cliente ao caso pelo Rails, com anexo (`Cases::CustomerReplyJob`) | Sim, 12/10, provada com foto |
+| 1.23.0 | **Casos, fases 2 e 3:** atividade `case` do Jev, `# CASES` no `MontaPrompt`, rede `false_case`, `PrecisaHandoff` no repo, repasse da equipe (CortexGen Caso), `Cases::CustomerNotice`, `Cases::Metrics` | Sim, 12/10, provada na conversa 89 |
 | 1.21.2 | **Nota com menção no aceite e na recusa pelo link** (`Commerce::TeamNote`, compartilhado com as notas da IA e da fatura automática): menciona o responsável do negócio ou o 1º admin, com valor e link do documento. Antes a recusa passava em silêncio. Smoke `commerce_auto_invoice` 15 | Sim, 08/10 (`test-b46n`; rollback `v1-pre-b46`) |
 | 1.21.1 | **Texto do documento numa mensagem própria:** o adaptador do OpenWA manda só o arquivo e descarta o texto junto do anexo (o Paulo recebeu só o PDF). `DocumentSender#to_conversation!` manda o PDF sozinho e depois o texto (`chat_quote`/`chat_invoice`/`chat_receipt` em `DocumentLabels`, es/pt/en, com o primeiro nome, o valor — saldo na fatura — e o link). O lembrete do Yappy agora são 2 mensagens | Sim, 08/10 (`test-b45n`; rollback `v1-pre-b45`) |
 | 1.21.0 | **Fatura automática no aceite** (pedido do Paulo no teste da Fase 2: aceitar, gerar a fatura e enviar eram cliques da equipe). Migration `20261008000002` (`commerce_profiles.auto_invoice_on_accept`, falso por padrão), chave em Company & payments → Automation. O "Aceptar" da página pública agenda o `Commerce::AutoInvoiceJob`: `to_invoice!`, envio pela conversa e pelo `delivered_email` da cotização e nota interna. Só o aceite pelo link dispara. Smoke `commerce_auto_invoice` 12 | Sim, 08/10 (`test-b43n`→`test-b44n`; rollback `v1-pre-b44`). Chave ainda desligada na conta 1 |
@@ -232,28 +225,26 @@ Conferir: `docker compose ps`, a tela `/cases` abrindo, o bloco Cases no painel 
 
 ### Fila, na ordem que eu seguiria
 
-0. **Testar o repasse na conversa 89** (pergunta pela IA, resposta do cliente no histórico). Depois, próxima frente: **Evolução da IA** (DeskComm), com conversas de teste montadas, porque não há dados reais.
-0. **Memória da IA, ajustes possíveis em uso:** os fatos da 1ª rodada repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"); apertar o prompt do `memoria_monta.js` se incomodar. Roda em toda conta com bot (a conta 2 também paga).
-1. ~~**App OAuth do Google**~~ (`cortexgencrm`): **publicado em produção pelo Paulo em 09/10.** Calendar da conta 1 **reconectado** em 09/10 (token novo, sem prazo de 7 dias). Escopo do Calendar é sensível: se o Google pedir verificação, a tela de consentimento mostra o aviso de app não verificado até sair.
-2. **Escolher a próxima frente com o Paulo:**
-   - **Fechar a Fase 2 em uso real** (começou em 08/10): cotização, envio, fatura e a página de pagamento conferidos (documentos 16 e 17); o Paulo aceitou o COT-2026-0006 pelo link com a fatura automática ligada e a FAT-2026-0007 saiu sozinha (1.21.0); o "Rechazar" pelo link foi provado (COT-2026-0004, 08:34) e o texto depois do PDF saiu na conversa 89 (1.21.1); falta o pagamento manual com recibo;
-   - **A Fase 2 em uso real fica para o fim** (decisão do Paulo em 09/10: depois de terminar o que está programado e da aprovação final).
-   - **Módulos do DeskComm ainda sem equivalente:** ~~Casos~~ (fase 1 na 1.22.0), Evolução da IA, Prospecção/Campanhas (maior risco de ban no QR). A Memória da IA saiu na 1.20.0; a "memória da organização" do DeskComm já é a nossa base de conhecimento.
-3. **Jev: `reply_review` decidindo na conta 1 desde 08/10** (All in AI → AI Providers → cartão do Jev → "Check the reply before sending"). Medido antes em 30 dias (`bot_jev_calls`, phase review): 68 revisões, 9 sinais, 4 que saíram ao cliente só por observar (2 confirmações de reunião sem marcar, 1 promessa de cotização sem criar, 1 resposta fora da pergunta), nenhum falso positivo claro; `promises` ≥ 0,7 só em promessas reais (6), < 0,2 em 46 de 59. Amostra pequena (quase só conversas 88/89): **acompanhar as retenções** (nota "Jev retuvo…") e voltar para observar se aparecer injusta. Script da auditoria: `rails runner` lendo `bot_jev_calls?phase=eq.review` pelo `Integrations::Botlayer::Client#get`.
-4. **Ver em uso real o que ainda não foi visto:**
-   - assinatura assinada de verdade (Stripe/MP/Yappy), com a fatura do ciclo e o recibo;
-   - renovação assistida do Yappy (fatura 3 dias antes, lembrete, atraso);
-   - Agenda: link do Meet logo após marcar (1.9.3) e mudança de horário; registrar a presença do compromisso 2.
-5. **Pequenos ajustes possíveis do catálogo na IA** (só se aparecerem em uso):
-   - pedido com vários itens ou mudança de quantidade ainda depende da etiqueta `[[QUOTE]]` (o Jev escolhe um item só);
-   - a quantidade vem de regex (`quantidadePedida`, no `MontaPrompt`).
+Regra do Paulo (12/10): terminar os módulos combinados com dados de teste. Tudo o que depende de uso real vai para a **fase final**, antes da aprovação.
+
+1. **Evolução da IA: decidir com o Paulo se liga a flag `ai_evolution` na conta 1** (hoje só na demo). Ligada, a rodada das 3h passa a ler as conversas 88 e 89 de teste. Na demo, conferir:
+   - a proposta da **política de troca**, que vem do caso, na próxima rodada (Execute de novo 2 h depois do último repasse);
+   - a junção, com o bloco de 20: recriar a demo e ver se os cinco envios viram uma ou duas propostas.
+2. **Próxima frente do DeskComm: Prospecção/Campanhas** (o último módulo sem equivalente). É o maior risco de banimento no WhatsApp por QR: desenhar com o Paulo, como Casos e Evolução, com quickstart de desenho, decisões e um `docs/cortexgen/*.md` aprovado antes do código.
+3. **Memória da IA, ajuste possível:** os fatos repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"). Apertar o prompt do `memoria_monta.js`.
+4. **Casos, o que ficou de fora** (`docs/cortexgen/casos.md`): a IA preencher os campos próprios do tipo (lista e sim/não dariam `choice`/`noul` do Jev) e o prazo em horário comercial.
+5. **Revisão cosmética:** acentos, modo escuro e celular. Inclui as telas novas (Cases, Case settings, Case metrics, AI evolution), que só têm o `en.json`: pela regra do projeto, as outras línguas vêm pelo Crowdin.
 6. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
-7. **SMS da inbox 15:** persona configurada, bot não ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
+7. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
 8. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
-    - clones `src-merge`, `src-f2`, `src-417`, `src-b1` a `src-b27` (o vivo é `src-b28`; o `src-b15` é o de lint, com `node_modules`); `dev-b30` fica (smoke rápido, `dev-smoke.sh`);
-    - imagens `test-b*n` antigas e `v1-pre-b21` a `v1-pre-b40`; manter `v1` e os dois últimos `v1-pre-*`;
-    - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json` (e os `/home/node/wf-*.json` no container do n8n), `fu-*.json`, `build-*.log`, `smoke-*.log`.
-9. Revisão cosmética antiga (acentos, modo escuro, celular).
+   - clones `src-*` antigos: o vivo é o `src-b30`; o `src-b15` é o de lint, com `node_modules`; o `dev-b30` é o do smoke rápido (`dev-smoke.sh`);
+   - imagens `test-b*n` antigas; manter a `v1` e os dois últimos `v1-pre-*`;
+   - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json` (e os `/home/node/wf-*.json` no container do n8n), `build-*.log`, `smoke-*.log`.
+9. **Fase final, com uso real** (depois do que está combinado, antes da aprovação):
+   - Comercial, Fase 2: falta o pagamento manual com recibo. Também uma assinatura assinada de verdade (Stripe/MP/Yappy) e a renovação assistida do Yappy;
+   - Agenda: o link do Meet logo após marcar, a mudança de horário e a presença do compromisso 2;
+   - Jev `reply_review` decidindo na conta 1 desde 08/10: acompanhar as retenções (nota "Jev retuvo…");
+   - catálogo na IA: pedido com vários itens (o Jev escolhe um item só; a quantidade vem de regex).
 
 ### Pendências antigas que continuam valendo
 
