@@ -60,7 +60,7 @@ Os models ficam em `app/models/ai_evolution/`, e o prefixo das tabelas é `ai_ev
    - as propostas pendentes e as recusadas.
 
    Conta no teto de IA fica de fora.
-   O Candidatos agrupa as conversas reservadas por persona, até 10 por item. O LLM lê todas juntas e junta numa proposta o que se repete. No 1º teste (12/10), com uma chamada por conversa, cinco clientes perguntando o mesmo virariam cinco propostas; além disso, o DeepSeek escreveu `{"knowledge_update": {...}}` no lugar de `"kind"`, e metade das respostas não era JSON.
+   O Candidatos agrupa as conversas reservadas por persona, até 20 por item (o teto diário da conta: uma chamada por persona). O LLM lê todas juntas e junta numa proposta o que se repete. No 1º teste (12/10), com uma chamada por conversa, cinco clientes perguntando o mesmo virariam cinco propostas; além disso, o DeepSeek escreveu `{"knowledge_update": {...}}` no lugar de `"kind"`, e metade das respostas não era JSON.
 2. **MontaEvolucao:** monta o prompt para o modelo da persona (o normal, não o leve: aqui a qualidade importa mais que o custo). Pede JSON ao provedor (`response_format`), com o formato exato no prompt, e tem 3 min de limite no nó HTTP. Cada proposta traz `evidence: [{ conversation_id, customer_quote, team_quote }]`. O formato pedido: `{ suggestions: [{ kind, title, content, target_doc_id, replace_text, same_as, rationale, customer_quote, team_quote }] }`. Lista vazia é a resposta comum. As regras:
    - propor só o que a **equipe** disse ou fez: nunca inventar política, preço ou prazo;
    - não propor o que a base já diz;

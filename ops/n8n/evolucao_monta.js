@@ -1,6 +1,6 @@
 // No MontaEvolucao do workflow "CortexGen Evolução" (depois do Candidatos).
 //
-// Uma chamada por rodada (ate 10 conversas da mesma persona) ao modelo da
+// Uma chamada por rodada (ate 20 conversas da mesma persona) ao modelo da
 // persona (o normal, nao o leve: aqui errar custa mais que o token). O LLM le
 // o que a equipe fez quando a IA nao deu conta e propoe mudancas na base ou no
 // prompt, juntando numa proposta so o que varias conversas ensinam. Resposta

@@ -27,8 +27,8 @@ const ok = (n, c) => console.log((c ? 'OK ' : 'FALHOU ') + n);
   ok('Candidatos: manda caixa -> persona e o teto de 20', JSON.stringify(claim.body) === JSON.stringify({ routes: [{ inbox_id: 33, persona_id: 'p1' }], limit: 20 }));
   ok('Candidatos: as conversas da mesma persona num item so', r.out.length === 1 && r.out[0].json.conversations.map(c => c.conversation_id).join() === '89,90' &&
      r.out[0].json.rota.model === 'deepseek' && r.out[0].json.persona.name === 'Nathan' && !r.out[0].json.conversations[0].persona);
-  r = await run(R + 'evolucao_candidatos.js', {}, {}, sb(Array.from({ length: 12 }, (_, k) => conversa(100 + k))));
-  ok('Candidatos: no maximo 10 conversas por rodada', r.out.map(i => i.json.conversations.length).join() === '10,2');
+  r = await run(R + 'evolucao_candidatos.js', {}, {}, sb(Array.from({ length: 22 }, (_, k) => conversa(100 + k))));
+  ok('Candidatos: no maximo 20 conversas por rodada', r.out.map(i => i.json.conversations.length).join() === '20,2');
   r = await run(R + 'evolucao_candidatos.js', {}, {}, sb([], { 'bot/claims': [401, {}] }));
   ok('Candidatos: conta sem a flag fica de fora', r.out.length === 0);
   r = await run(R + 'evolucao_candidatos.js', {}, {}, sb([], { bot_account_settings: [200, [{ chatwoot_account_id: 1, chat_user_token: 't', ai_monthly_budget_usd: 5 }]],

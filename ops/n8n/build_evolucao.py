@@ -56,7 +56,7 @@ code('MontaEvolucao', 'evolucao_monta.js', 440)
 clone('EscolheProvider', 'EscolheProvider', 660, 300)
 clone('LLMEvolucao', 'LLM', 880, 200)
 clone('LLMEvolucaoCustom', 'LLMCustom', 880, 400)
-# Uma rodada leva até 10 conversas e 3000 tokens de saída: os 60 s do bot não bastam.
+# Uma rodada leva até 20 conversas e 3000 tokens de saída: os 60 s do bot não bastam.
 for node in nodes:
     if node['name'] in ('LLMEvolucao', 'LLMEvolucaoCustom'):
         node['parameters'].setdefault('options', {})['timeout'] = 180000

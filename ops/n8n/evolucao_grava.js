@@ -1,7 +1,7 @@
 // No GravaEvolucao do workflow "CortexGen Evolução" (depois do LLMEvolucao /
 // LLMEvolucaoCustom). Roda uma vez para todos os itens.
 //
-// Por rodada (ate 10 conversas da mesma persona): registra o LLM no Uso de IA
+// Por rodada (ate 20 conversas da mesma persona): registra o LLM no Uso de IA
 // (kind 'evolution', conta no teto; db/botlayer/bot_ai_evolution.sql), le o
 // JSON e grava pelo Rails (POST ai_evolution/bot/results), que junta as iguais
 // e descarta correcao sem o trecho exato. Aceita tambem o formato que o

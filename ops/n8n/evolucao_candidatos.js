@@ -5,16 +5,18 @@
 // retida pelo Jev, caso aberto pela IA), paradas ha 2 h (POST
 // ai_evolution/bot/claims, AiEvolution::Bot). Vai o par caixa -> persona de
 // cada rota, para o Rails mandar a base e as propostas da persona certa.
-// Sai um item por persona com ate 10 conversas: o LLM le todas juntas e junta
-// o que se repete (visto em 12/10: uma chamada por conversa, cinco clientes
-// perguntando o mesmo virariam cinco propostas). Conta sem a flag
+// Sai um item por persona com ate 20 conversas (o mesmo teto diario da conta,
+// entao uma chamada so por persona): o LLM le todas juntas e junta o que se
+// repete. Visto em 12/10: uma chamada por conversa, cinco clientes perguntando
+// o mesmo virariam cinco propostas; com blocos de 10, as 2 conversas que
+// sobraram repetiram a proposta de envio do primeiro bloco. Conta sem a flag
 // ai_evolution (401) ou no teto mensal de IA fica de fora.
 
 const https = require('https');
 
 const CHATWOOT = 'https://prs.cortexgen.cloud/api/v1/accounts/';
 const POR_CONTA = 20;
-const POR_RODADA = 10;
+const POR_RODADA = 20;
 
 function pedir(method, url, headers, body) {
   return new Promise((resolve, reject) => {
