@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-19 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.25.1** (Outreach, campanhas por QR); **1.26.0** (manuais no Help Center) pronta e com deploy pendente (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-19 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.26.0** (manuais no Help Center; por baixo, o Outreach 1.25.1) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -14,10 +14,10 @@
 
 | Versão | O quê | Estado |
 |---|---|---|
-| 1.24.2 | **Memória da IA, prompt apertado** (`ops/n8n/memoria_monta.js`): cada informação em um lugar só (resumo = situação agora; fatos = o que dura, até 15 palavras), só entra o que o **cliente** disse, decidiu ou prometeu (nada de "a equipe indicou o telefone"), fato coberto pelo resumo sai. Só n8n. Commit `d3762b800` | **Não publicada.** Falta o import e o Publish do workflow (ver "Memória 1.24.2: publicar") |
+| 1.24.2 | **Memória da IA, prompt apertado** (`ops/n8n/memoria_monta.js`): cada informação em um lugar só (resumo = situação agora; fatos = o que dura, até 15 palavras), só entra o que o **cliente** disse, decidiu ou prometeu (nada de "a equipe indicou o telefone"), fato coberto pelo resumo sai. Só n8n. Commit `d3762b800` | **Publicada em 19/10** (workflow `8vQczvOX0APBIO9k` ativo, `versionId == activeVersionId`, prompt novo no `MontaMemoria`). Faltava o `docker restart n8n-y4jd-n8n-1` (o container seguia de pé desde 19:43 UTC): conferir, e ver os fatos da conversa 89 depois de uma rodada |
 | 1.25.0 | **Outreach: campanhas por QR** (flag `outreach`, menu CRM). Desenho e o que a implementação mudou: `docs/cortexgen/campanhas.md` | No ar |
 | 1.25.1 | Correção do Outreach: `test` e `prepare` devolviam outro corpo e a página mostrava "OUTREACH.STATUS.undefined"; botões desligados durante a ação (o teste saiu duplicado por clique repetido) | **No ar** (`test-b53n`) |
-| 1.26.0 | **Manuais no Help Center** (`docs/manual`, `rails manual:import`) | Imagem `test-b54n` pronta, 27 smokes verdes; **deploy pendente** (ver "Deploy da 1.26.0") |
+| 1.26.0 | **Manuais no Help Center** (`docs/manual`, `rails manual:import`) | **No ar** em 19/10 (`test-b54n`; rollback `v1-pre-b54`). `rails manual:import` rodado nas contas 1, 2, 3 e 8 (33 artigos em rascunho em cada) |
 
 **Outreach (resumo; detalhe em `docs/cortexgen/campanhas.md` e no manual `docs/manual/outreach.*.md`):**
 - Tabelas `outreach_campaigns`, `outreach_recipients`, `outreach_suppressions` (migration `20261019000001`); models `app/models/outreach/`, serviços `app/services/outreach/`, jobs `app/jobs/outreach/`, rotas `/outreach/campaigns` e `/outreach/suppressions`, telas `routes/dashboard/outreach/`.
@@ -57,9 +57,9 @@
 | **Casos**, fases 2 e 3: a IA abre e repassa, avisos e métricas | 1.23.0–1.23.1 | `docs/cortexgen/casos.md` | No ar; provado na conversa 89 |
 | **Evolução da IA** | 1.24.0–1.24.1 | `docs/cortexgen/evolucao.md` | No ar; provada na conta de demonstração |
 
-**Imagem:** a `:v1` é a `test-b53n` (1.25.1, commit `a8c2c4bf3`, clone `src-b32`). A **1.26.0** está na `test-b54n` (commit `575ef87af`, clone `src-b33`), com deploy pendente. Rollbacks: `v1-pre-b53` (1.25.0), `v1-pre-b52` (1.24.1), `v1-pre-b51` (1.24.0), `v1-pre-b50` (1.23.1) e as mais antigas, se a limpeza da VPS não as apagou. O próximo é `v1-pre-b54`.
+**Imagem:** a `:v1` é a `test-b54n` (1.26.0, commit `575ef87af`, clone `src-b33`) desde 19/10. Rollbacks: `v1-pre-b54` (1.25.1, `test-b53n`), `v1-pre-b53` (1.25.0), `v1-pre-b52` (1.24.1), `v1-pre-b51` (1.24.0), `v1-pre-b50` (1.23.1) e as mais antigas, se a limpeza da VPS não as apagou. O próximo é `v1-pre-b55`.
 
-**Tags e GitHub:** em dia em 19/10 até o commit `575ef87af` e a tag `cg-v1.25.1` (branch e tags enviadas). **Faltam** `cg-v1.26.0` (no `575ef87af`, depois do deploy) e `cg-v1.24.2` (no `d3762b800`, depois de publicar a Memória).
+**Tags e GitHub:** em dia em 19/10: tags até `cg-v1.26.0` (no `575ef87af`) e `cg-v1.24.2` (no `d3762b800`) enviadas. O último commit de docs só entra no GitHub no push seguinte.
 
 **Workflows do n8n** (todos com nós no repo, `ops/n8n/`):
 - **bot** `pd5V9pdaldRLUu4C`, publicado com os nós do `29d8f6236`. O patch de casos é `ops/n8n/patch_casos.py <export> <saída> <commit publicado>`.
@@ -67,7 +67,7 @@
 - **CortexGen Evolução** `1PBKdso3sEHgI06s`, todo dia às 3h, fuso do workflow `America/Panama` porque o n8n roda em New York (`build_evolucao.py`).
   - Publicado com o bloco de 20 conversas por persona, commit `b2b68e786`.
   - **Faltava o `docker restart n8n-y4jd-n8n-1` depois do último import** (13/10, o container estava de pé desde as 13:28 UTC). Conferir.
-- **CortexGen Memória** `8vQczvOX0APBIO9k` (a cada 10 min): o prompt da 1.24.2 **não está publicado**. Receita em "Memória 1.24.2: publicar".
+- **CortexGen Memória** `8vQczvOX0APBIO9k` (a cada 10 min): com o prompt da 1.24.2 publicado em 19/10 (confira o `docker restart` e os fatos da conversa 89).
 - Os nós LLM clonados usam a credencial **"OpenRouter account 2"** (`7cHXlIpMmL4YiyMj`). Depois do import, o Paulo reescolheu a credencial na tela. Conferir a cada import, e também no LLMRepasse do CortexGen Caso.
 
 **Contas de teste:**
@@ -176,7 +176,7 @@
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b54`.
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b55`.
 - **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 27 scripts em Postgres e Redis **descartáveis** (`outreach` 83 e `manual` 12 entraram em 19/10; o total de cenários passa de 600):
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `commerce_auto_invoice` 15, `ai_memory` 38, `cases` 61, `cases_ai` 32.
@@ -214,25 +214,26 @@ Ordem (o Paulo roda):
 
 O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
 
-### Deploy da 1.26.0 (o Paulo roda, um comando por vez)
+### Deploy da 1.26.0 (feito em 19/10; serve de receita)
 
 Na VPS, em `/opt/cortexgen-chat`. Sem migration.
 1. `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b54`
 2. `docker tag cortexgen-chat:test-b54n cortexgen-chat:v1`
 3. `docker compose up -d --force-recreate rails sidekiq`
 4. `docker compose exec rails bundle exec rails manual:import` (escreve no banco: um portal `manual-<conta>` por conta, em rascunho; contas sem administrador são puladas e a linha avisa).
-5. No Mac: `git tag cg-v1.26.0 575ef87af && git push origin --tags`.
+5. No Mac: `git tag cg-v1.26.0 575ef87af && git push origin --tags` (feito).
 
 Conferir: **Help Center** no painel mostra o portal "Manual" com 3 categorias; em cada idioma, abrir um artigo e ver tabelas, formatação e links entre manuais.
 
-### Memória 1.24.2: publicar (só n8n; o Paulo importa e publica)
+### Memória 1.24.2: publicar (feito em 19/10; serve de receita)
 
 1. `docker exec n8n-y4jd-n8n-1 n8n export:workflow --id=pd5V9pdaldRLUu4C --output=/tmp/wf.json`
 2. `cd /opt/cortexgen-chat/src-b33/ops/n8n && docker cp n8n-y4jd-n8n-1:/tmp/wf.json /tmp/wf.json && python3 build_memoria.py /tmp/wf.json /tmp/wf-memoria.json 8vQczvOX0APBIO9k`
 3. `docker cp /tmp/wf-memoria.json n8n-y4jd-n8n-1:/tmp/ && docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/tmp/wf-memoria.json`
 4. No n8n: abrir "CortexGen Memória", reescolher a credencial dos nós LLM, **recarregar a página**, Publish; depois `docker restart n8n-y4jd-n8n-1`.
 5. Conferir: na conversa 89, uma mensagem do cliente e, depois de uma rodada (10 min), o bloco AI memory: os fatos não repetem o resumo nem registram ações da equipe.
-6. No Mac: `git tag cg-v1.24.2 d3762b800`.
+6. No Mac: `git tag cg-v1.24.2 d3762b800` (feito).
+7. Depois do import, **`docker restart n8n-y4jd-n8n-1`** (workflow agendado: o import não para o relógio antigo).
 
 ### Deploy da 1.24.0 (o Paulo roda, um comando por vez)
 
@@ -288,8 +289,8 @@ Conferir: `docker compose ps`, a tela `/cases` abrindo, o bloco Cases no painel 
 
 Regra do Paulo (12/10): terminar os módulos combinados com dados de teste. Tudo o que depende de uso real vai para a **fase final**, antes da aprovação.
 
-1. **Deploy da 1.26.0** e `rails manual:import` (receita acima). Depois, o Paulo **lê os manuais** no Help Center (os dos recursos antigos não foram conferidos na tela) e aponta o que não bate; corrigir é editar `docs/manual/*.md` e rodar o import de novo.
-2. **Publicar a Memória 1.24.2** no n8n (receita acima) e conferir na conversa 89.
+1. **Memória 1.24.2:** confirmar o `docker restart` do n8n e ver, na conversa 89, se os fatos deixam de repetir o resumo e de registrar ações da equipe.
+2. **Manuais:** lidos pelo Paulo em 19/10 e sem mudanças por ora. Os artigos estão em rascunho em cada conta (Help Center); o Paulo publica o que quiser. Corrigir é editar `docs/manual/*.md`, subir a imagem e rodar `rails manual:import` de novo.
 3. **Provar o Outreach em uso:** CSV com 2 ou 3 números do Paulo (telefone, nome) → Use this list → Prepare the list → Start sending com o intervalo curto → responder de um dos números (a linha vira Replied e o bot responde) → pausar e retomar. A campanha 1 da conta 1 é um rascunho de teste com um telefone no nome: apagar.
 4. **Próxima entrega do Outreach** (lista em "Estado em 19/10"): teto único com o follow-up, pausa por pedidos de parar, veto por texto parecido. Busca de empresas (Prospecção/Apify do DeskComm) ficou **de fora** por decisão do Paulo: só volta se fizer sentido para o Panamá.
 5. **Evolução da IA:** ver a rodada das 3h na conta 1 e, se o selo de evidências incomodar, pedir ao modelo que cite todas as conversas que ensinam o mesmo.
