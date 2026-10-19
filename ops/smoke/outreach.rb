@@ -289,7 +289,8 @@ st, = api.(admin, :post, "campaigns/#{id}/audience",
            { source: 'import', mapping: { phone: 'Nada' }, file: Rack::Test::UploadedFile.new(csv.path, 'text/csv', original_filename: 'lista.csv') }, multipart: true)
 ok 'importar sem a coluna de telefone mapeada: 422', st == 422
 st, prep = api.(admin, :post, "campaigns/#{id}/prepare")
-ok 'preparar pela API', st == 200 && prep['counts'].values.sum == 4
+ok 'preparar pela API: a campanha volta pronta, com as contagens', st == 200 && prep['status'] == 'ready' && prep['metrics']['total'] == 4 &&
+                                                                     prep['metrics']['pending'] + prep['metrics']['excluded'] == 4
 st, reds = api.(admin, :get, "campaigns/#{id}/recipients?status=excluded")
 ok 'lista de excluídos com o motivo', st == 200 && reds['payload'].all? { |r| r['excluded_reason'].present? } && reds['meta']['count'] == reds['payload'].size
 st, upd = api.(admin, :put, "campaigns/#{id}", { name: 'Por API 2' })

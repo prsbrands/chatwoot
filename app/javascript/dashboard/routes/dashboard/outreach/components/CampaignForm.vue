@@ -49,6 +49,7 @@ const toggleDay = day => {
 };
 
 const save = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   try {
     const { data } = await OutreachAPI.update(props.campaign.id, {
@@ -219,7 +220,7 @@ const save = async () => {
       <Button
         :label="$t('OUTREACH.SAVE')"
         :is-loading="isSaving"
-        :disabled="!canSave"
+        :disabled="!canSave || isSaving"
         @click="save"
       />
     </div>

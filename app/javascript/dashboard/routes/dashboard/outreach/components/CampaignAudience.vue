@@ -70,6 +70,7 @@ const pickFile = async event => {
 };
 
 const apply = async () => {
+  if (isBusy.value) return;
   isBusy.value = true;
   try {
     const { data } = await OutreachAPI.audience(props.campaign.id, {
@@ -199,7 +200,7 @@ const apply = async () => {
       <Button
         :label="$t('OUTREACH.AUDIENCE.USE')"
         :is-loading="isBusy"
-        :disabled="source === 'import' ? !preview || !mapping.phone : false"
+        :disabled="isBusy || (source === 'import' && (!preview || !mapping.phone))"
         @click="apply"
       />
     </div>

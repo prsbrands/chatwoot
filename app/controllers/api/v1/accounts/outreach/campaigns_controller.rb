@@ -47,9 +47,10 @@ class Api::V1::Accounts::Outreach::CampaignsController < Api::V1::Accounts::Outr
     render_could_not_create_error(e.message)
   end
 
+  # A campanha volta com as contagens (por motivo de exclusão) nas métricas.
   def prepare
-    @counts = ::Outreach::Prepare.new(@campaign).perform
-    render json: { campaign_id: @campaign.id, counts: @counts }
+    ::Outreach::Prepare.new(@campaign).perform
+    render :show
   end
 
   def start

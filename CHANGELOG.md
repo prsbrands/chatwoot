@@ -14,6 +14,11 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.25.1] — 2026-10-19 · base Chatwoot 4.18.0 · Rails
+
+- **Outreach: a página da campanha quebrava depois de "Enviar teste" e de "Prepare the list"** (aparecia "OUTREACH.STATUS.undefined"): as duas ações devolviam outra coisa no lugar da campanha. Agora o teste só avisa que enviou, e preparar devolve a campanha com as contagens.
+- **O teste mandava a mensagem duas vezes** por um clique repetido. Os botões de Outreach (salvar, usar a lista, testar, preparar, iniciar) ficam desligados enquanto a ação roda.
+
 ## [1.25.0] — 2026-10-19 · base Chatwoot 4.18.0 · Rails
 
 - **Campanhas por QR** (menu CRM → **Outreach**, flag `outreach` no Super Admin). Manda uma mensagem para uma lista pelo WhatsApp por QR, de um jeito que protege o número.

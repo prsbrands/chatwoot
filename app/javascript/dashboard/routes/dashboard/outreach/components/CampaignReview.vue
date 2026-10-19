@@ -22,22 +22,23 @@ const metrics = computed(() => props.campaign.metrics);
 const hasList = computed(() => props.campaign.audience.count > 0);
 const isReady = computed(() => props.campaign.status === 'ready');
 
-const run = async (action, doneKey, payload = {}) => {
+const fail = error =>
+  useAlert(
+    error.response?.data?.message ||
+      error.response?.data?.error ||
+      t('OUTREACH.API.ERROR')
+  );
+
+// Prepara e inicia devolvem a campanha, que a página recarrega.
+const run = async (action, doneKey) => {
+  if (isBusy.value) return;
   isBusy.value = true;
   try {
-    const { data } = await OutreachAPI.action(
-      props.campaign.id,
-      action,
-      payload
-    );
-    if (doneKey) useAlert(t(doneKey));
+    const { data } = await OutreachAPI.action(props.campaign.id, action);
+    useAlert(t(doneKey));
     emit('updated', data);
   } catch (error) {
-    useAlert(
-      error.response?.data?.message ||
-        error.response?.data?.error ||
-        t('OUTREACH.API.ERROR')
-    );
+    fail(error);
   } finally {
     isBusy.value = false;
   }
@@ -45,8 +46,21 @@ const run = async (action, doneKey, payload = {}) => {
 
 const prepare = () => run('prepare', 'OUTREACH.REVIEW.PREPARED');
 const start = () => run('start', 'OUTREACH.REVIEW.STARTED');
-const sendTest = () =>
-  run('test', 'OUTREACH.REVIEW.TEST_SENT', { phone: testPhone.value });
+// O teste devolve só as bolhas enviadas, não a campanha: não recarrega nada.
+const sendTest = async () => {
+  if (isBusy.value) return;
+  isBusy.value = true;
+  try {
+    await OutreachAPI.action(props.campaign.id, 'test', {
+      phone: testPhone.value,
+    });
+    useAlert(t('OUTREACH.REVIEW.TEST_SENT'));
+  } catch (error) {
+    fail(error);
+  } finally {
+    isBusy.value = false;
+  }
+};
 </script>
 
 <template>
@@ -70,7 +84,7 @@ const sendTest = () =>
           faded
           :label="$t('OUTREACH.REVIEW.SEND_TEST')"
           :is-loading="isBusy"
-          :disabled="!testPhone.trim()"
+          :disabled="!testPhone.trim() || isBusy"
           @click="sendTest"
         />
       </div>
@@ -84,7 +98,7 @@ const sendTest = () =>
         class="self-start"
         :label="$t('OUTREACH.REVIEW.PREPARE')"
         :is-loading="isBusy"
-        :disabled="!hasList"
+        :disabled="!hasList || isBusy"
         @click="prepare"
       />
       <p v-if="!hasList" class="text-xs text-n-slate-11">
@@ -108,7 +122,7 @@ const sendTest = () =>
         class="self-start"
         :label="$t('OUTREACH.REVIEW.START')"
         :is-loading="isBusy"
-        :disabled="!metrics.pending"
+        :disabled="!metrics.pending || isBusy"
         @click="start"
       />
     </div>
