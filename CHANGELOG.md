@@ -14,6 +14,10 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.26.0] — 2026-10-19 · base Chatwoot 4.18.0 · Rails
+
+- **Manual de uso no Help Center** (en, es e pt_BR). O `docs/manual` traz um manual por recurso, nos três idiomas: Outreach, Casos, Evolução da IA, Memória da IA, Comercial (catálogo, documentos, cobrança e vitrine), Agenda, Funil, Radar e Tarefas, e Connections. O comando `rails manual:import` cria, em cada conta, o portal "Manual" com três categorias e um artigo por manual e idioma, ligados entre si e com os links entre manuais funcionando. Os artigos entram como **rascunho** (só a equipe vê, em Help Center); a equipe publica o que quiser. Rodar de novo atualiza o texto pelo repositório, sem duplicar e sem mudar o que já foi publicado.
+
 ## [1.25.1] — 2026-10-19 · base Chatwoot 4.18.0 · Rails
 
 - **Outreach: a página da campanha quebrava depois de "Enviar teste" e de "Prepare the list"** (aparecia "OUTREACH.STATUS.undefined"): as duas ações devolviam outra coisa no lugar da campanha. Agora o teste só avisa que enviou, e preparar devolve a campanha com as contagens.
