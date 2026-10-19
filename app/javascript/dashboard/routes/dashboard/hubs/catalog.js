@@ -33,6 +33,7 @@ export const HUBS = {
             to: 'companies_dashboard_index',
             query: { page: 1 },
           },
+          { id: 'OUTREACH', icon: 'i-lucide-send', to: 'outreach_index' },
           {
             id: 'CAMPAIGNS',
             icon: 'i-lucide-megaphone',

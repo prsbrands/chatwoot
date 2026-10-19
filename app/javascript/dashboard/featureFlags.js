@@ -56,6 +56,7 @@ export const FEATURE_FLAGS = {
   COMMERCE: 'commerce',
   CASES: 'cases',
   AI_EVOLUTION: 'ai_evolution',
+  OUTREACH: 'outreach',
   BOT_PERSONAS: 'bot_personas',
   ADVANCED_SEARCH: 'advanced_search',
   CONVERSATION_REQUIRED_ATTRIBUTES: 'conversation_required_attributes',

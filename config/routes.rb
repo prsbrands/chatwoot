@@ -337,6 +337,25 @@ Rails.application.routes.draw do
             post 'bot/claims', to: 'bot#claims'
             post 'bot/results', to: 'bot#results'
           end
+          # CortexGen: campanhas por QR (flag outreach)
+          namespace :outreach do
+            resources :campaigns, only: [:index, :show, :create, :update, :destroy] do
+              collection do
+                get :attention_count
+                post :preview_import
+              end
+              member do
+                get :recipients
+                post :audience
+                post :prepare
+                post :start
+                post :pause
+                post :cancel
+                post :test
+              end
+            end
+            resources :suppressions, only: [:index, :create, :destroy]
+          end
           # CortexGen: memória da IA por contato
           namespace :ai_memory do
             resources :contacts, only: [:show, :update]

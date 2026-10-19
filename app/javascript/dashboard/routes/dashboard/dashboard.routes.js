@@ -8,6 +8,7 @@ import { routes as salesPipelineRoutes } from './salesPipeline/routes';
 import { routes as commerceRoutes } from './commerce/routes';
 import { routes as casesRoutes } from './cases/routes';
 import { routes as aiEvolutionRoutes } from './aiEvolution/routes';
+import { routes as outreachRoutes } from './outreach/routes';
 import { routes as connectionsRoutes } from './connections/routes';
 import { routes as hubRoutes } from './hubs/routes';
 import { routes as agendaRoutes } from './agenda/routes';
@@ -39,6 +40,7 @@ export default {
         ...commerceRoutes,
         ...casesRoutes,
         ...aiEvolutionRoutes,
+        ...outreachRoutes,
         ...connectionsRoutes,
         ...hubRoutes,
         ...agendaRoutes,

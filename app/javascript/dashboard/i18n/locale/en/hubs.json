@@ -32,6 +32,10 @@
           "TITLE": "Companies",
           "DESCRIPTION": "The businesses your contacts work for."
         },
+        "OUTREACH": {
+          "TITLE": "Outreach",
+          "DESCRIPTION": "Send a message to a list on your WhatsApp QR number, at a pace that protects it: opening hours, daily limits, random gaps and breaks."
+        },
         "CAMPAIGNS": {
           "TITLE": "Campaigns",
           "DESCRIPTION": "Message a list of contacts you choose, on WhatsApp, SMS or the website chat."

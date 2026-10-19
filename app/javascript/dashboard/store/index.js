@@ -18,6 +18,7 @@ import connections from './modules/connections';
 import commerce from './modules/commerce';
 import cases from './modules/cases';
 import aiEvolution from './modules/aiEvolution';
+import outreach from './modules/outreach';
 import contactConversations from './modules/contactConversations';
 import contactLabels from './modules/contactLabels';
 import contactNotes from './modules/contactNotes';
@@ -88,6 +89,7 @@ export default createStore({
     commerce,
     cases,
     aiEvolution,
+    outreach,
     categories,
     contactConversations,
     contactLabels,

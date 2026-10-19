@@ -51,6 +51,8 @@ gem 'gmail_xoauth'
 gem 'net-smtp',  '~> 0.3.4'
 # Prevent CSV injection
 gem 'csv-safe'
+# Read CSV, XLSX and ODS lists for the outreach campaigns (MIT, no GPL dependency)
+gem 'roo', '~> 2.10'
 
 ##-- for active storage --##
 gem 'aws-sdk-s3', require: false

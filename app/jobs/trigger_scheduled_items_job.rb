@@ -34,6 +34,9 @@ class TriggerScheduledItemsJob < ApplicationJob
     Commerce::SubscriptionExpiryJob.perform_later
     Commerce::SubscriptionCycleJob.perform_later
 
+    # Campanhas por QR: religa a cadeia de envio e pausa a de sessão caída
+    Outreach::WatchdogJob.perform_later
+
     # Sessões de WhatsApp por QR (OpenWA) que caíram
     Openwa::SessionWatchJob.perform_later if Integrations::Openwa::Client.configured?
   end

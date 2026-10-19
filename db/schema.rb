@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_13_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_19_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1862,6 +1862,62 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_13_000001) do
     t.index ["secondary_actor_type", "secondary_actor_id"], name: "uniq_secondary_actor_per_account_notifications"
     t.index ["user_id", "account_id", "snoozed_until", "read_at"], name: "idx_notifications_performance"
     t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "outreach_campaigns", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "created_by_id"
+    t.string "name", null: false
+    t.integer "status", default: 0, null: false
+    t.jsonb "variants", default: [], null: false
+    t.boolean "cold", default: false, null: false
+    t.text "opt_out_footer"
+    t.jsonb "pacing", default: {}, null: false
+    t.jsonb "audience", default: {}, null: false
+    t.integer "attribution_hours", default: 72, null: false
+    t.datetime "started_at"
+    t.datetime "paused_at"
+    t.string "paused_reason"
+    t.datetime "completed_at"
+    t.datetime "next_send_at"
+    t.datetime "wake_at"
+    t.integer "batch_sent", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status"], name: "index_outreach_campaigns_on_account_id_and_status"
+    t.index ["inbox_id", "status"], name: "index_outreach_campaigns_on_inbox_id_and_status"
+  end
+
+  create_table "outreach_recipients", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campaign_id", null: false
+    t.string "phone", null: false
+    t.string "name"
+    t.jsonb "variables", default: {}, null: false
+    t.bigint "contact_id"
+    t.bigint "conversation_id"
+    t.integer "variant"
+    t.integer "status", default: 0, null: false
+    t.string "excluded_reason"
+    t.text "error"
+    t.datetime "sent_at"
+    t.datetime "replied_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "phone", "sent_at"], name: "index_outreach_recipients_on_account_id_and_phone_and_sent_at"
+    t.index ["campaign_id", "phone"], name: "index_outreach_recipients_on_campaign_id_and_phone"
+    t.index ["campaign_id", "status", "id"], name: "index_outreach_recipients_on_campaign_id_and_status_and_id"
+  end
+
+  create_table "outreach_suppressions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "phone", null: false
+    t.string "reason"
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "phone"], name: "index_outreach_suppressions_on_account_id_and_phone", unique: true
   end
 
   create_table "platform_app_permissibles", force: :cascade do |t|

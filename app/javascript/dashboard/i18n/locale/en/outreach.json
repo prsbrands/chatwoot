@@ -1,0 +1,179 @@
+{
+  "OUTREACH": {
+    "HEADER": "Outreach",
+    "DESCRIPTION": "Send a message to a list on your WhatsApp QR number, at a pace that protects the number: opening hours, daily limits, random gaps and breaks.",
+    "NEW": "New campaign",
+    "NEW_DESCRIPTION": "Pick the number and write the first message. You set the list, the pace and the variations next, while the campaign is still a draft.",
+    "EMPTY": "No campaigns yet.",
+    "CREATE": "Create campaign",
+    "CANCEL": "Cancel",
+    "BACK": "Back",
+    "SAVE": "Save",
+    "SAVED": "Saved. If the campaign was ready, prepare the list again.",
+    "API": {
+      "ERROR": "Could not complete the request."
+    },
+    "STATUS": {
+      "draft": "Draft",
+      "ready": "Ready",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "PAUSED_REASON": {
+      "session_down": "The WhatsApp session of the number is disconnected.",
+      "send_failures": "Three sends in a row failed.",
+      "session_not_found": "The number has no WhatsApp session."
+    },
+    "PAUSED_HINT": "Fix it and resume the campaign. Nobody who failed is sent again automatically.",
+    "METRICS": {
+      "SENT": "Sent",
+      "REPLIED": "Replied",
+      "PENDING": "Waiting",
+      "FAILED": "Failed",
+      "OPTED_OUT": "Asked to stop",
+      "EXCLUDED": "Left out"
+    },
+    "FIELDS": {
+      "NAME": "Name",
+      "NUMBER": "Number",
+      "NUMBER_PLACEHOLDER": "Choose a WhatsApp QR number",
+      "NO_NUMBER": "No WhatsApp QR number found. Connect one first in Connections.",
+      "MESSAGE": "First message"
+    },
+    "EXCLUSIONS": {
+      "LINK": "Exclusion list",
+      "HEADER": "Exclusion list",
+      "DESCRIPTION": "Numbers your team does not want in any campaign. They are still answered normally when they write; this is not the same as asking to stop.",
+      "PHONES": "Numbers (one per line, or separated by commas)",
+      "REASON": "Reason (optional)",
+      "ADD": "Add to the list",
+      "REMOVE": "Remove",
+      "ADDED": "{count} added",
+      "ADDED_INVALID": "{count} added. Not valid: {invalid}"
+    },
+    "MESSAGE": {
+      "TITLE": "Message",
+      "VARIANT": "Version {number}",
+      "REMOVE_VARIANT": "Remove",
+      "ADD_VARIANT": "Add another version",
+      "HINT_VARIABLES": "Personalize with",
+      "HINT_OPTIONS": "and any column of your file. Pick a random option with",
+      "HINT_BUBBLES": ". A blank line starts a new message, up to 4. The versions take turns.",
+      "COLD": "Cold list",
+      "COLD_HINT": "People who never talked to you. The campaign can use only half of the number's daily limit.",
+      "FOOTER": "Opt-out line",
+      "FOOTER_HINT": "Added at the end of every message, for example: Reply STOP to stop receiving messages. Whoever answers with a stop word is blocked."
+    },
+    "PACING": {
+      "TITLE": "Pace",
+      "HINT": "The campaign can only be slower than the number's own limits, never faster. Hours follow the time zone of the number.",
+      "WINDOW_START": "Starts at (hour)",
+      "WINDOW_END": "Ends at (hour)",
+      "INTERVAL_MIN": "Gap between messages, at least (s)",
+      "INTERVAL_MAX": "Gap, at most (s)",
+      "INTERVAL_FLOOR": "At least {seconds} seconds",
+      "MAX_PER_HOUR": "Per hour, at most",
+      "MAX_PER_DAY": "Per day, at most (blank: the number's limit)",
+      "BATCH_SIZE": "Messages before a break",
+      "PAUSE_MIN": "Break, at least (min)",
+      "PAUSE_MAX": "Break, at most (min)",
+      "DAYS": "Days"
+    },
+    "WEEKDAY": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    },
+    "AUDIENCE": {
+      "TITLE": "List",
+      "CURRENT_IMPORT": "Current list: {count} people from a file.",
+      "CURRENT_CRM": "Current list: {count} contacts from the CRM.",
+      "SOURCE": {
+        "import": "Spreadsheet",
+        "crm": "CRM contacts"
+      },
+      "FILE": "File",
+      "FILE_HINT": "CSV, XLSX or ODS, up to 10,000 rows, with the column titles in the first row. Save older XLS files as XLSX.",
+      "COLUMN": {
+        "phone": "Phone column",
+        "name": "Name column",
+        "company": "Company column"
+      },
+      "NO_COLUMN": "None",
+      "COUNTRY": "Country code",
+      "COUNTRY_HINT": "Added to local numbers",
+      "ROWS": "{count} rows in the file. The first rows are shown above.",
+      "LABEL": "Contacts with the label",
+      "INBOX": "Contacts from the inbox",
+      "ANY": "Any",
+      "USE": "Use this list",
+      "APPLIED": "List set: {count} people. Prepare the list to see who can receive."
+    },
+    "REVIEW": {
+      "TITLE": "Review and start",
+      "TEST": "Send a test to yourself",
+      "TEST_PHONE": "Your number",
+      "SEND_TEST": "Send test",
+      "TEST_HINT": "Sends the first version to that number, with the data of the first person on the list. It does not count in the campaign.",
+      "PREPARE": "Prepare the list",
+      "NO_LIST": "Set the list first.",
+      "WILL_SEND": "{count} people will receive the message.",
+      "START": "Start sending",
+      "PREPARED": "List prepared.",
+      "STARTED": "Campaign started.",
+      "TEST_SENT": "Test sent."
+    },
+    "REASON": {
+      "opt_out": "Asked to stop receiving messages",
+      "suppressed": "In the exclusion list",
+      "no_phone": "No phone number",
+      "invalid_phone": "Phone number not in a valid format",
+      "duplicate": "Same number as another person on the list",
+      "in_other_campaign": "Already waiting in another campaign",
+      "recently_contacted": "Received a campaign in the last 30 days",
+      "active_conversation": "Open conversation with your team",
+      "missing_variable": "Missing data the message uses",
+      "manual": "Taken out by hand"
+    },
+    "RECIPIENT_STATUS": {
+      "pending": "Waiting",
+      "sending": "Sending",
+      "sent": "Sent",
+      "replied": "Replied",
+      "failed": "Failed",
+      "opted_out": "Asked to stop",
+      "excluded": "Left out",
+      "cancelled": "Cancelled"
+    },
+    "RESULTS": {
+      "TITLE": "Results",
+      "RATES": "Reply rate: {reply} of those sent. Failure rate: {failure}. WhatsApp by QR does not report delivered or read.",
+      "FILTER": "Show",
+      "ALL": "Everyone",
+      "PHONE": "Phone",
+      "NAME": "Name",
+      "STATUS": "Status",
+      "DETAIL": "Detail",
+      "SENT_AT": "Sent",
+      "PREVIOUS": "Previous",
+      "NEXT": "Next"
+    },
+    "ACTIONS": {
+      "PAUSE": "Pause",
+      "RESUME": "Resume",
+      "CANCEL": "Cancel campaign",
+      "DELETE": "Delete"
+    },
+    "DONE": {
+      "PAUSE": "Campaign paused.",
+      "RESUME": "Campaign resumed.",
+      "CANCEL": "Campaign cancelled."
+    }
+  }
+}

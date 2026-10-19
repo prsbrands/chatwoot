@@ -345,3 +345,9 @@
   display_name: AI Evolution
   enabled: false
   column: feature_flags_ext_1
+# CortexGen: campanhas por QR (disparo para uma lista pelo WhatsApp por QR, com
+# ritmo e vetos). Sempre no fim, pelo mesmo motivo.
+- name: outreach
+  display_name: Outreach
+  enabled: false
+  column: feature_flags_ext_1

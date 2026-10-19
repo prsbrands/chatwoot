@@ -18,6 +18,7 @@ import commerce from './commerce.json';
 import aiMemory from './aiMemory.json';
 import cases from './cases.json';
 import aiEvolution from './aiEvolution.json';
+import outreach from './outreach.json';
 import components from './components.json';
 import contact from './contact.json';
 import contactFilters from './contactFilters.json';
@@ -74,6 +75,7 @@ export default {
   ...aiMemory,
   ...cases,
   ...aiEvolution,
+  ...outreach,
   ...components,
   ...contact,
   ...contactFilters,

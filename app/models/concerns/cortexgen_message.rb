@@ -9,6 +9,9 @@
 # resposta dele vai para o caso pelo Cases::CustomerReplyJob, com texto ou só
 # anexo (a foto que a equipe pediu chega sem texto, e o bot não olha mensagem
 # sem texto). Vale também em caixa sem bot e com a conversa atribuída.
+#
+# Campanhas por QR: a mensagem do cliente vira resposta da campanha que falou com
+# ele (Outreach::ReplyJob, um minuto depois, para o OptOut do bot já ter bloqueado).
 module CortexgenMessage
   def webhook_data
     data = super
@@ -29,5 +32,6 @@ module CortexgenMessage
   def execute_after_create_commit_callbacks
     super
     Cases::CustomerReplyJob.perform_later(id) if incoming? && !private? && account.feature_enabled?('cases')
+    Outreach::ReplyJob.set(wait: 1.minute).perform_later(id) if incoming? && !private? && account.feature_enabled?('outreach')
   end
 end

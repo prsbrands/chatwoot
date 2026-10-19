@@ -55,6 +55,22 @@ class Integrations::Openwa::Client
     delete("integration/plugins/#{ADAPTER_PLUGIN_ID}/instances/#{instance_id}")
   end
 
+  # A sessão do número QR de uma inbox: o vínculo está na config da instância do
+  # adapter (ProvisionService#adapter_config).
+  def session_for_inbox(account_id, inbox_id)
+    instance = adapter_instances.find do |item|
+      item.dig('config', 'accountId').to_s == account_id.to_s && item.dig('config', 'inboxId').to_s == inbox_id.to_s
+    end
+    instance&.fetch('sessionScope')
+  end
+
+  # Texto direto pelo gateway (o gateway simula o "digitando" antes de enviar).
+  # As campanhas não passam pelo Chatwoot: o adaptador só leva ao WhatsApp a
+  # mensagem de uma conversa que o cliente já abriu, e o número frio não abriu.
+  def send_text(session_id, chat_id, text)
+    post("sessions/#{session_id}/messages/send-text", { chatId: chat_id, text: text })
+  end
+
   # A URL de ingress é determinística, o que permite apontar o webhook do canal
   # para ela antes mesmo de cunhar a instância do adapter.
   def ingress_url(instance_id)

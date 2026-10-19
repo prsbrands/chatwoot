@@ -182,6 +182,26 @@ watch(
 );
 onBeforeUnmount(() => clearInterval(evolutionTimer));
 
+// Número em Outreach: campanhas que o sistema pausou (sessão caída, falhas de
+// envio) e esperam alguém. Relido com os outros números.
+const hasOutreach = computed(() =>
+  isFeatureEnabledonAccount.value(accountId.value, FEATURE_FLAGS.OUTREACH)
+);
+let outreachTimer = null;
+watch(
+  [accountId, hasOutreach],
+  ([currentAccountId, outreach]) => {
+    clearInterval(outreachTimer);
+    if (!currentAccountId || !outreach) return;
+    const fetchAttentionCount = () =>
+      store.dispatch('outreach/fetchAttentionCount').catch(() => {});
+    fetchAttentionCount();
+    outreachTimer = setInterval(fetchAttentionCount, REVIEW_COUNT_INTERVAL);
+  },
+  { immediate: true }
+);
+onBeforeUnmount(() => clearInterval(outreachTimer));
+
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
@@ -928,6 +948,22 @@ const baseMenuItems = computed(() => {
       },
     },
     {
+      name: 'Outreach',
+      label: t('SIDEBAR.OUTREACH'),
+      icon: 'i-lucide-send',
+      to: accountScopedRoute('outreach_index'),
+      activeOn: [
+        'outreach_index',
+        'outreach_new',
+        'outreach_show',
+        'outreach_suppressions',
+      ],
+      getterKeys: {
+        count: 'outreach/getAttentionCount',
+        countClass: 'bg-n-ruby-9 text-white',
+      },
+    },
+    {
       name: 'Documents',
       label: t('SIDEBAR.DOCUMENTS'),
       icon: 'i-lucide-receipt-text',
@@ -1190,6 +1226,7 @@ const MENU_LAYOUT = [
   ['Cases', 'CRM'],
   ['Companies', 'CRM'],
   ['Campaigns', 'CRM'],
+  ['Outreach', 'CRM'],
   ['Documents', 'CRM'],
   ['Subscriptions', 'CRM'],
   ['Catalog', 'CRM'],

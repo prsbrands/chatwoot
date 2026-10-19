@@ -14,6 +14,22 @@ Cada entrada diz o que muda para quem usa. O detalhe técnico e as armadilhas fi
 
 ---
 
+## [1.25.0] — 2026-10-19 · base Chatwoot 4.18.0 · Rails
+
+- **Campanhas por QR** (menu CRM → **Outreach**, flag `outreach` no Super Admin). Manda uma mensagem para uma lista pelo WhatsApp por QR, de um jeito que protege o número.
+  - **A lista:** um arquivo **CSV, XLSX ou ODS** (até 10 mil linhas, com o mapeamento das colunas e uma prévia) ou contatos do CRM por etiqueta e caixa. Serve para lista fria. Quem nunca for enviado não vira contato.
+  - **A mensagem:** até 3 versões que se alternam, opções `{Oi|Olá}` sorteadas, variáveis `{name}`, `{full_name}`, `{company}` e as colunas do arquivo, uma linha em branco para cada bolha (até 4) e uma linha de saída opcional ("Responda PARAR…"). **Enviar teste para mim** antes de iniciar.
+  - **O ritmo, só mais lento que o número:** janela de horário e dias, intervalo aleatório entre envios (mínimo de 15 s), tetos por hora e por dia, lote com pausa ("10 envios, descansa de 5 a 15 min") e o teto do dia pela idade do número (20, 50, 100, 200), com metade disso para lista fria.
+  - **Quem fica de fora**, conferido na preparação e **de novo antes de cada envio:** pediu para parar, lista de exclusão da operação, telefone ausente ou inválido, repetido, já em outra campanha, recebeu campanha nos últimos 30 dias, conversa aberta com a equipe, dado que a mensagem usa e não tem. A tela mostra a contagem por motivo antes de iniciar.
+  - **Pausa sozinha** quando a sessão do número cai ou 3 envios seguidos falham, com número vermelho no menu. Envio que deu erro ou ficou sem resposta nunca é repetido.
+  - **Resultados:** enviadas, respostas (atribuídas em 72 h, configurável), pedidos de parar e falhas, com a lista de pessoas e o motivo de cada exclusão. O WhatsApp por QR não devolve entregue e lida.
+  - O envio vai direto pelo OpenWA, e a conversa só aparece no Chatwoot quando a pessoa responde; a resposta cai no bot da caixa.
+  - **Lista de exclusão** (Outreach → Exclusion list): números que nenhuma campanha toca e que continuam sendo atendidos.
+
+## [1.24.2] — 2026-10-19 · base Chatwoot 4.18.0 · só n8n
+
+- **A Memória da IA guarda menos repetição e menos o que a empresa fez.** Os fatos repetiam o resumo e às vezes registravam ações da equipe ("Vitor indicou o telefone"). Agora cada informação vai para um lugar só: o resumo diz onde as coisas estão agora, e os fatos guardam o que continua verdadeiro sobre o cliente (curtos, até 15 palavras). Só entra o que o **cliente** disse, decidiu ou prometeu; o que a empresa ou a IA enviou ou respondeu fica de fora. Compromisso em aberto com data ou responsável ainda entra e sai quando é cumprido. Um fato que o resumo passou a cobrir é removido.
+
 ## [1.24.1] — 2026-10-12 · base Chatwoot 4.18.0 · Rails + n8n
 
 - **A rodada da Evolução da IA lê as conversas juntas.** No primeiro teste, na conta de demonstração, cada conversa foi numa chamada separada: nenhuma sabia o que a outra propôs, e o DeepSeek respondeu num formato inventado. As 13 conversas deram zero propostas. Agora:
