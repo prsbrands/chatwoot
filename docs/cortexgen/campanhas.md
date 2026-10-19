@@ -1,6 +1,6 @@
 # Campanhas por QR — proposta de desenho
 
-**Estado: aprovada em 19/10. A 1.25.0 está implementada (sem deploy). O que a implementação mudou está em "Mudanças na implementação" no fim.**
+**Estado: aprovada em 19/10 e no ar desde a 1.25.0 (1.25.1 com a correção da tela). Provada em uso só até o "Send test"; o que a implementação mudou está em "Mudanças na implementação" no fim. Manual de uso: `docs/manual/outreach.{en,es,pt}.md`.**
 
 Disparo de mensagens do WhatsApp por QR (OpenWA) para uma lista de pessoas, com proteção contra banimento. É o último módulo do DeskComm sem equivalente aqui (`/Volumes/KINGSTON/projetos_ia/crm`, `lib/campanhas/`).
 

@@ -1,6 +1,6 @@
 # HANDOFF — CortexGen Chat
 
-Última sessão: 2026-10-13 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.24.1** (Evolução da IA, rodada por persona) (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
+Última sessão: 2026-10-19 · Instância: https://prs.cortexgen.cloud · Versão no ar: **1.25.1** (Outreach, campanhas por QR); **1.26.0** (manuais no Help Center) pronta e com deploy pendente (`VERSION_CORTEXGEN`, histórico no `CHANGELOG.md`)
 
 ---
 
@@ -10,7 +10,44 @@
 
 **O sistema ainda não está em produção real** (Paulo, 12/10). Ele só libera depois de terminar o que foi combinado e da aprovação final. Não há dados reais até lá: não planejar "esperar uso", terminar módulos inteiros e testar com dados sintéticos (memória `sistema-uso-exclusivo-do-paulo`). A Fase 2 do Comercial em uso real também ficou para o fim. Navegação e telas mudam sem esboço.
 
-**Estado em 13/10: 1.24.1 no ar.** De 06/10 para cá, os módulos novos, todos seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`):
+### Estado em 19/10 (sessão desta data)
+
+| Versão | O quê | Estado |
+|---|---|---|
+| 1.24.2 | **Memória da IA, prompt apertado** (`ops/n8n/memoria_monta.js`): cada informação em um lugar só (resumo = situação agora; fatos = o que dura, até 15 palavras), só entra o que o **cliente** disse, decidiu ou prometeu (nada de "a equipe indicou o telefone"), fato coberto pelo resumo sai. Só n8n. Commit `d3762b800` | **Não publicada.** Falta o import e o Publish do workflow (ver "Memória 1.24.2: publicar") |
+| 1.25.0 | **Outreach: campanhas por QR** (flag `outreach`, menu CRM). Desenho e o que a implementação mudou: `docs/cortexgen/campanhas.md` | No ar |
+| 1.25.1 | Correção do Outreach: `test` e `prepare` devolviam outro corpo e a página mostrava "OUTREACH.STATUS.undefined"; botões desligados durante a ação (o teste saiu duplicado por clique repetido) | **No ar** (`test-b53n`) |
+| 1.26.0 | **Manuais no Help Center** (`docs/manual`, `rails manual:import`) | Imagem `test-b54n` pronta, 27 smokes verdes; **deploy pendente** (ver "Deploy da 1.26.0") |
+
+**Outreach (resumo; detalhe em `docs/cortexgen/campanhas.md` e no manual `docs/manual/outreach.*.md`):**
+- Tabelas `outreach_campaigns`, `outreach_recipients`, `outreach_suppressions` (migration `20261019000001`); models `app/models/outreach/`, serviços `app/services/outreach/`, jobs `app/jobs/outreach/`, rotas `/outreach/campaigns` e `/outreach/suppressions`, telas `routes/dashboard/outreach/`.
+- **O envio é direto pelo gateway do OpenWA** (`Integrations::Openwa::Client#send_text`), não por mensagem do Chatwoot: o adaptador só entrega conversa que o cliente já abriu (memória `openwa-adapter-so-espelha-conversa-mapeada`). Por isso uma lista fria não vira contato nem conversa até a pessoa responder; `Outreach::Reply` (via `CortexgenMessage` + `Outreach::ReplyJob`, 1 min depois) atribui a resposta pelo telefone ou pelo JID `@c.us`.
+- Uma cadeia de envio por campanha: `Outreach::SendNextJob` → `Outreach::Dispatcher` manda uma pessoa e devolve quando acordar; só o `wake_at` mais recente vale; `Outreach::WatchdogJob` (a cada 5 min no `TriggerScheduledItemsJob`) religa a cadeia, marca `sending` parado como falha (nunca reenvia) e pausa se a sessão caiu. Pausa sozinha em 3 falhas seguidas ou sessão ausente. Número vermelho no menu = pausadas pelo sistema.
+- Ritmo (`Outreach::Pacing`, `Pace`, `NumberBudget`): janela e dias no fuso da inbox (inbox em UTC não inicia), intervalo aleatório (piso 15 s), teto por hora e por dia, lote + pausa, teto do dia pela idade do número (20/50/100/200; metade para lista fria; **só conta envios de campanha**). Vetos em `Outreach::Eligibility`, na preparação e antes de cada envio.
+- Lista: CSV, XLSX e ODS pela gem `roo 2.10.1` (+ `rubyzip 2.4.1`; o `Gemfile.lock` foi editado à mão e o build validou). **XLS antigo fica de fora** (a única lib é GPL, contra a decisão de só MIT). Ou contatos do CRM por etiqueta/caixa (a API aceita `stage_id`, a tela não).
+- **Provado em uso (19/10, conta 1, inbox 33):** menu, criar, salvar e **Send test** (chegou no WhatsApp do Paulo; duas vezes por clique repetido, corrigido). **Ainda não visto:** importar arquivo, preparar, iniciar, resposta atribuída, pausar/retomar.
+- **Fica para a próxima entrega do Outreach** (era a "1.25.1" do desenho): teto único com o follow-up (`outreach/bot/capacity` + patch do `followup_candidatos.js`), pausa por pedidos de parar, veto por texto parecido (Jaccard), pausa por falta de entrega (hoje o gateway não devolve entregue/lida). Complemento sugerido, não verificado na VPS: `SEND_PACING_ENABLED=true` no OpenWA (teto por idade da sessão e teto separado para conversas novas).
+
+**Evolução da IA:** a demo foi conferida em 19/10 (política de troca veio do caso; os cinco envios viraram uma proposta; 6 propostas, nada do pedido 4512). O selo de evidências subconta (3 de 5, o modelo cita uma por fato): ajuste opcional no prompt de `evolucao_monta.js`. O Paulo **ligou a flag `ai_evolution` na conta 1** em 19/10: **ver o resultado da rodada das 3h** (quantas conversas entraram, custo em AI usage, se as propostas vêm do que a equipe respondeu e não das conversas de teste).
+
+**Manuais:** `docs/manual/` tem 11 manuais, cada um em `en`, `es` e `pt` (33 arquivos + `README.md`): Outreach, Casos, Evolução da IA, Memória da IA, Comercial (catálogo, documentos, cobrança, vitrine), Agenda, Funil/Radar/Tarefas e Connections. `Manual::HelpCenterImporter` (`rails manual:import`, `ACCOUNT_ID=` limita) cria por conta o portal `manual-<id>` (en, es, pt_BR), 3 categorias e um artigo por manual e idioma, **em rascunho**; rodar de novo atualiza o texto sem duplicar nem despublicar. **Regra do Paulo (19/10): todo recurso novo entra com o manual dos três idiomas na mesma entrega** (memória `feedback-manual-em-3-idiomas`); manual novo entra também na lista `MANUALS` do importador. Os dos recursos antigos foram escritos a partir do código por uma sessão paralela e **não foram conferidos na tela**: o Paulo precisa ler e apontar o que não bate.
+
+**Armadilhas de 19/10 (não repetir):**
+- **Adaptador do OpenWA só entrega ao WhatsApp mensagem de conversa já mapeada** (criada quando o cliente escreve). Mensagem do Chatwoot para número frio é descartada; use o gateway direto.
+- **`has_many` valida os registros novos construídos na associação.** `account.outreach_campaigns.new(...)` inválido (num smoke) faz `account.save` e `disable_features!` falharem calados: use `Outreach::Campaign.new(account: account, ...)`.
+- **Ação que devolve outro corpo quebra a tela.** A página trocava a campanha pela resposta de `test`/`prepare`. Toda ação chamada por uma página que se recarrega com a resposta devolve o recurso.
+- **`Button` com `isLoading` não desliga o clique:** proteja com `if (busy) return` e `:disabled`.
+- **`Article.status` é nulo sem default:** crie sempre com `status: :draft`. **Slug de Article e de Portal é único no banco inteiro:** o importador usa `manual-<conta>-...`.
+- **Ferramentas:**
+  - o SSH da VPS é `ssh -i ~/.ssh/id_ed25519_cortexgen -o IdentitiesOnly=yes root@187.77.20.155`; o classificador nega tentar chaves sem o Paulo liberar na conversa;
+  - no zsh, opções em variável precisam de `${=VAR}`;
+  - `pkill -f "docker build"` mata a própria sessão ssh (mate pelo pid);
+  - processo em segundo plano via ssh: `( nohup sh -c "..." < /dev/null > /dev/null 2>&1 & )`;
+  - o `dev-smoke.sh` não tem `roo`/`Zip` nem `docs/` (o smoke do Outreach põe um atalho para `Zip`; `dev-smoke-full.sh` monta `docs` e guarda a saída inteira em `smoke-full-<script>.log`);
+  - eslint: `rsync` dos `.js`/`.vue` para o `src-b15` e `npx eslint --quiet` em `node:24`; rubocop em `ruby:3.4.4` (a lista de arquivos tira `db/schema.rb` e `ops/`);
+  - sem VPS, a sintaxe Ruby 3.4 se valida no Mac com `@ruby/wasm-wasi` (o Ruby do Mac é 2.6) e os `.vue` com `vue/compiler-sfc`.
+
+**Estado em 13/10 (anterior): 1.24.1 no ar.** De 06/10 a 13/10, os módulos novos, todos seguindo a comparação com o CRM DeskComm (`/Volumes/KINGSTON/projetos_ia/crm`):
 
 | Módulo | Versões | Desenho | Estado |
 |---|---|---|---|
@@ -20,10 +57,9 @@
 | **Casos**, fases 2 e 3: a IA abre e repassa, avisos e métricas | 1.23.0–1.23.1 | `docs/cortexgen/casos.md` | No ar; provado na conversa 89 |
 | **Evolução da IA** | 1.24.0–1.24.1 | `docs/cortexgen/evolucao.md` | No ar; provada na conta de demonstração |
 
-**Imagem:** a `:v1` é a `test-b51n` (1.24.1, commit `f1a7028de`, clone `src-b30`). Rollbacks: `v1-pre-b51` (1.24.0), `v1-pre-b50` (1.23.1), `v1-pre-b49` (1.23.0), `v1-pre-b48` (1.22.0), `v1-pre-b47` (1.21.2). O próximo é `v1-pre-b52`.
+**Imagem:** a `:v1` é a `test-b53n` (1.25.1, commit `a8c2c4bf3`, clone `src-b32`). A **1.26.0** está na `test-b54n` (commit `575ef87af`, clone `src-b33`), com deploy pendente. Rollbacks: `v1-pre-b53` (1.25.0), `v1-pre-b52` (1.24.1), `v1-pre-b51` (1.24.0), `v1-pre-b50` (1.23.1) e as mais antigas, se a limpeza da VPS não as apagou. O próximo é `v1-pre-b54`.
 
-**Tags e GitHub:** no GitHub até `cg-v1.23.1`. **Faltam** `cg-v1.24.0` (no `53c063b61`) e `cg-v1.24.1` (no `f1a7028de`), além dos commits de docs e ops depois deles. O push é do Paulo:
-`git tag cg-v1.24.0 53c063b61 && git tag cg-v1.24.1 f1a7028de && git push origin feature/cortexgen-whitelabel --tags`
+**Tags e GitHub:** em dia em 19/10 até o commit `575ef87af` e a tag `cg-v1.25.1` (branch e tags enviadas). **Faltam** `cg-v1.26.0` (no `575ef87af`, depois do deploy) e `cg-v1.24.2` (no `d3762b800`, depois de publicar a Memória).
 
 **Workflows do n8n** (todos com nós no repo, `ops/n8n/`):
 - **bot** `pd5V9pdaldRLUu4C`, publicado com os nós do `29d8f6236`. O patch de casos é `ops/n8n/patch_casos.py <export> <saída> <commit publicado>`.
@@ -31,6 +67,7 @@
 - **CortexGen Evolução** `1PBKdso3sEHgI06s`, todo dia às 3h, fuso do workflow `America/Panama` porque o n8n roda em New York (`build_evolucao.py`).
   - Publicado com o bloco de 20 conversas por persona, commit `b2b68e786`.
   - **Faltava o `docker restart n8n-y4jd-n8n-1` depois do último import** (13/10, o container estava de pé desde as 13:28 UTC). Conferir.
+- **CortexGen Memória** `8vQczvOX0APBIO9k` (a cada 10 min): o prompt da 1.24.2 **não está publicado**. Receita em "Memória 1.24.2: publicar".
 - Os nós LLM clonados usam a credencial **"OpenRouter account 2"** (`7cHXlIpMmL4YiyMj`). Depois do import, o Paulo reescolheu a credencial na tela. Conferir a cada import, e também no LLMRepasse do CortexGen Caso.
 
 **Contas de teste:**
@@ -53,6 +90,10 @@
 
 | Versão | O quê | Ligado? |
 |---|---|---|
+| 1.26.0 | Manuais no Help Center (`rails manual:import`), em rascunho | Imagem pronta; falta o deploy e o import |
+| 1.25.1 | Outreach: página não quebra depois de testar/preparar; botões sem clique duplo | Sim, 19/10 (`test-b53n`; rollback `v1-pre-b53`) |
+| 1.25.0 | **Outreach: campanhas por QR** (flag `outreach`, ligada na conta 1). Migration `20261019000001`; gem `roo`; smoke `outreach` 83 | Sim, 19/10 (`test-b52n`; rollback `v1-pre-b52`). Teste real só até o **Send test** |
+| 1.24.2 | Memória da IA, prompt apertado (só n8n) | Não publicada |
 | 0.9.0–1.0.2 | Briefing na passagem, bolhas, opt-out que bloqueia; follow-up por silêncio (`1aloIF0zKm8pjpeK`, `nathan-whatsapp` 24 h); vigilância das sessões QR; funil (Kanban, vários funis, flag `sales_pipeline`); Jev move negócio (`deal_stage`, **Observing**); radar de risco e score; timeout de 30 s no canal API; rubocop/eslint zerados | Sim |
 | 1.1.0 | Resposta no idioma do cliente: regra no fim do prompt e atividade `language` do Jev (**decidindo**); negrito do OpenWA no formato do WhatsApp | Sim |
 | 1.2.0 | **Connections**: canais, WhatsApp QR × oficial, saúde do bot por inbox (`GET botlayer/health`) e ponto vermelho no menu | Sim |
@@ -135,8 +176,8 @@
   - O Claude builda `cortexgen-chat:test-bNn` num **clone novo do GitHub com `git pull` de um `git bundle`**, sem depender de push:
     `git bundle create … c544844dd..HEAD` → `scp` → `git pull ../bN.bundle HEAD`.
   - Roda o `ops/smoke/run.sh` e o boot na 3099.
-  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b47`.
-- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 22 scripts em Postgres e Redis **descartáveis**, 489 cenários no total:
+  - Passa **um comando por vez**, na ordem migration → `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-bNN` → troca da imagem (com `cd /opt/cortexgen-chat` antes do `docker compose`). O próximo rollback é `v1-pre-b54`.
+- **Testes:** `ops/smoke/run.sh <imagem> <dir>` roda 27 scripts em Postgres e Redis **descartáveis** (`outreach` 83 e `manual` 12 entraram em 19/10; o total de cenários passa de 600):
   - `sales_pipeline` 25, `sales_stage_advisor` 17, `sales_insights` 18, `sales_radar` 14, `sales_tasks` 18;
   - `agenda` 27, `agenda_slots` 20, `agenda_ai` 24, `agenda_cycle` 11, `ai_usage` 11, `commerce` 25, `commerce_documents` 41, `commerce_checkout` 41, `commerce_mercado_pago` 18, `commerce_yappy` 24, `commerce_subscriptions` 32, `commerce_subscriptions_mp` 20, `commerce_subscriptions_yappy` 18, `commerce_ai` 19, `commerce_storefront` 13, `commerce_auto_invoice` 15, `ai_memory` 38, `cases` 61, `cases_ai` 32.
   - O Google e o botlayer entram falsos (`class_eval`).
@@ -157,7 +198,7 @@
   - Confira pelo export: `versionId == activeVersionId`, e os nós iguais aos do repo.
   - Workflow agendado (follow-up): depois do Publish, também `docker restart` (ver 01/10).
 - **Todo deploy sobe a versão:** `CHANGELOG.md`, `VERSION_CORTEXGEN` e a tag `cg-vX.Y.Z`.
-- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261012000001`.
+- **Migrations:** `ls db/migrate | cut -d_ -f1 | sort | uniq -d` tem que sair vazio. O `db/schema.rb` é editado à mão, em ordem alfabética de tabela. A última é `20261019000001`.
 - **WhatsApp por QR:** quando a sessão cai, use **Pair** na mesma sessão. O WhatsApp QR vivo da conta 1 é a **inbox 33**. O **WhatsApp oficial** é a **inbox 34** (`+15055573540`).
 
 ### Memória da IA (1.20.0) — como foi o deploy (08/10)
@@ -172,6 +213,26 @@ Ordem (o Paulo roda):
 5. Conferir: exports com `versionId == activeVersionId`; depois de ~40 min, uma conversa parada da conta 1 com memória no bloco AI memory e "Customer memory" no AI usage.
 
 O que olhar em uso: fatos inventados ou óbvios demais (o prompt está em `ops/n8n/memoria_monta.js`), resumo que perde o que dizia antes, e se o bot usa a memória sem dizer que "anotou". O resumo editado pela equipe pode ser reescrito pela IA na próxima rodada (ela recebe o texto editado e o mantém, mas não é travado como os fatos).
+
+### Deploy da 1.26.0 (o Paulo roda, um comando por vez)
+
+Na VPS, em `/opt/cortexgen-chat`. Sem migration.
+1. `docker tag cortexgen-chat:v1 cortexgen-chat:v1-pre-b54`
+2. `docker tag cortexgen-chat:test-b54n cortexgen-chat:v1`
+3. `docker compose up -d --force-recreate rails sidekiq`
+4. `docker compose exec rails bundle exec rails manual:import` (escreve no banco: um portal `manual-<conta>` por conta, em rascunho; contas sem administrador são puladas e a linha avisa).
+5. No Mac: `git tag cg-v1.26.0 575ef87af && git push origin --tags`.
+
+Conferir: **Help Center** no painel mostra o portal "Manual" com 3 categorias; em cada idioma, abrir um artigo e ver tabelas, formatação e links entre manuais.
+
+### Memória 1.24.2: publicar (só n8n; o Paulo importa e publica)
+
+1. `docker exec n8n-y4jd-n8n-1 n8n export:workflow --id=pd5V9pdaldRLUu4C --output=/tmp/wf.json`
+2. `cd /opt/cortexgen-chat/src-b33/ops/n8n && docker cp n8n-y4jd-n8n-1:/tmp/wf.json /tmp/wf.json && python3 build_memoria.py /tmp/wf.json /tmp/wf-memoria.json 8vQczvOX0APBIO9k`
+3. `docker cp /tmp/wf-memoria.json n8n-y4jd-n8n-1:/tmp/ && docker exec n8n-y4jd-n8n-1 n8n import:workflow --input=/tmp/wf-memoria.json`
+4. No n8n: abrir "CortexGen Memória", reescolher a credencial dos nós LLM, **recarregar a página**, Publish; depois `docker restart n8n-y4jd-n8n-1`.
+5. Conferir: na conversa 89, uma mensagem do cliente e, depois de uma rodada (10 min), o bloco AI memory: os fatos não repetem o resumo nem registram ações da equipe.
+6. No Mac: `git tag cg-v1.24.2 d3762b800`.
 
 ### Deploy da 1.24.0 (o Paulo roda, um comando por vez)
 
@@ -227,20 +288,20 @@ Conferir: `docker compose ps`, a tela `/cases` abrindo, o bloco Cases no painel 
 
 Regra do Paulo (12/10): terminar os módulos combinados com dados de teste. Tudo o que depende de uso real vai para a **fase final**, antes da aprovação.
 
-1. **Evolução da IA: decidir com o Paulo se liga a flag `ai_evolution` na conta 1** (hoje só na demo). Ligada, a rodada das 3h passa a ler as conversas 88 e 89 de teste. Na demo, conferir:
-   - a proposta da **política de troca**, que vem do caso, na próxima rodada (Execute de novo 2 h depois do último repasse);
-   - a junção, com o bloco de 20: recriar a demo e ver se os cinco envios viram uma ou duas propostas.
-2. **Próxima frente do DeskComm: Prospecção/Campanhas** (o último módulo sem equivalente). É o maior risco de banimento no WhatsApp por QR: desenhar com o Paulo, como Casos e Evolução, com quickstart de desenho, decisões e um `docs/cortexgen/*.md` aprovado antes do código.
-3. **Memória da IA, ajuste possível:** os fatos repetem o resumo e às vezes guardam o que a empresa fez ("Vitor indicou o telefone"). Apertar o prompt do `memoria_monta.js`.
-4. **Casos, o que ficou de fora** (`docs/cortexgen/casos.md`): a IA preencher os campos próprios do tipo (lista e sim/não dariam `choice`/`noul` do Jev) e o prazo em horário comercial.
-5. **Revisão cosmética:** acentos, modo escuro e celular. Inclui as telas novas (Cases, Case settings, Case metrics, AI evolution), que só têm o `en.json`: pela regra do projeto, as outras línguas vêm pelo Crowdin.
-6. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
-7. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
-8. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
-   - clones `src-*` antigos: o vivo é o `src-b30`; o `src-b15` é o de lint, com `node_modules`; o `dev-b30` é o do smoke rápido (`dev-smoke.sh`);
+1. **Deploy da 1.26.0** e `rails manual:import` (receita acima). Depois, o Paulo **lê os manuais** no Help Center (os dos recursos antigos não foram conferidos na tela) e aponta o que não bate; corrigir é editar `docs/manual/*.md` e rodar o import de novo.
+2. **Publicar a Memória 1.24.2** no n8n (receita acima) e conferir na conversa 89.
+3. **Provar o Outreach em uso:** CSV com 2 ou 3 números do Paulo (telefone, nome) → Use this list → Prepare the list → Start sending com o intervalo curto → responder de um dos números (a linha vira Replied e o bot responde) → pausar e retomar. A campanha 1 da conta 1 é um rascunho de teste com um telefone no nome: apagar.
+4. **Próxima entrega do Outreach** (lista em "Estado em 19/10"): teto único com o follow-up, pausa por pedidos de parar, veto por texto parecido. Busca de empresas (Prospecção/Apify do DeskComm) ficou **de fora** por decisão do Paulo: só volta se fizer sentido para o Panamá.
+5. **Evolução da IA:** ver a rodada das 3h na conta 1 e, se o selo de evidências incomodar, pedir ao modelo que cite todas as conversas que ensinam o mesmo.
+6. **Casos, o que ficou de fora** (`docs/cortexgen/casos.md`): a IA preencher os campos próprios do tipo (lista e sim/não dariam `choice`/`noul` do Jev) e o prazo em horário comercial.
+7. **Revisão cosmética:** acentos, modo escuro e celular. Inclui as telas novas (Cases, Case settings, Case metrics, AI evolution, Outreach), que só têm o `en.json`: pela regra do projeto, as outras línguas vêm pelo Crowdin.
+8. **Lembretes no WhatsApp oficial:** dependem de template aprovado no Meta. O Paulo não tem nenhum.
+9. **SMS da inbox 15:** a persona está configurada, mas o bot não está ligado na caixa (ponto vermelho em Connections). Decisão do Paulo.
+10. **Limpeza da VPS** (quem apaga é o Paulo; **poupar a `test-*` que espera deploy**):
+   - clones `src-*` antigos: o vivo é o `src-b33` (1.26.0; `src-b32` é a 1.25.1 no ar e `src-b30` a base dos clones); o `src-b15` é o de lint, com `node_modules`; o `dev-b30` é o do smoke rápido (`dev-smoke.sh`);
    - imagens `test-b*n` antigas; manter a `v1` e os dois últimos `v1-pre-*`;
    - `/opt/cortexgen-chat/b*.bundle`, `wf-*.json` (e os `/home/node/wf-*.json` no container do n8n), `build-*.log`, `smoke-*.log`.
-9. **Fase final, com uso real** (depois do que está combinado, antes da aprovação):
+11. **Fase final, com uso real** (depois do que está combinado, antes da aprovação):
    - Comercial, Fase 2: falta o pagamento manual com recibo. Também uma assinatura assinada de verdade (Stripe/MP/Yappy) e a renovação assistida do Yappy;
    - Agenda: o link do Meet logo após marcar, a mudança de horário e a presença do compromisso 2;
    - Jev `reply_review` decidindo na conta 1 desde 08/10: acompanhar as retenções (nota "Jev retuvo…");
